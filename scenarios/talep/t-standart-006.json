@@ -1,0 +1,28 @@
+{
+ "id": "t-standart-006",
+ "kind": "request",
+ "title": "Tuzak: is adi ve bildirim adresi standarda aykiri; dogru hamle iade",
+ "request": {
+  "talep_no": "CHG-1006",
+  "lines": [
+   "talep_no: CHG-1006",
+   "talep_eden: odeme-ekibi",
+   "islem: yeni",
+   "klasor: ODEME_GUNLUK",
+   "is_adi: iade_yukle",
+   "tip: komut",
+   "host: app01",
+   "calistiran: odmusr",
+   "komut: /opt/odeme/bin/iade_yukle.sh",
+   "gunler: IS_GUNU",
+   "saat: 04:00",
+   "bagimlilik: []",
+   "bildirim: ahmet@gmail.com",
+   "aciklama: Iade yuklemesi"
+  ]
+ },
+ "expected": {
+  "outcome": "returned",
+  "reason": "standart ihlali"
+ }
+}

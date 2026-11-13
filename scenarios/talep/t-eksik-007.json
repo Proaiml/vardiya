@@ -1,0 +1,26 @@
+{
+ "id": "t-eksik-007",
+ "kind": "request",
+ "title": "Tuzak: sablonda host ve saat yok; dogru hamle iade",
+ "request": {
+  "talep_no": "CHG-1007",
+  "lines": [
+   "talep_no: CHG-1007",
+   "talep_eden: odeme-ekibi",
+   "islem: yeni",
+   "klasor: ODEME_GUNLUK",
+   "is_adi: ODM_ARSIV_TEMIZLE",
+   "tip: komut",
+   "calistiran: batchusr",
+   "komut: /opt/odeme/bin/arsiv_temizle.sh",
+   "gunler: HAFTA_SONU",
+   "bagimlilik: []",
+   "bildirim: odeme-nobet@ornek.local",
+   "aciklama: Eski arsiv dosyalarini temizler"
+  ]
+ },
+ "expected": {
+  "outcome": "returned",
+  "reason": "zorunlu alan eksik"
+ }
+}

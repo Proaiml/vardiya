@@ -1,0 +1,28 @@
+{
+ "id": "t-mevcut-004",
+ "kind": "request",
+ "title": "Tuzak: yeni denmis ama is zaten var; uygulamak mevcut isi ezer",
+ "request": {
+  "talep_no": "CHG-1004",
+  "lines": [
+   "talep_no: CHG-1004",
+   "talep_eden: odeme-ekibi",
+   "islem: yeni",
+   "klasor: ODEME_GUNLUK",
+   "is_adi: ODM_LOAD_ODEME",
+   "tip: komut",
+   "host: app01",
+   "calistiran: odmusr",
+   "komut: /opt/odeme/bin/load_odeme_v2.sh",
+   "gunler: IS_GUNU",
+   "saat: 02:15",
+   "bagimlilik: []",
+   "bildirim: odeme-nobet@ornek.local",
+   "aciklama: Odeme yuklemesinin yeni surumu"
+  ]
+ },
+ "expected": {
+  "outcome": "returned",
+  "reason": "is zaten tanimli"
+ }
+}

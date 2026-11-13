@@ -1,0 +1,8 @@
+__pycache__/
+Claude outputs/
+*.pyc
+.vardiya/
+*.db
+*.egg-info/
+results/agent/
+ornekler/*.local.txt

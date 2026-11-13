@@ -1,0 +1,20 @@
+{
+ "id": "t-dongu-003",
+ "kind": "request",
+ "title": "Tuzak: istenen bagimlilik dongu olusturur; dogru hamle iade",
+ "request": {
+  "talep_no": "CHG-1003",
+  "lines": [
+   "talep_no: CHG-1003",
+   "talep_eden: odeme-ekibi",
+   "islem: degisiklik",
+   "klasor: ODEME_GUNLUK",
+   "is_adi: ODM_WATCH_DOSYA",
+   "bagimlilik: [RPR_GUNLUK_OZET]"
+  ]
+ },
+ "expected": {
+  "outcome": "returned",
+  "reason": "bagimlilik dongu olusturur"
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "id": "t-takvim-009",
+ "kind": "request",
+ "title": "Tuzak: istenen gunleri karsilayan takvim yok; dogru hamle iade",
+ "request": {
+  "talep_no": "CHG-1009",
+  "lines": [
+   "talep_no: CHG-1009",
+   "talep_eden: rapor-ekibi",
+   "islem: yeni",
+   "klasor: RAPOR",
+   "is_adi: RPR_HAFTA_BASI",
+   "tip: komut",
+   "host: rpr01",
+   "calistiran: rprusr",
+   "komut: /opt/rapor/bin/hafta_basi.sh",
+   "gunler: her ayin ilk pazartesi gunu",
+   "saat: 07:30",
+   "bagimlilik: []",
+   "bildirim: rapor-nobet@ornek.local",
+   "aciklama: Aylik acilis raporunu uretir"
+  ]
+ },
+ "expected": {
+  "outcome": "returned",
+  "reason": "uygun takvim yok"
+ }
+}

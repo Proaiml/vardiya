@@ -1,0 +1,42 @@
+{
+ "id": "t-takvim-005",
+ "kind": "request",
+ "title": "Gunler serbest yazilmis: dogru takvim AY_SONU_IS_GUNU",
+ "request": {
+  "talep_no": "CHG-1005",
+  "lines": [
+   "talep_no: CHG-1005",
+   "talep_eden: rapor-ekibi",
+   "islem: yeni",
+   "klasor: RAPOR",
+   "is_adi: RPR_AY_SONU_KAPANIS",
+   "tip: komut",
+   "host: rpr01",
+   "calistiran: rprusr",
+   "komut: /opt/rapor/bin/ay_sonu_kapanis.sh",
+   "gunler: her ayin son is gunu",
+   "saat: 06:00",
+   "bagimlilik: [RPR_GUNLUK_OZET]",
+   "bildirim: rapor-nobet@ornek.local",
+   "aciklama: Ay sonu kapanis raporunu uretir"
+  ]
+ },
+ "expected": {
+  "outcome": "applied",
+  "definition": {
+   "name": "RPR_AY_SONU_KAPANIS",
+   "folder": "RAPOR",
+   "type": "komut",
+   "host": "rpr01",
+   "run_as": "rprusr",
+   "command": "/opt/rapor/bin/ay_sonu_kapanis.sh",
+   "calendar": "AY_SONU_IS_GUNU",
+   "time": "06:00",
+   "deps": [
+    "RPR_GUNLUK_OZET"
+   ],
+   "notify": "rapor-nobet@ornek.local",
+   "description": "Ay sonu kapanis raporunu uretir"
+  }
+ }
+}

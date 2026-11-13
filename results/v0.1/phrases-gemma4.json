@@ -1,0 +1,186 @@
+{
+ "author": "ollama:gemma4:latest",
+ "phrases": {
+  "HERGUN": {
+   "meaning": "haftanın yedi günü, hafta sonları ve resmi tatiller de dahil olmak üzere her gün",
+   "items": [
+    "Hafta içi, hafta sonu fark etmeksizin her gün",
+    "Tüm günler geçerli",
+    "Pazardan yediye kadar hep çalışırız",
+    "Her gün mesai",
+    "Tatil olsa bile tüm günler dahil",
+    "Yılın her günü için uygun",
+    "Hafta sonları ve resmi tatiller de dahil olmak üzere sürekli",
+    "Tüm zamanlar açık"
+   ]
+  },
+  "IS_GUNU": {
+   "meaning": "pazartesiden cumaya her gün, resmi tatil günleri hariç (yani iş günleri)",
+   "items": [
+    "Pazartesi'den Cuma'ya kadar tüm hafta içi günler.",
+    "Hafta içi normal çalışma günleri.",
+    "İş günü takvimindeki her gün.",
+    "Pzt-Cum, resmi tatiller hariç.",
+    "Normal mesai günleri (hafta içi).",
+    "Haftanın iş günleri boyunca.",
+    "Resmi tatil olmayan tüm hafta içi günler.",
+    "Pazartesi'den Cuma'ya kadar çalışılacak günler."
+   ]
+  },
+  "HAFTA_SONU": {
+   "meaning": "yalnızca cumartesi ve pazar günleri",
+   "items": [
+    "Sadece hafta sonları",
+    "Cumartesi ve Pazar",
+    "Hafta sonu günleri",
+    "Sadece Cmt/Paz",
+    "Cumartesi ile Pazar arası",
+    "Haftanın son iki günü",
+    "Sadece hafta sonuna özel",
+    "CS & PA"
+   ]
+  },
+  "PAZARTESI": {
+   "meaning": "her hafta yalnızca pazartesi günü, o gün tatil olsa bile",
+   "items": [
+    "Sadece Pazartesi",
+    "Her Pazartesi günü",
+    "Pazartesi günü hariç başka bir gün yok",
+    "Sadece haftanın ilk günü",
+    "Yalnızca pazartesiler",
+    "Pzt.",
+    "Sadece o hafta Pazartesi",
+    "Pazartesi günü (her zaman)"
+   ]
+  },
+  "AY_SONU_IS_GUNU": {
+   "meaning": "her ayın son iş günü",
+   "items": [
+    "Ayın son mesai günü",
+    "Son iş gününde",
+    "Her ayın bitişindeki çalışma günü",
+    "Ay sonunda çalışan gün",
+    "Ayın kapanış iş günü",
+    "O ayın en son iş günü",
+    "Ay sonu çalışması gereken gün",
+    "Ayın son iş günü olarak belirlenen tarih"
+   ]
+  },
+  "AY_BASI_IS_GUNU": {
+   "meaning": "her ayın ilk iş günü",
+   "items": [
+    "Ayın ilk mesai günü",
+    "Her ayın başlangıç iş günü",
+    "İlk iş günü (ay)",
+    "Ayın ilk çalışma günü",
+    "Birinci iş günü",
+    "Ayın açılış günü",
+    "İlk hafta içi"
+   ]
+  },
+  "AYIN_15I": {
+   "meaning": "her ayın 15'i; 15'i hafta sonuna ya da resmi tatile denk gelirse ondan sonraki ilk iş günü",
+   "items": [
+    "Ayın ortası, yani 15'ı. Eğer o gün tatilse, en yakın mesai günü.",
+    "Her ayın 15'i esas alınır; hafta sonu veya resmi bayramsa bir sonraki iş gününe kayar.",
+    "15'inde çalışacağız. Tatil/hafta sonu olursa ertesi iş günü geçerli.",
+    "Ayın yarısı (15). Eğer o tarih boşsa, ilk müsait mesai günü.",
+    "On beşinci gün. Hafta sonu veya resmi tatildeyse, sonraki çalışma günü.",
+    "Her ay 15'i. Tatil durumunda bir sonraki iş gününe revize edilir.",
+    "Ayın ortası için plan yapıyoruz; hafta sonu/tatilse ilk mesai günü esas alınır.",
+    "15'indeyiz. Eğer o gün tatil ise, en yakın çalışma gününü kullanacağız."
+   ]
+  },
+  "-1": {
+   "meaning": "her ayın ilk pazartesi günü",
+   "items": [
+    "Ayın ilk Pazartesi'si",
+    "Her ayın başlangıcındaki Pazartesi",
+    "İlk Pazartesi günleri",
+    "Ayın birinci Pazartesi günü",
+    "Pazartesi, her ayın başında",
+    "Birinci Pazartesi",
+    "Ayın ilk iş günü (eğer Pazartesi ise)",
+    "Her ayın başlangıcındaki o Pazartesi"
+   ]
+  },
+  "-2": {
+   "meaning": "iki haftada bir, cuma günü",
+   "items": [
+    "İki haftada bir Cuma",
+    "Her iki haftanın Cuması",
+    "Cuma günleri, aralıklı olarak",
+    "İki haftalık periyotlarla cuma günü",
+    "Arada bir cuma",
+    "Firma takvimine göre iki haftada bir cumartesi değil, cuma",
+    "Cumaları, iki haftada bir baz alınırsa",
+    "Her iki haftanın son gününde (Cuma)"
+   ]
+  },
+  "-3": {
+   "meaning": "üç ayda bir, çeyreğin son günü",
+   "items": [
+    "Her üç ayda bir, dönemin bitiş gününde",
+    "Çeyrek sonunda olmak üzere",
+    "Üç aylık periyotun kapanış günü",
+    "Dönem sonu (3 ayda bir)",
+    "Her çeyreğin son iş günü",
+    "Üç ayda bir, o dönemin son günü",
+    "Çeyrek bitiş tarihi",
+    "Üç ayda bir, dönem sonunda"
+   ]
+  },
+  "-4": {
+   "meaning": "yalnızca salı ve perşembe günleri",
+   "items": [
+    "Sadece Salı ve Perşembe.",
+    "Salı ile Perşembe arası günler.",
+    "Bu iş için sadece Salı ve Perşembe uygun.",
+    "Çalışma günleri yalnızca Salı ve Perşembe olmalı.",
+    "Perşembe ve Salı günleri yeterli.",
+    "İhtiyaç duyulan günler: Salı, Perşembe.",
+    "Sadece o iki gün (Salı/Perş).",
+    "Salı günü ile perşembe günü arasında."
+   ]
+  },
+  "-5": {
+   "meaning": "her ayın 10'u (tatil olsa da o gün)",
+   "items": [
+    "Her ayın onuncu günü",
+    "Ayın 10'u, tatil olsa bile çalışılacak.",
+    "Aylık olarak 10. gün",
+    "Ne olursa olsun her ayın 10'u",
+    "Onuncu tarih (aydan bağımsız)",
+    "Her ayın 10'u günü",
+    "Ayın on numarası, resmi tatil olsa bile",
+    "10'u hep çalışıyoruz."
+   ]
+  },
+  "-6": {
+   "meaning": "çarşamba dışında hafta içi her gün",
+   "items": [
+    "Çarşamba hariç tüm iş günleri",
+    "Pazartesi, Salı, Perşembe ve Cuma",
+    "Hafta içi ama Çarşamba yok",
+    "Çarşambayı atlayarak hafta içi",
+    "Tüm günler; sadece Çarşamba hariç",
+    "Pzt, Sal, Prş, Cum",
+    "Çarşamba dışındaki tüm iş günleri",
+    "Hafta içi ama ortası değil"
+   ]
+  },
+  "-7": {
+   "meaning": "her ayın son cuma günü",
+   "items": [
+    "Ayın son cuması",
+    "Her ayın bitişindeki Cuma",
+    "Son cuma günleri",
+    "Ay sonunda gelen Cuma günü",
+    "O ayın en son Cuması",
+    "Cuma, o ayın kapanışı",
+    "Ayın son haftaki Cuma",
+    "Son cumaya denk gelen tarih"
+   ]
+  }
+ }
+}

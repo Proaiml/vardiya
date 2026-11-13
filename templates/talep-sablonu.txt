@@ -1,0 +1,27 @@
+# Is tanimlama ve degisiklik talebi sablonu
+#
+# Kurallar:
+# - Her satir "alan: deger" bicimindedir. '#' ile baslayan satirlar yorumdur.
+# - Sablonda olmayan alan eklenmez; ayni alan iki kez yazilmaz.
+# - islem: yeni        -> asagidaki butun alanlar zorunludur (bagimlilik yoksa [] yazilir).
+# - islem: degisiklik  -> talep_no, talep_eden, islem, klasor, is_adi zorunludur;
+#                         yalnizca degisecek alanlar yazilir, yazilmayan alan oldugu gibi kalir.
+# - host, calistiran, klasor ve bagimlilik ortamda tanimli adlarla yazilir.
+# - gunler bir takvim adidir. Takvim adini bilmiyorsaniz gunleri kendi cumlenizle yazin;
+#   ajan bir takvime cevirebilirse cevirir, ceviremezse talebi gecerli takvim listesiyle iade eder.
+# - Parola ve gizli bilgi sablona yazilmaz.
+
+talep_no:
+talep_eden:
+islem:
+klasor:
+is_adi:
+tip:
+host:
+calistiran:
+komut:
+gunler:
+saat:
+bagimlilik: []
+bildirim:
+aciklama:

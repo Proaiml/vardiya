@@ -1,0 +1,94 @@
+# JS7 JobScheduler laboratuvari: dis gecerlilik ortami.
+#
+# Yalnizca yerel deneme icindir. JOC Cockpit varsayilan yonetici hesabiyla gelir;
+# bu yuzden butun portlar 127.0.0.1'e baglidir ve aga acilmaz.
+#
+#   docker compose -f lab/js7/docker-compose.yml up -d
+#   docker compose -f lab/js7/docker-compose.yml down        # durdurur, veriyi korur
+#   docker compose -f lab/js7/docker-compose.yml down -v     # veriyi de siler
+#
+# Arayuz: http://127.0.0.1:17446
+name: vardiya-js7
+
+services:
+  controller:
+    image: sosberlin/js7:controller-2-9-1
+    hostname: js7-controller
+    tty: true
+    stdin_open: true
+    environment:
+      RUN_JS_JAVA_OPTIONS: "-Xmx256m"
+      RUN_JS_ID: "vardiya"
+    volumes:
+      - controller-var:/var/sos-berlin.com/js7/controller/var
+    ports:
+      - "127.0.0.1:15444:4444"
+
+  # Agent, guvenilen imza anahtari tanimli degilse acilmaz ("No trusted signature keys").
+  # Imajdaki ornek ayar dosyasi ilk kurulumda bir kez yerine kopyalanir.
+  agent-init:
+    image: sosberlin/js7:agent-2-9-1
+    entrypoint: ["sh", "-c", "cd /var/sos-berlin.com/js7/agent/config/private && { [ -f private.conf ] || cp -p private.conf-example private.conf; }"]
+    volumes:
+      - agent-var:/var/sos-berlin.com/js7/agent
+
+  agent:
+    image: sosberlin/js7:agent-2-9-1
+    hostname: js7-agent
+    depends_on:
+      agent-init:
+        condition: service_completed_successfully
+    tty: true
+    stdin_open: true
+    environment:
+      RUN_JS_JAVA_OPTIONS: "-Xmx256m"
+    volumes:
+      # 2.9.1 imajinda veri dizini budur (eski belgelerdeki var_4445 degil)
+      - agent-var:/var/sos-berlin.com/js7/agent
+    ports:
+      - "127.0.0.1:16445:4445"
+
+  joc:
+    image: sosberlin/js7:joc-2-9-1-1
+    hostname: js7-joc
+    tty: true
+    stdin_open: true
+    environment:
+      RUN_JS_JAVA_OPTIONS: "-Xmx512m"
+    volumes:
+      - joc-config:/var/sos-berlin.com/js7/joc/resources/joc
+      - joc-logs:/var/log/sos-berlin.com/js7/joc
+      - ./hibernate.cfg.xml:/var/sos-berlin.com/js7/joc/resources/joc/hibernate.cfg.xml:ro
+    ports:
+      - "127.0.0.1:17446:4446"
+    depends_on:
+      db:
+        condition: service_healthy
+      controller:
+        condition: service_started
+      agent:
+        condition: service_started
+
+  # JOC Cockpit'in veritabani. 2.9.1 imaji gomulu veritabaniyla gelmez.
+  # Disariya port acilmaz; yalnizca laboratuvar agi icinden erisilir.
+  db:
+    image: postgres:16-alpine
+    hostname: js7-db
+    environment:
+      POSTGRES_DB: js7
+      POSTGRES_USER: js7
+      POSTGRES_PASSWORD: js7lab
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U js7 -d js7"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:
+  controller-var:
+  agent-var:
+  joc-config:
+  joc-logs:

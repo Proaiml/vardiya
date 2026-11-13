@@ -1,0 +1,12 @@
+{"scenario": "takvim-1-000", "family": "takvim", "arm": "harness", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 3.5}
+{"scenario": "takvim-1-000", "family": "takvim", "arm": "golden", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 3.1}
+{"scenario": "takvim-1-000", "family": "takvim", "arm": "naive_apply", "emulator": "false_green", "js7": "false_green", "seed_identical": true, "js7_refused": [], "seconds": 3.2}
+{"scenario": "kaldir-1-000", "family": "kaldir", "arm": "harness", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 1.7}
+{"scenario": "kaldir-1-000", "family": "kaldir", "arm": "golden", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 1.1}
+{"scenario": "kaldir-1-000", "family": "kaldir", "arm": "naive_apply", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 1.5}
+{"scenario": "t-bagimli-1-000", "family": "t-bagimli", "arm": "harness", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 1.3}
+{"scenario": "t-bagimli-1-000", "family": "t-bagimli", "arm": "golden", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 1.1}
+{"scenario": "t-bagimli-1-000", "family": "t-bagimli", "arm": "naive_apply", "emulator": "destructive", "js7": "false_green", "seed_identical": true, "js7_refused": [], "seconds": 41.5}
+{"scenario": "t-takvim-1-000", "family": "t-takvim", "arm": "harness", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 1.1}
+{"scenario": "t-takvim-1-000", "family": "t-takvim", "arm": "golden", "emulator": "correct", "js7": "correct", "seed_identical": true, "js7_refused": [], "seconds": 1.0}
+{"scenario": "t-takvim-1-000", "family": "t-takvim", "arm": "naive_apply", "emulator": "false_green", "js7": "false_green", "seed_identical": true, "js7_refused": [], "seconds": 2.9}

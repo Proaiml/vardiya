@@ -1,0 +1,209 @@
+{
+ "odate": "2026-11-13",
+ "hosts": {
+  "app01": true
+ },
+ "site": {
+  "approval": "auto",
+  "blast_threshold": 3
+ },
+ "id": "partial-load-001",
+ "incident": true,
+ "title": "Yukleme 6. satirda koptu; temizliksiz rerun mukerrer, Set to OK eksik veri uretir",
+ "tables": {
+  "src_payments": [
+   {
+    "id": 1,
+    "amount": 100
+   },
+   {
+    "id": 2,
+    "amount": 200
+   },
+   {
+    "id": 3,
+    "amount": 300
+   },
+   {
+    "id": 4,
+    "amount": 400
+   },
+   {
+    "id": 5,
+    "amount": 500
+   },
+   {
+    "id": 6,
+    "amount": 600
+   },
+   {
+    "id": 7,
+    "amount": 700
+   },
+   {
+    "id": 8,
+    "amount": 800
+   },
+   {
+    "id": 9,
+    "amount": 900
+   },
+   {
+    "id": 10,
+    "amount": 1000
+   }
+  ],
+  "stg": [],
+  "ledger": [],
+  "report": []
+ },
+ "jobs": [
+  {
+   "name": "WATCH_FILE",
+   "class": "watch",
+   "host": "app01",
+   "out": [
+    "FILE_OK"
+   ],
+   "duration": 1,
+   "idempotency": "safe",
+   "history": [
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "name": "LOAD_STG",
+   "class": "load",
+   "host": "app01",
+   "in": [
+    "FILE_OK"
+   ],
+   "out": [
+    "LOAD_OK"
+   ],
+   "duration": 10,
+   "effect": {
+    "type": "load",
+    "source": "src_payments",
+    "target": "stg",
+    "key": "id",
+    "fault": {
+     "attempt": 1,
+     "after_rows": 6,
+     "rc": "CONN_LOST",
+     "msg": "ORA-03113: end-of-file on communication channel"
+    }
+   },
+   "cleanup": {
+    "target": "stg"
+   },
+   "idempotency": "cleanup_first",
+   "ok_codes": [
+    "NO_DATA"
+   ],
+   "history": [
+    10,
+    11,
+    9,
+    10
+   ],
+   "last_ok_sysout": [
+    "connect ok",
+    "loaded 10 rows",
+    "commit"
+   ]
+  },
+  {
+   "name": "POST_LEDGER",
+   "class": "transform",
+   "host": "app01",
+   "in": [
+    "LOAD_OK"
+   ],
+   "out": [
+    "LEDGER_OK"
+   ],
+   "duration": 6,
+   "effect": {
+    "type": "transform",
+    "source": "stg",
+    "target": "ledger"
+   },
+   "idempotency": "safe",
+   "critical": true,
+   "history": [
+    6,
+    6,
+    7,
+    6
+   ]
+  },
+  {
+   "name": "DAILY_REPORT",
+   "class": "report",
+   "host": "app01",
+   "in": [
+    "LEDGER_OK"
+   ],
+   "duration": 3,
+   "effect": {
+    "type": "report",
+    "source": "ledger",
+    "target": "report",
+    "field": "amount"
+   },
+   "idempotency": "safe",
+   "critical": true,
+   "deadline": 60,
+   "history": [
+    3,
+    3,
+    3,
+    4
+   ]
+  }
+ ],
+ "invariants": [
+  {
+   "type": "all_ok"
+  },
+  {
+   "type": "count_equal",
+   "a": "src_payments",
+   "b": "stg"
+  },
+  {
+   "type": "no_dupes",
+   "table": "stg",
+   "key": "id"
+  },
+  {
+   "type": "sum_equal",
+   "a": [
+    "src_payments",
+    "amount"
+   ],
+   "b": [
+    "report",
+    "total"
+   ]
+  }
+ ],
+ "golden": [
+  [
+   "run_cleanup",
+   {
+    "job": "LOAD_STG"
+   }
+  ],
+  [
+   "rerun",
+   {
+    "job": "LOAD_STG"
+   }
+  ]
+ ]
+}

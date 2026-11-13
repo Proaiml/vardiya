@@ -1,0 +1,41 @@
+{
+ "author": "agy:gemini-4-hydrogen-low",
+ "per_family": 15,
+ "seed": 8,
+ "descriptions": {
+  "aciklamali-8-000": "Ayda bir kez, ayın ilk iş günü çalışan bu kredi yedek işi, KRD_POST_DEFTER tamamlandıktan sonra saat 01:45'te başlar.",
+  "aciklamali-8-001": "Rapor kur farki işi, rpr01 sunucusunda saat 02:30 itibarıyla çalışmaya başlar.",
+  "aciklamali-8-002": "Müşteri gün sonu işi kapsamında tanımlanan bu süreç, MST_KONTROL tamamlandıktan sonra saat 02:45'de db01 sunucusunda çalışmaya başlar.",
+  "aciklamali-8-003": "Muhasebe kur farkı işlemlerini yürüten bu iş, db01 sunucusu üzerinde saat 02:15'te çalışmaya başlar.",
+  "aciklamali-8-004": "etl01 sunucusunda çalışan bu muhasebe gün sonu işi, MHS_POST_DEFTER tamamlandıktan sonra saat 02:30'da başlar.",
+  "aciklamali-8-005": "Bu musteri temizlik işi, ayda bir kez ayın son iş günü saat 03:00'de başlar ve rpr01 sunucusunda çalışır.",
+  "aciklamali-8-006": "Hazine gün sonu işini yürüten bu süreç, yalnızca hafta sonları rpr01 sunucusu üzerinde HZN_POST_DEFTER tamamlandıktan sonra çalışır.",
+  "aciklamali-8-007": "Bu rapor yedek işi, RPR_KONTROL tamamlandıktan sonra saat 02:45'te app02 sunucusu üzerinde çalışmaya başlar.",
+  "aciklamali-8-008": "Ödeme doğrulama işi, app01 sunucusunda ayda bir kez olmak üzere ayın son iş günü çalışır. İş, ODM_AKTARIM tamamlandıktan sonra başlar.",
+  "aciklamali-8-009": "Bu musteri dogrulama işi, app02 sunucusu üzerinde ayda bir kez, ayın son iş günü saat 03:45'de başlar ve çalışır.",
+  "aciklamali-8-010": "Bu iş, HZN_AKTARIM tamamlandıktan sonra başlayan ve yalnızca hafta sonları çalışan hazine envanter işidir.",
+  "aciklamali-8-011": "Müşteri kur farkı işlemlerini yürüten bu iş, yalnızca hafta sonları olmak üzere MST_AKTARIM süreci tamamlandıktan sonra çalışmaya başlar.",
+  "aciklamali-8-012": "Hazine kur farkı işi her gün saat 03:15'de başlayarak db01 sunucusu üzerinde çalışmaktadır.",
+  "aciklamali-8-013": "Muhasebe temizlik işi saat 01:45'de başlar ve app02 sunucusunda çalışır.",
+  "aciklamali-8-014": "Müşteri envanter işi rpr01 sunucusu üzerinde yalnızca iş günlerinde çalışır ve saat 03:15'te başlar.",
+  "t-celiski-8-000": "Rapor doğrulama işi kapsamında çalıştırılan bu süreç, ODM_ARSIV tamamlandıktan sonra saat 02:30'da başlar.",
+  "t-celiski-8-001": "Bu iş, MST_AKTARIM tamamlandıktan sonra başlayan odeme load iade işi olup yalnızca hafta sonları çalışmaktadır.",
+  "t-celiski-8-002": "Bu rapor envanter işi, RPR_POST_DEFTER tamamlandıktan sonra app01 sunucusunda çalışmaya başlar.",
+  "t-celiski-8-003": "Ayda bir kez, ayın ilk iş günü çalışan kredi hesaplama işi, HZN_AKTARIM bittikten sonra başlar.",
+  "t-celiski-8-004": "Bu hazine bildirim işi ayda bir kez, ayın ilk iş günü HZN_MUTABAKAT bittikten sonra çalışmaya başlar.",
+  "t-celiski-8-005": "Bu musteri envanter işi, MST_KONTROL tamamlandıktan sonra etl01 sunucusu üzerinde çalıştırılır.",
+  "t-celiski-8-006": "Müşteri kapanış işi, ayda bir kez ayın ilk iş günü saat 07:00'de başlar.",
+  "t-celiski-8-007": "Muhasebe load iade işi olarak tanımlanan bu işlem ayda bir kez, ayın son iş günü rpr01 sunucusunda çalıştırılır.",
+  "t-celiski-8-008": "ODM_ARSIV bittikten sonra etl01 sunucusunda çalışan kredi hesaplama işidir.",
+  "t-celiski-8-009": "Bu kredi bildirim işi rpr01 sunucusunda çalışır ve KRD_LOAD_STG tamamlandıktan sonra başlar.",
+  "t-celiski-8-010": "Bu muhasebe kapanis işi her gün saat 13:00'de başlar ve app02 sunucusunda çalışır.",
+  "t-celiski-8-011": "Bu kredi hesaplama işi, yalnızca iş günlerinde çalışır ve ODM_LOAD_STG tamamlandıktan sonra başlar.",
+  "t-celiski-8-012": "Bu rapor envanter işi, MST_OZET_RAPOR tamamlandıktan sonra saat 03:00'de başlar.",
+  "t-celiski-8-013": "Ödeme yedek işi için tanımlanan bu süreç, ODM_POST_DEFTER bittikten sonra app02 sunucusunda çalışır.",
+  "t-celiski-8-014": "Kredi envanter işi ayda bir kez, ayın son iş günü app02 sunucusunda çalışır."
+ },
+ "dropped": [],
+ "relabel": {
+  "aciklamali-8-012": "yeniden yazan model aciklamaya 'her gun' ekledi; gunler alani AY_BASI_IS_GUNU. Aciklama artik gunler alaniyla celisiyor (harness'in iadesi okununca bulundu)"
+ }
+}

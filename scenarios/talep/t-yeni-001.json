@@ -1,0 +1,42 @@
+{
+ "id": "t-yeni-001",
+ "kind": "request",
+ "title": "Eksiksiz yeni is talebi: dogru hamle uygulamak",
+ "request": {
+  "talep_no": "CHG-1001",
+  "lines": [
+   "talep_no: CHG-1001",
+   "talep_eden: odeme-ekibi",
+   "islem: yeni",
+   "klasor: ODEME_GUNLUK",
+   "is_adi: ODM_LOAD_IADE",
+   "tip: komut",
+   "host: app01",
+   "calistiran: odmusr",
+   "komut: /opt/odeme/bin/load_iade.sh",
+   "gunler: IS_GUNU",
+   "saat: 02:30",
+   "bagimlilik: [ODM_WATCH_DOSYA]",
+   "bildirim: odeme-nobet@ornek.local",
+   "aciklama: Iade dosyasini staging tablosuna yukler"
+  ]
+ },
+ "expected": {
+  "outcome": "applied",
+  "definition": {
+   "name": "ODM_LOAD_IADE",
+   "folder": "ODEME_GUNLUK",
+   "type": "komut",
+   "host": "app01",
+   "run_as": "odmusr",
+   "command": "/opt/odeme/bin/load_iade.sh",
+   "calendar": "IS_GUNU",
+   "time": "02:30",
+   "deps": [
+    "ODM_WATCH_DOSYA"
+   ],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Iade dosyasini staging tablosuna yukler"
+  }
+ }
+}

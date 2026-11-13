@@ -1,0 +1,11 @@
+{
+ "_not": "Yalnizca 127.0.0.1'e bagli yerel laboratuvar icindir. Hesap, JS7'nin belgelenmis varsayilan yonetici hesabidir; ortam aga acilacaksa once arayuzden degistirilmelidir. JS7_URL, JS7_ACCOUNT ve JS7_PASSWORD ortam degiskenleri bu dosyayi ezer.",
+ "url": "http://127.0.0.1:17446",
+ "account": "root",
+ "password": "root",
+ "controller_id": "vardiya",
+ "controller_url": "http://js7-controller:4444",
+ "agent_id": "agent1",
+ "agent_name": "agent1",
+ "agent_url": "http://js7-agent:4445"
+}

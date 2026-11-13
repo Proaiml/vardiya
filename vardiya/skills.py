@@ -1,0 +1,173 @@
+"""Skill layer: declarative runbooks. A skill is data, never code.
+
+A skill may only use kernel verbs, cannot raise its own authority, and cannot
+skip the policy check. Parsing is a strict YAML subset so no dependency is needed.
+"""
+import pathlib
+import re
+from dataclasses import dataclass, field
+
+PLAN_STEPS = {"hold_downstream", "free_downstream", "run_cleanup", "rerun", "set_to_ok", "escalate"}
+
+
+def _scalar(v):
+    v = v.strip()
+    if v.startswith("[") and v.endswith("]"):
+        return [_scalar(x) for x in v[1:-1].split(",") if x.strip()]
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        return v[1:-1]
+    return int(v) if v.lstrip("-").isdigit() else v
+
+
+def parse_yaml(text):
+    root = {}
+    stack = [(-1, root)]
+    for raw in text.splitlines():
+        if not raw.strip() or raw.strip().startswith("#"):
+            continue
+        indent, line = len(raw) - len(raw.lstrip()), raw.strip()
+        while stack[-1][0] >= indent:
+            stack.pop()
+        key, _, val = line.partition(":")
+        if val.strip() == "":
+            child = {}
+            stack[-1][1][key.strip()] = child
+            stack.append((indent, child))
+        else:
+            stack[-1][1][key.strip()] = _scalar(val)
+    return root
+
+
+def _literal(tok, facts):
+    if tok in facts:
+        return facts[tok]
+    return {"true": True, "false": False}.get(tok, _scalar(tok))
+
+
+def holds(expr, facts):
+    """Tiny safe evaluator: `fact op value` clauses joined by ` and `. No eval()."""
+    for clause in expr.split(" and "):
+        parts = clause.split(None, 2)
+        if len(parts) != 3 or parts[1] not in OPS or parts[0] not in facts:
+            return False
+        try:
+            if not OPS[parts[1]](facts[parts[0]], _literal(parts[2].strip(), facts)):
+                return False
+        except (TypeError, re.error):
+            return False
+    return True
+
+
+def _matches(value, pattern):
+    # a pattern comes from a skill file: keep both sides short so a bad one cannot stall the desk
+    return len(str(pattern)) <= 200 and len(str(value)) <= 500 and re.fullmatch(str(pattern), str(value)) is not None
+
+
+OPS = {"==": lambda a, b: a == b, "!=": lambda a, b: a != b, ">": lambda a, b: a > b,
+       ">=": lambda a, b: a >= b, "<": lambda a, b: a < b, "<=": lambda a, b: a <= b,
+       "matches": _matches, "startswith": lambda a, b: str(a).startswith(str(b)),
+       "endswith": lambda a, b: str(a).endswith(str(b))}
+
+
+@dataclass
+class Skill:
+    name: str
+    description: str
+    trigger: str
+    authority: int
+    allowed_actions: list
+    diagnose: dict
+    plans: dict
+    postconditions: dict
+    evidence: list
+    body: str = ""
+    errors: list = field(default_factory=list)
+
+
+def load_skill(path):
+    text = pathlib.Path(path).read_text(encoding="utf-8")
+    _, front, body = text.split("---", 2)
+    m = parse_yaml(front)
+    s = Skill(m["name"], m.get("description", ""), m["trigger"], int(str(m["authority"]).lstrip("L")),
+              m.get("allowed_actions", []), m.get("diagnose", {}), m.get("plans", {}),
+              m.get("postconditions", {}), m.get("evidence", []), body.strip())
+    # static safety gate: a skill can only name kernel plan steps it declared as allowed
+    for diag, steps in s.plans.items():
+        for step in steps:
+            if step not in PLAN_STEPS:
+                s.errors.append(f"{diag}: bilinmeyen adim {step}")
+            base = {"hold_downstream": "hold", "free_downstream": "free"}.get(step, step)
+            if step != "escalate" and base not in s.allowed_actions:
+                s.errors.append(f"{diag}: {step} izinli eylemlerde yok")
+        if diag not in s.diagnose:
+            s.errors.append(f"plan '{diag}' icin teshis kosulu yok")
+    if "http://" in text or "https://" in text:
+        s.errors.append("skill dis baglanti tasiyamaz")
+    return s
+
+
+def _kind(path):
+    text = pathlib.Path(path).read_text(encoding="utf-8")
+    return parse_yaml(text.split("---", 2)[1]).get("kind", "incident")
+
+
+def load_skills(directory):
+    """Incident skills (runbooks). Request-rule skills in the same folder are loaded separately."""
+    skills = [load_skill(p) for p in sorted(pathlib.Path(directory).glob("*/SKILL.md")) if _kind(p) == "incident"]
+    bad = [f"{s.name}: {e}" for s in skills for e in s.errors]
+    if bad:
+        raise ValueError("gecersiz skill: " + "; ".join(bad))
+    return skills
+
+
+# ---- request-rule skills ---------------------------------------------------------
+# A site's own standards for job definitions, as data. A rule can only add a reason to return a
+# request; nothing in a skill can make the desk accept what the kernel checks refuse.
+RULE_FACTS = ("name", "folder", "type", "host", "run_as", "command", "calendar", "time", "notify", "description",
+              "dep_count", "hour", "minute", "is_new", "folder_prefix", "std_name_regex", "std_notify_suffix")
+
+
+@dataclass
+class Rule:
+    skill: str
+    id: str
+    require: str
+    message: str
+    when: str = ""
+    severity: str = "error"
+
+
+def load_rule_skill(path):
+    text = pathlib.Path(path).read_text(encoding="utf-8")
+    m = parse_yaml(text.split("---", 2)[1])
+    rules, errors = [], []
+    if "http://" in text or "https://" in text:
+        errors.append("skill dis baglanti tasiyamaz")
+    for rid, body in (m.get("rules") or {}).items():
+        if not isinstance(body, dict) or not body.get("require") or not body.get("message"):
+            errors.append(f"{rid}: require ve message zorunlu")
+            continue
+        if set(body) - {"require", "message", "when", "severity"}:
+            errors.append(f"{rid}: bilinmeyen alan {sorted(set(body) - {'require', 'message', 'when', 'severity'})}")
+        if body.get("severity", "error") not in ("error", "warning"):
+            errors.append(f"{rid}: severity error ya da warning olmali")
+        for expr in (str(body["require"]), str(body.get("when", ""))):
+            for clause in filter(None, expr.split(" and ")):
+                parts = clause.split(None, 2)
+                if len(parts) != 3 or parts[1] not in OPS:
+                    errors.append(f"{rid}: kosul okunamadi: {clause}")
+                elif parts[0] not in RULE_FACTS:
+                    errors.append(f"{rid}: bilinmeyen olgu {parts[0]}")
+        rules.append(Rule(m.get("name", "?"), rid, str(body["require"]), str(body["message"]),
+                          str(body.get("when", "")), body.get("severity", "error")))
+    if errors:
+        raise ValueError(f"gecersiz skill {m.get('name', path)}: " + "; ".join(errors))
+    return rules
+
+
+def load_request_rules(directory):
+    out = []
+    for p in sorted(pathlib.Path(directory).glob("*/SKILL.md")):
+        if _kind(p) == "request_rules":
+            out += load_rule_skill(p)
+    return out

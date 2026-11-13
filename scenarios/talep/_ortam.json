@@ -1,0 +1,140 @@
+{
+ "today": "2026-11-13",
+ "env": {
+  "hosts": {
+   "app01": {
+    "users": [
+     "batchusr",
+     "odmusr"
+    ],
+    "desc": "odeme uygulama sunucusu"
+   },
+   "db01": {
+    "users": [
+     "dbbatch"
+    ],
+    "desc": "veritabani sunucusu"
+   },
+   "rpr01": {
+    "users": [
+     "rprusr"
+    ],
+    "desc": "raporlama sunucusu"
+   }
+  },
+  "calendars": {
+   "HERGUN": {
+    "rule": {
+     "type": "daily"
+    },
+    "desc": "haftanin her gunu, tatiller dahil"
+   },
+   "IS_GUNU": {
+    "rule": {
+     "type": "workdays"
+    },
+    "desc": "pazartesiden cumaya, resmi tatiller haric"
+   },
+   "HAFTA_SONU": {
+    "rule": {
+     "type": "weekly",
+     "days": [
+      5,
+      6
+     ]
+    },
+    "desc": "cumartesi ve pazar"
+   },
+   "AY_SONU_IS_GUNU": {
+    "rule": {
+     "type": "month_end_workday"
+    },
+    "desc": "her ayin son is gunu"
+   },
+   "AYIN_15I": {
+    "rule": {
+     "type": "month_day",
+     "day": 15,
+     "shift": "next"
+    },
+    "desc": "her ayin 15. gunu; tatile ya da hafta sonuna gelirse sonraki is gunu"
+   }
+  },
+  "folders": {
+   "ODEME_GUNLUK": {
+    "prefix": "ODM_"
+   },
+   "RAPOR": {
+    "prefix": "RPR_"
+   }
+  },
+  "standards": {
+   "name_regex": "[A-Z][A-Z0-9_]{3,29}",
+   "notify_suffix": "@ornek.local"
+  },
+  "holidays": [
+   "2026-12-31",
+   "2027-01-01"
+  ]
+ },
+ "jobs": [
+  {
+   "name": "ODM_WATCH_DOSYA",
+   "folder": "ODEME_GUNLUK",
+   "type": "dosya_izleme",
+   "host": "app01",
+   "run_as": "batchusr",
+   "command": "/data/odeme/gelen/odeme.csv",
+   "calendar": "IS_GUNU",
+   "time": "01:00",
+   "deps": [],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Odeme dosyasinin gelmesini bekler"
+  },
+  {
+   "name": "ODM_LOAD_ODEME",
+   "folder": "ODEME_GUNLUK",
+   "type": "komut",
+   "host": "app01",
+   "run_as": "odmusr",
+   "command": "/opt/odeme/bin/load_odeme.sh",
+   "calendar": "IS_GUNU",
+   "time": "02:00",
+   "deps": [
+    "ODM_WATCH_DOSYA"
+   ],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Odeme dosyasini staging tablosuna yukler"
+  },
+  {
+   "name": "ODM_POST_DEFTER",
+   "folder": "ODEME_GUNLUK",
+   "type": "komut",
+   "host": "db01",
+   "run_as": "dbbatch",
+   "command": "/opt/odeme/bin/post_defter.sh",
+   "calendar": "IS_GUNU",
+   "time": "03:00",
+   "deps": [
+    "ODM_LOAD_ODEME"
+   ],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Staging kayitlarini deftere isler"
+  },
+  {
+   "name": "RPR_GUNLUK_OZET",
+   "folder": "RAPOR",
+   "type": "komut",
+   "host": "rpr01",
+   "run_as": "rprusr",
+   "command": "/opt/rapor/bin/gunluk_ozet.sh",
+   "calendar": "IS_GUNU",
+   "time": "05:00",
+   "deps": [
+    "ODM_POST_DEFTER"
+   ],
+   "notify": "rapor-nobet@ornek.local",
+   "description": "Gunluk ozet raporunu uretir"
+  }
+ ]
+}

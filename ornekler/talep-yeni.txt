@@ -1,0 +1,15 @@
+# Ornek talep: gunler takvim adiyla degil, serbest yazilmis.
+talep_no: CHG-2002
+talep_eden: rapor-ekibi
+islem: yeni
+klasor: RAPOR
+is_adi: RPR_AY_SONU_OZET
+tip: komut
+host: rpr01
+calistiran: rprusr
+komut: /opt/rapor/bin/ay_sonu_ozet.sh
+gunler: her ayin son is gunu
+saat: 06:30
+bagimlilik: [RPR_GUNLUK_OZET]
+bildirim: rapor-nobet@ornek.local
+aciklama: Ay sonu ozet raporunu uretir

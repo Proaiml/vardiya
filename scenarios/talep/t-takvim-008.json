@@ -1,0 +1,42 @@
+{
+ "id": "t-takvim-008",
+ "kind": "request",
+ "title": "Gunler serbest yazilmis: dogru takvim IS_GUNU",
+ "request": {
+  "talep_no": "CHG-1008",
+  "lines": [
+   "talep_no: CHG-1008",
+   "talep_eden: rapor-ekibi",
+   "islem: yeni",
+   "klasor: RAPOR",
+   "is_adi: RPR_KUR_FARKI",
+   "tip: komut",
+   "host: rpr01",
+   "calistiran: rprusr",
+   "komut: /opt/rapor/bin/kur_farki.sh",
+   "gunler: hafta ici her gun, resmi tatillerde calismasin",
+   "saat: 07:00",
+   "bagimlilik: [RPR_GUNLUK_OZET]",
+   "bildirim: rapor-nobet@ornek.local",
+   "aciklama: Kur farki raporunu uretir"
+  ]
+ },
+ "expected": {
+  "outcome": "applied",
+  "definition": {
+   "name": "RPR_KUR_FARKI",
+   "folder": "RAPOR",
+   "type": "komut",
+   "host": "rpr01",
+   "run_as": "rprusr",
+   "command": "/opt/rapor/bin/kur_farki.sh",
+   "calendar": "IS_GUNU",
+   "time": "07:00",
+   "deps": [
+    "RPR_GUNLUK_OZET"
+   ],
+   "notify": "rapor-nobet@ornek.local",
+   "description": "Kur farki raporunu uretir"
+  }
+ }
+}

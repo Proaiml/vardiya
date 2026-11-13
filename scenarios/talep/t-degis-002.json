@@ -1,0 +1,34 @@
+{
+ "id": "t-degis-002",
+ "kind": "request",
+ "title": "Tek alan degisikligi: yalnizca saat degismeli",
+ "request": {
+  "talep_no": "CHG-1002",
+  "lines": [
+   "talep_no: CHG-1002",
+   "talep_eden: odeme-ekibi",
+   "islem: degisiklik",
+   "klasor: ODEME_GUNLUK",
+   "is_adi: ODM_POST_DEFTER",
+   "saat: 03:30"
+  ]
+ },
+ "expected": {
+  "outcome": "applied",
+  "definition": {
+   "name": "ODM_POST_DEFTER",
+   "folder": "ODEME_GUNLUK",
+   "type": "komut",
+   "host": "db01",
+   "run_as": "dbbatch",
+   "command": "/opt/odeme/bin/post_defter.sh",
+   "calendar": "IS_GUNU",
+   "time": "03:30",
+   "deps": [
+    "ODM_LOAD_ODEME"
+   ],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Staging kayitlarini deftere isler"
+  }
+ }
+}
