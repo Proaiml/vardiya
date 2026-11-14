@@ -166,6 +166,23 @@ Okuma:
 Bench 0.1'de (56 senaryo, 14 aile, eski siteler) aynı tablo: ham `qwen3:8b` %23 doğru ve %70 zararlı, ham
 `qwen3:14b` %23 ve %77; runbook'lu plasebo %43 ve %48 (8B), %39 ve %43 (14B); harness ile ikisi de %100.
 
+### Yeni iş tipleri (sürüm 0.3)
+
+İki aile, aile başına 4 senaryo: `yeni-tip` (dosya izleme, veritabanı, dosya aktarımı, ssh ya da boş iş; geçerli)
+ve `t-tip` (o tipin kendi hatası: talebe yazılmış parola, olmayan ya da başka türden bağlantı profili, süre sınırı
+olmayan dosya izleme, kaynağıyla aynı hedef, komutlu boş iş).
+
+| Kol | `qwen3:8b` | `qwen3:14b` | `gemma4` |
+| --- | --- | --- | --- |
+| Ham model: geçerli talep doğru / tuzak doğru | 2/4 / 0/4 | 4/4 / 0/4 | 3/4 / 0/4 |
+| Ham model + runbook | 2/4 / 0/4 | 3/4 / 0/4 | 0/4 / 4/4 |
+| **Harness + model** | **4/4 / 4/4** | **4/4 / 4/4** | **4/4 / 4/4** |
+
+Ham modeller tuzakların hiçbirini görmedi: talebe yazılmış parolayı, yanlış türden bağlantı profilini, süre sınırı
+olmayan dosya izlemeyi uygulayıp kapattılar. Runbook `gemma4`'te tuzakları yakalattı ama bu kez geçerli taleplerin
+hepsi iade edildi. İlk ölçümde ham kolun istemi tipe özel alanları (`connection`, `target`, `timeout`) adlandırmıyordu
+ve model alanları karıştırıp geçerli talepleri de bozuyordu; istem düzeltildi, bu iki kol yeniden koşuldu.
+
 ### Gelişmiş model, harness'siz
 
 Gemini 4 Hydrogen (en yüksek düşünme düzeyi), Antigravity'nin komut satırı aracı üzerinden ham kola bağlandı:
