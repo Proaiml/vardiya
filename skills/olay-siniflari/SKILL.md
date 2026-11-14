@@ -175,7 +175,7 @@ classes:
     fix_airflow: gorev SIGTERM aldiysa once disaridan durdurulup durdurulmadigina bak (clear, mark failed, execution_timeout, kalp atisi kesilen zombie gorev); alt surecler erken olduruluyorsa killed_task_cleanup_time degerini artir
     fix_slurm: sacct -j <id> -o jobid,maxrss,reqmem,state ile bellek kullanimini gor (OUT_OF_MEMORY); --mem degerini artir; is sure sinirina yaklasirken temiz kapanmak icin #SBATCH --signal=B:TERM@05:00 ile sinyali onceden iste ve betikte yakala
     fix_kubernetes: pod OOMKilled ise bellek sinirini (resources.limits.memory) artir
-    harmful: [set_ok]
+    harmful: [set_ok, rerun]
     evidence: [shared_attr, slowing, precedent]
   os_siniri:
     title: Isletim sistemi kullanici sinirlari yetersiz (acik dosya, surec sayisi)
