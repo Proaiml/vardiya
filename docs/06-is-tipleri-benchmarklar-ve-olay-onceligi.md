@@ -347,6 +347,20 @@ belirli sözcükler ya da kodlar geçince durumu başarısıza çevirmek (On/Do)
 "çalışıyor" görünen işi kapatmak (12.141 görüntülenme; force-end yerine ctm_setnotok). Sessiz hata sınıfına çıktı
 kuralı ve Windows çıkış kodu, takılı iş sınıfına "hayalet çalışan iş" ayrımı eklendi.
 
+"Aynı iş iki kez çalıştı" araması doğrudan mükerrer çalışmaya değil, yakın sınıflara çıktı: agent'ta bitmiş ama
+sunucuda "çalışıyor" kalan iş (4.980 görüntülenme; agent tarafındaki takılı durum dosyası), yükseltmeden sonra "bu sürüm
+bu işi çalıştıramaz" bekleme nedeni, çok uzun süren işi otomatik sonlandıran kural ve komut satırı araçlarıyla iş
+öldürme, bekletme, silme (19.305 görüntülenme). Bu son makalede bir uyarı var: araçları art arda hızlı çalıştırmak
+sunucuyu yavaşlatıyor. Bu, harness'in politika çekirdeği için bir kural adayı: toplu müdahaleler hızla değil, aralıklı
+uygulanmalı (döngü koruması bugün yalnızca aynı eylemin tekrarını sınırlıyor).
+
+Dosya aktarımı hataları araması (1.430 sonuç): Azure SFTP'ye bağlanırken "Session.connect: Connection reset" (bilinen
+hata kaydı açılmış), bağlantı profili için SSH anahtarı üretirken "connection reset by peer", SharePoint'e izin
+eksikliği, 33 soruluk bir MFT sık sorulanlar makalesi. Önceki bulgularla (tedarikçilerin anahtara geçmesi, JS7'de SMB
+aktarımının 60 dakikada kopması, adında boşluk olan dosya) birlikte yeni bir sınıf açıldı: **dosya aktarımı bağlantısı
+kurulamıyor** (`aktarim`). "Dosya gelmedi" sınıfından ayrı: orada sorun karşı tarafın geç göndermesi, burada bağlantının
+kendisi.
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların
@@ -461,7 +475,7 @@ Ezbere karşı iki bölüm var. `dev`: çözücülerin yazıldığı adlar ve ha
 kullanıcı, tablo ve kaynak adları değiştirilmiş, her hata başka bir ürünün diliyle yazılmış (PostgreSQL kilidi,
 Windows 1326 oturum hatası gibi).
 
-İlk sonuç, yalnızca kod kolu: `dev` 22 olayın 22sinde, `test` 22sinin 22sinde doğru kök neden ve doğru müdahale (on dört arıza sınıfı).
+İlk sonuç, yalnızca kod kolu: `dev` 23 olayın 23ünde, `test` 23ünün 23ünde doğru kök neden ve doğru müdahale (on beş arıza sınıfı; plan sınıfının örnek olayı yok).
 
 Sınır: `test` bölümünün yeni adlarını ve hata yazımlarını da çözücüleri yazan el, aynı oturumda yazdı. Bu, adlara
 ve tek bir hata satırına bağımlılığı sınıyor ama bağımsız bir sınama değil. Sıradaki adım: hata yazımlarını başka bir

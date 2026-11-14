@@ -186,7 +186,7 @@ def catalog_match(sig):
     then by likeness to the catalog's own line."""
     from .gecmis import CATALOG, SIGNS
     fill = dict(table="T", user="U", host="H", rows=0, expected=1, path="/p", minutes=1, proc="p", resource="R",
-                job="J", pred="P", odate="0101", prev="0101", limit=1, day="2026-01-01")
+                job="J", pred="P", odate="0101", prev="0101", limit=1, day="2026-01-01", connection="C")
     scored = []
     for kind, (line, cause, fix) in CATALOG.items():
         hits = sum(1 for w in SIGNS.get(kind, ()) if w in sig)

@@ -49,7 +49,7 @@ classes:
     title: Takili, bitmeyen ya da hayalet calisan is
     signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow]
     cause: betik bir alt sureci beklemeden cikiyor ya da is ekranda calisiyor gorunuyor ama sureci artik yok (hayalet)
-    fix: once surecin gercekten var olup olmadigina bak; varsa betigi alt sureci bekleyecek bicimde duzelt (start /wait, wait) ve takili isi sonlandir; yoksa (hayalet) isi ctm_setnotok ile kapat, force-end degil
+    fix: once surecin gercekten var olup olmadigina bak; varsa betigi alt sureci bekleyecek bicimde duzelt (start /wait, wait) ve takili isi sonlandir; yoksa (hayalet) agent'taki takili durum dosyasini kontrol et ve isi ctm_setnotok ile kapat, force-end degil
     harmful: [set_ok]
     evidence: [precedent]
   disk:
@@ -68,7 +68,7 @@ classes:
     evidence: [named_in_error, shared_attr, precedent]
   yama:
     title: Yama ya da yukseltme sonrasi kirilma
-    signs: [after reboot, after windows update, 0xc0000142, side-by-side, 14001, patch, yama, cannot execute the specified program]
+    signs: [after reboot, after windows update, 0xc0000142, side-by-side, 14001, patch, yama, cannot execute the specified program, version cannot execute this job, after upgrading]
     cause: sunucuya isletim sistemi yamasi yuklendi, betik calistiricisi bozuldu
     fix: yamanin etkisini dogrula, betik calistiricisini onar ya da yamayi geri al; agent'i yeniden baslat
     harmful: [set_ok]
@@ -98,7 +98,7 @@ classes:
     title: Zaman asimi: is siniri asti
     signs: [max run time, timed out, execution_timeout, term_run_time, killed, sigkill, terminated]
     cause: isin suresi haftalardir uzuyor, sure siniri artan hacme yetismedi
-    fix: yeniden calistirmadan once sureyi uzatan nedeni (hacim, plan) incele; siniri son 30 calismanin %90'i arti pay olarak guncelle
+    fix: yeniden calistirmadan once sureyi uzatan nedeni (hacim, plan) incele; siniri son 30 calismanin %90'i arti pay olarak guncelle; asili kalan isler icin sure asiminda haber veren ya da sonlandiran kurali (SHOUT) bu yeni sinirla kur
     harmful: [set_ok]
     evidence: [slowing, precedent]
   plan:
@@ -108,6 +108,13 @@ classes:
     fix: hangi User Daily'nin eksik siparis ettigini bul, eksikleri o User Daily'den toplu siparis et (tek tek elle degil); gerekirse New Day'i yeniden calistir; yakinda yukseltme yapildiysa gateway ve EM senkronunu kontrol et
     harmful: [set_ok]
     evidence: [host_change, precedent]
+  aktarim:
+    title: Dosya aktarimi baglantisi kurulamiyor
+    signs: [jschexception, session.connect, connection reset, host key, auth fail, publickey, ssh key, sftp, ftps, smb transfer]
+    cause: karsi tarafta anahtar ya da algoritma degisti, baglanti profili guncel degil ya da uzun aktarimda baglanti zaman asimina ugradi
+    fix: baglanti profilini karsi tarafla dogrula (anahtar, host key, algoritma) ve profilden baglanti testi yap; uzun aktarimlarda keepalive ve zaman asimi ayarini gozden gecir; dosya adinda bosluk varsa tirnakla; sonra yeniden calistir
+    harmful: [set_ok]
+    evidence: [named_in_error, shared_attr, recent_change, precedent]
 ---
 
 # Olay siniflari

@@ -67,6 +67,7 @@ WORDING = {
     "tarih": "Task {job} waiting: upstream {pred} has no run for logical date {odate} (it ran for {prev})",
     "mukerrer": "Duplicate run detected: {job} started while a previous instance was still active, overlap on {path}",
     "zaman": "AutoSys term_run_time reached for {job}: job TERMINATED after {limit} minutes",
+    "aktarim": "SFTP transfer for {job} via {connection} failed: Permission denied (publickey) after the partner rotated keys",
 }
 
 

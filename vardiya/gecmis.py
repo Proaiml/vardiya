@@ -63,6 +63,10 @@ CATALOG = {
               "isin suresi haftalardir uzuyor, sure siniri artan hacme yetismedi",
               "yeniden calistirmadan once sureyi uzatan nedeni (hacim, plan) incele; siniri son 30 calismanin %90'i "
               "arti pay olarak guncelle"),
+    "aktarim": ("{job}: com.jcraft.jsch.JSchException: Session.connect: java.net.SocketException: Connection reset "
+                "(profile {connection})",
+                "karsi tarafta anahtar ya da algoritma degisti, baglanti profili guncel degil",
+                "baglanti profilini karsi tarafla dogrula ve profilden baglanti testi yap"),
     "plan": ("{job} was not ordered on {day}: daily plan load did not complete",
              "gunluk plan yuklemesi (New Day) yarida kaldi",
              "plan yuklemesinin gunlugunu incele, eksik isleri takvimlerine gore toplu yeniden sirala; tek tek elle "
@@ -162,7 +166,7 @@ def build(site, days=90, seed=7, graph=None, names=None, wording=None):
             (-37, "sessiz", "MHS_MUTABAKAT"), (-35, "dosya", "MHS_WATCH_KUR"), (-29, "degisiklik", "ODM_LOAD_ODEME"),
             (-31, "setok", "ODM_POST_DEFTER"), (-21, "yama", "app01"), (-16, "kaynak", "MHS_MUTABAKAT"),
             (-23, "kilit", "MHS_KUR_FARKI"), (-18, "takili", "KRD_RISK_HESAP"), (-14, "dosya", "MHS_WATCH_KUR"),
-            (-4, "mukerrer", "ODM_BANKA_GONDER"), (-3, "tarih", "KRD_RAPOR"), (-2, "zaman", "MHS_MUTABAKAT"),
+            (-10, "aktarim", "KRD_TEDARIK_AL"), (-4, "mukerrer", "ODM_BANKA_GONDER"), (-3, "tarih", "KRD_RAPOR"), (-2, "zaman", "MHS_MUTABAKAT"),
             (-9, "disk", "rpr01"), (-7, "dosya", "MHS_WATCH_KUR"), (-1, "kilit", "MHS_KUR_FARKI"),
             (0, "parola", "batchusr")]
     plan = [(o, k, rn(w)) for o, k, w in plan]
@@ -192,6 +196,7 @@ def build(site, days=90, seed=7, graph=None, names=None, wording=None):
                               expected=48000, path=j.get("command") or "/data/?", minutes=j.get("timeout") or 180,
                               proc="java", resource=(j["resources"] or ["?"])[0], job=n,
                               pred=(j["deps"] or ["?"])[0], odate=day[5:7] + day[8:], limit=8,
+                              connection=j.get("connection") or "?",
                               prev=_day(datetime.date.fromisoformat(day), -1)[5:7] + _day(datetime.date.fromisoformat(day), -1)[8:])
             if kind == "kilit":
                 root = f"table:{j['tables'][0]}"
@@ -209,6 +214,8 @@ def build(site, days=90, seed=7, graph=None, names=None, wording=None):
                                     by="operator")
             if kind == "zaman":
                 root = f"job:{n}"
+            if kind == "aktarim":
+                root = f"connection:{j['connection']}"
             if kind == "kaynak":
                 root = f"resource:{j['resources'][0]}"
                 err = line.format(resource=j["resources"][0], minutes=95)
