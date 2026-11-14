@@ -113,28 +113,7 @@ class ClassSkills(unittest.TestCase):
         self.assertIn("rerun", classes["kilit"]["harmful"])
         with tempfile.TemporaryDirectory() as d:
             (pathlib.Path(d) / "x").mkdir()
-            (pathlib.Path(d) / "x" / "SKILL.md").write_text(
-                "---
-name: x
-kind: incident_classes
-classes:
-"
-                "  iyi:
-    signs: [quota exceeded]
-    cause: kota doldu
-    fix: kotayi artir
-    evidence: [precedent]
-"
-                "  kotu:
-    signs: [x]
-    fix: y
-    evidence: [model_ne_derse]
-"
-                "  bos:
-    signs: [z]
-    evidence: [precedent]
----
-", encoding="utf-8")
+            (pathlib.Path(d) / "x" / "SKILL.md").write_text('---\nname: x\nkind: incident_classes\nclasses:\n  iyi:\n    signs: [quota exceeded]\n    cause: kota doldu\n    fix: kotayi artir\n    evidence: [precedent]\n  kotu:\n    signs: [x]\n    fix: y\n    evidence: [model_ne_derse]\n  bos:\n    signs: [z]\n    evidence: [precedent]\n---\n', encoding="utf-8")
             got = load_incident_classes(d)
         self.assertEqual(set(got), {"iyi"})   # unknown evidence query, or no fix: not loaded at all
 
