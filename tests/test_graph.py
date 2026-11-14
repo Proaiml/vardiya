@@ -103,6 +103,42 @@ class IncidentBench(unittest.TestCase):
         self.assertNotIn("ODM_", text)          # renamed through and through
 
 
+class ClassSkills(unittest.TestCase):
+    def test_classes_are_data_and_bad_ones_are_refused(self):
+        import tempfile
+        from vardiya.skills import load_incident_classes
+        root = pathlib.Path(__file__).resolve().parent.parent / "skills"
+        classes = load_incident_classes(root)
+        self.assertGreaterEqual(len(classes), 15)
+        self.assertIn("rerun", classes["kilit"]["harmful"])
+        with tempfile.TemporaryDirectory() as d:
+            (pathlib.Path(d) / "x").mkdir()
+            (pathlib.Path(d) / "x" / "SKILL.md").write_text(
+                "---
+name: x
+kind: incident_classes
+classes:
+"
+                "  iyi:
+    signs: [quota exceeded]
+    cause: kota doldu
+    fix: kotayi artir
+    evidence: [precedent]
+"
+                "  kotu:
+    signs: [x]
+    fix: y
+    evidence: [model_ne_derse]
+"
+                "  bos:
+    signs: [z]
+    evidence: [precedent]
+---
+", encoding="utf-8")
+            got = load_incident_classes(d)
+        self.assertEqual(set(got), {"iyi"})   # unknown evidence query, or no fix: not loaded at all
+
+
 class Health(unittest.TestCase):
     def test_the_scan_finds_what_came_in_before_the_checks(self):
         from vardiya import saglik

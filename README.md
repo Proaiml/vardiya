@@ -19,7 +19,7 @@ Durum: isler emulatorde ya da yerel JS7 laboratuvarinda durur; uretim ortami ici
 ## Calistirma
 
 ```
-python -m unittest discover -s tests        # 85 test
+python -m unittest discover -s tests        # 86 test
 python -m vardiya bench                     # iki is kolu icin senaryo x kol matrisi (betik kollar)
 python -m vardiya bench --only talep        # yalnizca talep karsilama
 python -m vardiya fuzz -n 3000              # guvenlik hatti: rastgele ajan ve bozuk talep, ham vs harness

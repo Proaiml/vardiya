@@ -117,8 +117,9 @@ def analyse(g, run_id, window=0):
                                    f"{', '.join(co)}" if co else "")})
             have.add(a)
     known = catalog_match(sig)
-    from .gecmis import NEW_DAY, _clock
-    if known and known["kind"] == "tarih":  # a predecessor that finished after the plan day turned
+    from .gecmis import NEW_DAY, _C, _clock
+    probes = set(_C.get(known["kind"], {}).get("evidence") or []) if known else set()
+    if known and "crossed_new_day" in probes:  # a predecessor that finished after the plan day turned
         for p in preds:
             pj = g.get(f"job:{p}") or {}
             for r in g.runs(p, since=day, until=day):
@@ -126,14 +127,14 @@ def analyse(g, run_id, window=0):
                     cand.append({"id": r["id"], "kind": "run", "score": 6.0,
                                  "why": f"oncul {p} {pj['time']}'de basladi, {r['minutes']:.0f} dk surdu ve New Day'i "
                                         f"(07:00) gecti: kosulunu onceki siparis tarihiyle uretti"})
-    if known and known["kind"] == "zaman" and len(durations) >= 10:  # slow, not stuck: the limit fell behind
+    if known and "slowing" in probes and len(durations) >= 10:  # slow, not stuck: the limit fell behind
         slope = theil_sen(durations)
         if slope > 0:
             cand.append({"id": f"job:{job}", "kind": "job", "score": 4.5,
                          "why": f"{job} son {len(durations)} calismada uzuyor (her calismada +{slope:.2f} dk, son "
                                 f"{durations[-1]:.1f} dk): takilma degil, sure siniri artan hacme yetismedi"})
     if not cand and known:  # nothing on the graph points elsewhere: the known kind of this error says where
-        where = "dis:kaynak-sistem" if known["kind"] == "dosya" else f"job:{job}"
+        where = "dis:kaynak-sistem" if "external_source" in probes else f"job:{job}"
         cand.append({"id": where, "kind": where.split(":", 1)[0], "score": 2.0,
                      "why": f"bilinen hata turu: {known['cause']}"})
     for c in cand:  # a candidate the past already pointed at, or the error line names, gains weight

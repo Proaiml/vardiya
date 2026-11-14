@@ -407,7 +407,7 @@ yalnızca adaylar arasında seçim ve gerekçe.
 | Kontroller yokken girmiş tanımlar | Tanım sağlığı taraması: her iş yeni talep gibi denetlenir; takvim uyumsuzluğu, süre sınırsız dosya izleme, tanımdaki parola, aynı komutu çalıştıran iki iş |
 | Kilit, parola dönüşü, saklı yordamın hatayı yutması, bitmeyen iş (Stack Overflow) | Bölüm 8'deki çözücüler |
 
-Her hata türü artık bir üründeki tek bir hata satırına değil, işaretlerine göre tanınıyor (`gecmis.SIGNS`): kilit
+Arıza sınıfları kod değil veri: `skills/olay-siniflari/SKILL.md` her sınıf için işaretleri, nedeni, doğru müdahaleyi, zararlı müdahaleleri ve bakılacak kanıt sorgularını tutuyor. Yeni bir sınıf eklemek kod yazmayı gerektirmiyor; listede olmayan bir kanıt sorgusuna başvuran sınıf yüklenmiyor. Her hata türü bir üründeki tek bir hata satırına değil, işaretlerine göre tanınıyor: kilit
 için "lock", "resource busy", "55P03"; parola için "logon failure", "1326" gibi.
 
 ### 8.2 Olay bench'i: küçük model tek başına ve harness içinde

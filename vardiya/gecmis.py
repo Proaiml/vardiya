@@ -8,6 +8,7 @@ broke the next run, a child process that kept the job open, a full disk. Each is
 the right root cause of every incident is known and the analysis can be checked against it.
 """
 import datetime
+import pathlib
 import random
 
 from .graph import Graph
@@ -91,6 +92,24 @@ SIGNS = {
     "plan": ("not ordered", "daily plan", "new day", "not scheduled", "was not triggered", "plan load"),
 }
 NEW_DAY = 7 * 60  # the plan day turns at 07:00 (Control-M New Day default)
+
+# The classes are data: skills/olay-siniflari/SKILL.md. What is written above is the error line each class
+# produces in the generated history; cause, fix and signs come from the skill when it is there.
+SKILLS_DIR = pathlib.Path(__file__).resolve().parent.parent / "skills"
+
+
+def classes():
+    from .skills import load_incident_classes
+    loaded = load_incident_classes(SKILLS_DIR)
+    out = {k: {"title": k, "signs": list(SIGNS.get(k, ())), "cause": cause, "fix": fix, "harmful": [], "evidence": []}
+           for k, (_, cause, fix) in CATALOG.items()}
+    out.update(loaded)
+    return out
+
+
+_C = classes()
+CATALOG = {k: (CATALOG[k][0] if k in CATALOG else "", c["cause"], c["fix"]) for k, c in _C.items()}
+SIGNS = {k: tuple(c["signs"]) for k, c in _C.items()}
 # Quantitative resources the demo site's jobs need (Control-M: Resource, JS7: Resource Lock).
 RESOURCES = {"MHS_KUR_FARKI": ["DB_YAZMA"], "MHS_MUTABAKAT": ["DB_YAZMA"], "ODM_POST_DEFTER": ["DB_YAZMA"]}
 # Tables the demo site's jobs write; a site file may carry its own `tables` per job.

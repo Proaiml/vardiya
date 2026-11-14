@@ -165,6 +165,35 @@ def load_rule_skill(path):
     return rules
 
 
+# ---- incident-class skills -------------------------------------------------------
+# The evidence queries a class may ask for. The queries themselves live in cozumle.py; a class only names them.
+EVIDENCE = {"shared_attr", "named_in_error", "recent_change", "host_change", "pred_failed", "pred_setok",
+            "crossed_new_day", "slowing", "precedent", "external_source"}
+HARMFUL_ACTIONS = {"rerun", "set_ok"}
+
+
+def load_incident_classes(directory):
+    """Failure classes from `kind: incident_classes` skills: {class: {title, signs, cause, fix, harmful, evidence}}.
+    A class with no signs, no fix, or an unknown evidence query or action is refused, not half-loaded."""
+    out = {}
+    for path in sorted(pathlib.Path(directory).glob("*/SKILL.md")):
+        if _kind(path) != "incident_classes":
+            continue
+        m = parse_yaml(path.read_text(encoding="utf-8").split("---", 2)[1])
+        for name, c in (m.get("classes") or {}).items():
+            if not isinstance(c, dict):
+                continue
+            signs = [str(s).lower() for s in (c.get("signs") if isinstance(c.get("signs"), list) else [c.get("signs")])
+                     if s]
+            evidence = c.get("evidence") if isinstance(c.get("evidence"), list) else [c.get("evidence")]
+            harmful = c.get("harmful") if isinstance(c.get("harmful"), list) else ([c["harmful"]] if c.get("harmful") else [])
+            if not signs or not c.get("fix") or not set(evidence) <= EVIDENCE or not set(harmful) <= HARMFUL_ACTIONS:
+                continue
+            out[name] = {"title": c.get("title", name), "signs": signs, "cause": str(c.get("cause", "")),
+                         "fix": str(c["fix"]), "harmful": harmful, "evidence": evidence, "skill": m.get("name")}
+    return out
+
+
 def load_request_rules(directory):
     out = []
     for p in sorted(pathlib.Path(directory).glob("*/SKILL.md")):
