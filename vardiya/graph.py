@@ -24,10 +24,15 @@ def signature(text):
     t = re.sub(r"\b0x[0-9a-f]+\b|\b[0-9a-f]{12,}\b", "<id>", t)
     # A Unix exit status from 129 to 255 means the process was ended by a signal (128 + signal number). That fact
     # is the whole diagnosis, so it survives templating as a word instead of becoming <n>.
-    t = re.sub(r"\b(oscompstat|exit code|exit status|return code|rc)\s*[=:]?\s*(129|1[3-9]\d|2[0-4]\d|25[0-5])\b",
-               r"\1 signal", t)
+    t = mark_signals(t)
     t = re.sub(r"\d+([.,:]\d+)*", "<n>", t)
     return re.sub(r"\s+", " ", t)[:160]
+
+
+def mark_signals(text):
+    """'OSCOMPSTAT 137' -> 'oscompstat signal': a Unix exit status of 129-255 is 128 plus a signal number."""
+    return re.sub(r"\b(oscompstat|exit code|exit status|return code|rc)\s*[=:]?\s*(129|1[3-9]\d|2[0-4]\d|25[0-5])\b",
+                  r"\1 signal", str(text or "").lower())
 
 
 def _tokens(sig):

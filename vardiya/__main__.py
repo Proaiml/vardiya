@@ -21,6 +21,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
+    if argv[:1] == ["ops"]:
+        from . import opsbench
+        return opsbench.main(argv[1:])
     if argv[:1] == ["olay"]:
         from . import olaybench
         return olaybench.main(argv[1:])

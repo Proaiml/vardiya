@@ -112,7 +112,7 @@ classes:
     title: Dosya aktarimi baglantisi kurulamiyor
     signs: [jschexception, session.connect, connection reset, host key, auth fail, publickey, ssh key, sftp, ftps, smb transfer, algorithm negotiation fail, server_host_key]
     cause: karsi tarafta anahtar ya da algoritma degisti, baglanti profili guncel degil ya da uzun aktarimda baglanti zaman asimina ugradi
-    fix: baglanti profilini karsi tarafla dogrula (anahtar, host key, algoritma) ve profilden baglanti testi yap; uzun aktarimlarda keepalive ve zaman asimi ayarini gozden gecir; dosya adinda bosluk varsa tirnakla; sonra yeniden calistir
+    fix: baglanti profilini karsi tarafla dogrula (anahtar, host key, algoritma) ve profilden baglanti testi yap; karsi taraf algoritmalari sertlestirdiyse istedigi anahtar degisimi, sifre ve MAC algoritmalarinin kullandigin aktarim modulu surumunce desteklenip desteklenmedigine bak, desteklenmiyorsa modulu yukselt; uzun aktarimlarda keepalive ve zaman asimi ayarini gozden gecir; dosya adinda bosluk varsa tirnakla; sonra yeniden calistir
     harmful: [set_ok]
     evidence: [named_in_error, shared_attr, recent_change, precedent]
   saat_dilimi:
@@ -131,9 +131,9 @@ classes:
     evidence: [host_change, precedent]
   sertifika:
     title: Sertifika suresi doldu ya da guvenilmiyor
-    signs: [certificate, certification path, sslhandshake, handshake failed, pkix, pkix path building failed, certificate expired, unable to find valid certification, unable to get local issuer certificate, unable to verify the first certificate, suncertpathbuilderexception]
+    signs: [certificate, certification path, sslhandshake, handshake failed, pkix, pkix path building failed, certificate expired, unable to find valid certification, unable to get local issuer certificate, unable to verify the first certificate, suncertpathbuilderexception, failed to load user authorizations, can't contact ldap server]
     cause: sunucu ile agent arasindaki SSL/TLS sertifikasinin suresi doldu, sertifika otoritesi degisti ya da guven deposunda yok; sik gorulen iki ayri durum: sunucuya yuklenen sertifikada ara sertifikalar eksik (zincir kirik), ya da https'e baglanan modulun (Web Services, bulut, Informatica) kendi JRE'sinin guven deposunda karsi tarafin CA'si yok
-    fix: once zinciri Control-M disinda dogrula (openssl s_client -connect host:port -CAfile ...); zincir eksikse ara sertifikalari ekletip yeniden yukle; modul JRE'sinde CA eksikse CA'yi o JRE'nin keytool'uyla guven deposuna ekle ve modulu yeniden baslat; sunucu-agent sertifikasi bittiyse yenisini ctmkeytool ile toplu dagit, baglanti modunu (SSL ya da TCP) dogrula; olaydan once sertifika bitis tarihlerini izle
+    fix: SSL yeni acildiysa istemci ve arac (emdef gibi) baglantilarinin da imzalayan CA kok sertifikasini tanidigini dogrula, tanimiyorsa CA kok sertifikasini yonetim sunucusunda arac baglantilari icin tanimla; once zinciri Control-M disinda dogrula (openssl s_client -connect host:port -CAfile ...); zincir eksikse ara sertifikalari ekletip yeniden yukle; modul JRE'sinde CA eksikse CA'yi o JRE'nin keytool'uyla guven deposuna ekle ve modulu yeniden baslat; sunucu-agent sertifikasi bittiyse yenisini ctmkeytool ile toplu dagit, baglanti modunu (SSL ya da TCP) dogrula; olaydan once sertifika bitis tarihlerini izle
     harmful: [set_ok]
     evidence: [shared_attr, host_change, precedent]
   sinyal:

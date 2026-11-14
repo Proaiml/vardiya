@@ -194,6 +194,41 @@ def load_incident_classes(directory):
     return out
 
 
+def load_procedures(directory):
+    """Admin procedures from `kind: admin_procedures` skills: {name: {title, triggers, steps, caution}}.
+    A procedure with fewer than two triggers or no steps is refused."""
+    out = {}
+    for path in sorted(pathlib.Path(directory).glob("*/SKILL.md")):
+        if _kind(path) != "admin_procedures":
+            continue
+        m = parse_yaml(path.read_text(encoding="utf-8").split("---", 2)[1])
+        for name, p in (m.get("procedures") or {}).items():
+            if not isinstance(p, dict):
+                continue
+            triggers = [str(t).lower() for t in (p.get("triggers") if isinstance(p.get("triggers"), list) else []) if t]
+            if len(triggers) < 2 or not p.get("steps"):
+                continue
+            out[name] = {"title": str(p.get("title", name)), "triggers": triggers, "steps": str(p["steps"]),
+                         "caution": str(p.get("caution", "")), "skill": m.get("name")}
+    return out
+
+
+def match_procedures(procedures, text, need=2, limit=2):
+    """The procedures whose triggers occur in the text, best first; a procedure needs `need` hits."""
+    low = fold(text)
+    scored = sorted(((sum(fold(t) in low for t in p["triggers"]), name) for name, p in procedures.items()),
+                    reverse=True)
+    return [name for hits, name in scored if hits >= need][:limit]
+
+
+_FOLD = str.maketrans("çğıöşüÇĞİÖŞÜâîû", "cgiosuCGIOSUaiu")
+
+
+def fold(text):
+    """Lower case without Turkish diacritics, so 'yeniden başlat' and 'yeniden baslat' compare equal."""
+    return str(text or "").translate(_FOLD).lower()
+
+
 def load_request_rules(directory):
     out = []
     for p in sorted(pathlib.Path(directory).glob("*/SKILL.md")):
