@@ -62,7 +62,7 @@ WORDING = {
     "takili": "Job exceeded {minutes} minutes; process tree still contains {proc}",
     "disk": "IOException: There is not enough space on the disk ({host})",
     "kaynak": "Job waiting for quantitative resource {resource}: requested 1, available 0 for {minutes} min",
-    "yama": "The system cannot execute the specified program after reboot on {host} (CScript)",
+    "yama": "{job}: side-by-side configuration is incorrect after Windows update on {host} (error 14001)",
     "setok": "No rows selected from {table}: nothing to post",
     "tarih": "Task {job} waiting: upstream {pred} has no run for logical date {odate} (it ran for {prev})",
     "mukerrer": "Duplicate run detected: {job} started while a previous instance was still active, overlap on {path}",

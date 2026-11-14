@@ -274,11 +274,11 @@ def warnings(g, today, horizon=7):
         runs = [r for r in g.runs(name) if r["ok"] and r["attempt"] == 1][-30:]
         if len(runs) >= 15:
             ys = [r["minutes"] for r in runs]
-            slope, med = theil_sen(ys), statistics.median(ys[:10])
-            if med and slope * len(ys) > 0.25 * med:
+            slope, med, last = theil_sen(ys), statistics.median(ys[:7]), statistics.median(ys[-7:])
+            if med and slope * len(ys) > 0.25 * med and last > 1.2 * med:
                 out.append({"kind": "yavaslama", "job": name, "level": "uyari",
-                            "text": f"{name} yavasliyor: son {len(ys)} calismada sure {med:.1f} dk'dan "
-                                    f"{ys[-1]:.1f} dk'ya cikti (egilim her calismada +{slope:.2f} dk)",
+                            "text": f"{name} yavasliyor: son {len(ys)} calismanin ilk haftasinda medyan {med:.1f} dk, "
+                                    f"son haftasinda {last:.1f} dk (egilim her calismada +{slope:.2f} dk)",
                             "series": [round(y, 1) for y in ys]})
     by_sig = {}
     for f in failures(g):
@@ -318,6 +318,18 @@ def warnings(g, today, horizon=7):
         info = _incident(g, inc["id"])
         if info["root"]:
             roots.setdefault(info["root"], []).append(info)
+    for root, incs in roots.items():  # the same root keeps coming back at a pace: say when it is due
+        days = sorted({datetime.date.fromisoformat(i["day"]) for i in incs})
+        if len(days) >= 3:
+            gaps = [(b - a).days for a, b in zip(days, days[1:])]
+            gap = statistics.median(gaps)
+            nxt = days[-1] + datetime.timedelta(days=round(gap))
+            if gap >= 7 and max(gaps) - min(gaps) <= gap * 0.6 and 0 < (nxt - t0).days <= 30:
+                out.append({"kind": "periyodik", "job": ", ".join(sorted({j for i in incs for j in i["jobs"]})),
+                            "level": "uyari",
+                            "text": f"{root} kaynakli olay {len(days)} kez, yaklasik {gap:.0f} gunde bir yasandi; bu "
+                                    f"tempoyla sonraki {nxt.isoformat()} civari. Kok neden giderilmediyse onceden onlem al",
+                            "days": [d.isoformat() for d in days]})
     for root, incs in roots.items():
         unverified = [i for i in incs if not i["verified"] and not i["open"]]
         if len(unverified) >= 2:

@@ -42,7 +42,7 @@ CATALOG = {
                "kaynagi tutan isler bitmis ama kaynak serbest birakilmamis (asili kayit)",
                "bekleme nedenini dogrula (ctmwhy, is gunlugunde Wait Resource kodu 5120); kaynaklar bossa isi bir kez "
                "hold edip free et ki yeniden degerlendirilsin; asili kayit varsa serbest birak; havuz sinirini yukseltme"),
-    "yama": ("Error: CScript.exe version 5.6 or higher is required (host {host})",
+    "yama": ("{job} failed after reboot on {host}: the application was unable to start correctly (0xc0000142)",
              "sunucuya isletim sistemi yamasi yuklendi, betik calistiricisi bozuldu",
              "yamanin etkisini dogrula, betik calistiricisini onar ya da yamayi geri al; agent'i yeniden baslat"),
     "setok": ("ORA-01403: no data found in {table} (staging bos)",

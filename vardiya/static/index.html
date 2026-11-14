@@ -486,7 +486,7 @@ const LVL = {risk: ["Risk", "s-crit", "crit"], uyari: ["Uyarı", "s-warn", "warn
 function spark(series) { if (!series) return ""; const W = 120, H = 28, mx = Math.max(...series), mn = Math.min(...series);
   const pts = series.map((v, i) => `${(i * W / (series.length - 1)).toFixed(1)},${(H - 3 - (H - 6) * (v - mn) / Math.max(.001, mx - mn)).toFixed(1)}`).join(" ");
   return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>`; }
-const warnItem = w => `<div class="notice ${w.level === "risk" ? "crit" : "warn"}">${ICON[LVL[w.level][2]]}<div style="flex:1"><div class="row"><b>${esc({yavaslama: "Yavaşlama", tekrar: "Tekrarlayan hata", kalici: "Kök neden giderilmemiş", disk: "Disk doluyor", setok: "Elle başarılı sayılan iş"}[w.kind] || w.kind)}</b>${tag(w.job)}</div>
+const warnItem = w => `<div class="notice ${w.level === "risk" ? "crit" : "warn"}">${ICON[LVL[w.level][2]]}<div style="flex:1"><div class="row"><b>${esc({yavaslama: "Yavaşlama", tekrar: "Tekrarlayan hata", kalici: "Kök neden giderilmemiş", disk: "Disk doluyor", setok: "Elle başarılı sayılan iş", periyodik: "Sırası yaklaşan olay"}[w.kind] || w.kind)}</b>${tag(w.job)}</div>
   <div>${esc(w.text)}</div>${w.days ? `<div class="hint">Görüldüğü günler: ${w.days.map(day).join(", ")}</div>` : ""}</div>${spark(w.series)}</div>`;
 function renderWarnings() {
   $("#warn-list").innerHTML = (graph.warnings.map(warnItem).join("") || `<div class="empty">Önümüzdeki günler için uyarı yok.</div>`) +

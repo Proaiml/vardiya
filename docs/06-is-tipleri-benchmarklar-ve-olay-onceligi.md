@@ -313,6 +313,34 @@ to AM data pipe" (hata 232), sertifika yolu bulunamadı (SunCertPathBuilderExcep
 silinmemesi ve gereken güvenlik duvarı portları. Bunların ilk ikisi hata çizgesinde "agent iletişimi" işaretlerine
 eklendi; üçüncüsü disk dolma uyarısının bir başka nedeni.
 
+**Düzeltme (aynı gün).** Başlıktan çıkardığım bir sonuç yanlış çıktı: "CScript.exe 5.6 gerekli" hatası (15 cevap)
+işlerin yama sonrası bozulması değil, Control-M masaüstü istemcisinin kurulumunda çıkan bir hata; BMC'nin bilgi
+makalesine göre nedeni Windows bölgesel ayarları. Yama sınıfındaki örnek hata satırı gerçek bir iş hatasıyla
+(uygulama başlatılamadı, 0xc0000142) değiştirildi. Ders: başlıktan sınıf çıkarmak yetmiyor, içerik okunmalı.
+
+**Konu içi okumalar (dakikada en çok bir sayfa).** SAP işleri çalıştıran agent'ta XT_*.log dosyalarının 60 GB'ı
+geçmesi: cevaba göre dosyayı SAP extractor süreci yazıyor; extractor yeniden başlatılınca (shut-xt, start-xt) yeni log
+açılıyor ve eski silinebiliyor; büyümenin olağan nedeni silinmiş bir bağlantı profiline bağlı kalan olaylar. Soran kişi
+yeniden başlattıktan sonra yeni logun yine büyüdüğünü, aynı host grubundaki öbür SAP agent'ında böyle bir dosya
+olmadığını yazmış; kök neden kapanmamış. Disk sınıfının nedeni ve müdahalesi buna göre genişletildi.
+
+"Failed to write submit message to AM data pipe, error 232" (BMC bilgi makalesi, 2.514 görüntülenme): agent'ın iç
+iletişim hatası; bir sürümde düzeltilmiş bilinen bir hata, ayrıca agent'ta Java yolu güncelleme betiği çalıştırıldıktan
+sonra da görülüyor. Agent sınıfının nedeni ve müdahalesine "yakın zamanda Java ya da agent değişikliği" eklendi; bu
+sınıf zaten sunucu değişikliği kanıtına bakıyor.
+
+Parolaların CyberArk'tan alınması (9 cevap) ve ona bağlı bir 2020 sorusu: CyberArk'ın otomatik parola dönüşü "Run As"
+kullanıcılarına "<" ve ">" içeren parolalar göndermiş, Control-M bunları kabul etmediği için büyük bir kesinti yaşanmış;
+cevaplarda öneri, yeni parolayı Control-M'e yazdıktan sonra CCM'den sınamak. Parola sınıfının nedeni ve müdahalesi buna
+göre genişletildi. Buradan çıkan bir olaydan önce uyarısı fikri: aynı kök nedenli olaylar düzenli aralıkla
+tekrarlıyorsa (örnek geçmişte parola dönüşü 64 günde bir) bir sonrakinin tarihi tahmin edilebilir.
+
+"New Day sonrası sipariş edilmeyen işler" araması 18.875 sonuç döndürdü; ilk sıradaki bilgi makaleleri: bir User Daily'nin
+eksik sipariş ettiği işleri bulup toplu sipariş etmek (5.614 görüntülenme), New Day sürecini hızlandırmak, New Day'i yeniden
+çalıştırmak, 9.0.21'e yükseltmeden sonra gateway'in "Formatting AJF / No Sync" durumunda takılması ve yine yükseltmeden
+sonra döngüsel işlerin sipariş edilip agent'a gönderilmemesi. Plan sınıfı bunlarla dolduruldu; sınıf sunucu değişikliği
+kanıtına da bakıyor.
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların
@@ -399,7 +427,7 @@ yalnızca adaylar arasında seçim ve gerekçe.
 | Sorun (kaynak) | Harness'teki yetenek |
 | --- | --- |
 | Kaynaklar boşken iş kaynak bekliyor (BMC, 27 cevap) | Çizgede kaynak düğümleri; hata satırı kaynağı adlandırınca aday; çözüm: asılı kaydı serbest bırak, havuz sınırını yükseltme |
-| Yama ya da yükseltme sonrası işler bozuluyor (BMC: CScript, MS yamaları) | Sunucu düzeyinde değişiklik düğümü; hatadan önceki üç günde o sunucuya gelen yama aday olur |
+| Yama ya da yükseltme sonrası işler bozuluyor (BMC: MS yamaları sonrası sorun) | Sunucu düzeyinde değişiklik düğümü; hatadan önceki üç günde o sunucuya gelen yama aday olur |
 | "Set OK" ile "gerçekten başarılı" ayrılmıyor (BMC, 2022'den beri açık istek) | Elle başarılı sayılan çalışmalar ayrı işaretli; ardılda veri hatası çıkınca ilk aday o çalışma; Raporlar sayfasında liste |
 | Agent'ın kendi logları diski dolduruyor (BMC: XT_*.log 60 GB) | Sunucu başına disk serisi; eğilimle dolma süresi tahmini; 21 gün içinde dolacaksa erken uyarı |
 | Döngüsel iş her düşüşte yeni olay açıyor (BMC) | Aynı iş ve aynı hata için açık olay varsa yeni olay açılmaz, çalışma ona eklenir |

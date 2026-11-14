@@ -12,16 +12,16 @@ classes:
     evidence: [named_in_error, shared_attr, precedent]
   parola:
     title: Parola ya da kimlik bilgisi degisti
-    signs: [logon failure, password, parola, 1326, authentication failed, login failed, credentials]
-    cause: servis hesabinin parolasi degistirildi, agent'in parola deposu eski
-    fix: agent parola deposunu yeni parolayla guncelle (ctmpwd), sonra bekleyen isleri yeniden calistir
+    signs: [logon failure, password, parola, 1326, authentication failed, login failed, credentials, wrong password]
+    cause: servis hesabinin parolasi degistirildi ve agent'in parola deposu eski kaldi; otomatik parola donusunde (CyberArk gibi) Control-M'in kabul etmedigi karakterler de gonderilebiliyor
+    fix: agent parola deposunu yeni parolayla guncelle (ctmpwd), sonra bekleyen isleri yeniden calistir; otomatik donus kullaniliyorsa yeni parolanin izin verilen karakterlerden olustugunu ve CCM'de calistigini dogrula
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, certification path, sslhandshake]
-    cause: agent sureci durmus
-    fix: agent'i yeniden baslat (start-ag), ctmping ile dogrula
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, certification path, sslhandshake]
+    cause: agent sureci durmus ya da agent'in ic iletisimi (AM data pipe) kopmus; sik onceki olay agent'ta Java ya da surum degisikligi
+    fix: agent'i yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, host_change, precedent]
   sessiz:
@@ -54,9 +54,9 @@ classes:
     evidence: [precedent]
   disk:
     title: Disk doldu
-    signs: [no space, not enough space, disk full, enospc, disk dolu]
-    cause: sunucuda disk doldu
-    fix: eski cikti ve raporlari temizle, sonra yeniden calistir
+    signs: [no space, not enough space, disk full, enospc, disk dolu, filesystem full]
+    cause: sunucuda disk doldu; sik gorulen neden agent'in kendi loglari (ornek: SAP extractor XT_*.log, silinmis bir baglanti profiline bagli olaylar yuzunden buyur)
+    fix: en cok buyuyen dosyayi bul; agent ya da extractor logu ise sureci yeniden baslat (SAP icin shut-xt, start-xt) ve eski logu sil; silinmis baglanti profiline bagli olaylari temizle; eski cikti ve raporlari temizle, sonra yeniden calistir
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, precedent]
   kaynak:
@@ -68,7 +68,7 @@ classes:
     evidence: [named_in_error, shared_attr, precedent]
   yama:
     title: Yama ya da yukseltme sonrasi kirilma
-    signs: [cscript, after reboot, patch, yama, cannot execute the specified program]
+    signs: [after reboot, after windows update, 0xc0000142, side-by-side, 14001, patch, yama, cannot execute the specified program]
     cause: sunucuya isletim sistemi yamasi yuklendi, betik calistiricisi bozuldu
     fix: yamanin etkisini dogrula, betik calistiricisini onar ya da yamayi geri al; agent'i yeniden baslat
     harmful: [set_ok]
@@ -102,12 +102,12 @@ classes:
     harmful: [set_ok]
     evidence: [slowing, precedent]
   plan:
-    title: Gunluk plan yuklenmedi (New Day)
-    signs: [not ordered, daily plan, new day, not scheduled, was not triggered, plan load]
-    cause: gunluk plan yuklemesi (New Day) yarida kaldi
-    fix: plan yuklemesinin gunlugunu incele, eksik isleri takvimlerine gore toplu yeniden sirala; tek tek elle siparis etme
+    title: Gunluk plan yuklenmedi (New Day, User Daily)
+    signs: [not ordered, daily plan, new day, not scheduled, was not triggered, plan load, user daily, ctmudly, formatting ajf, no sync]
+    cause: New Day ya da bir User Daily yarida kaldi; surum yukseltmesinden sonra gateway senkronu takilabiliyor (Formatting AJF, No Sync) ya da dongusel isler siparis edilip gonderilmiyor
+    fix: hangi User Daily'nin eksik siparis ettigini bul, eksikleri o User Daily'den toplu siparis et (tek tek elle degil); gerekirse New Day'i yeniden calistir; yakinda yukseltme yapildiysa gateway ve EM senkronunu kontrol et
     harmful: [set_ok]
-    evidence: [precedent]
+    evidence: [host_change, precedent]
 ---
 
 # Olay siniflari
