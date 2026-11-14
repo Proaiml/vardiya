@@ -121,7 +121,7 @@ procedures:
   ha_elle_gecis:
     title: Yuksek erisilebilirlikte zamanlayici sunucusunu elle ikinciye gecirmek ve geri almak
     triggers: [high availability, failover, fallback, yuksek erisilebilirlik, ikinci, birincil, secondary, primary, gecis, geceriz, ctmipc]
-    steps: gecis ve geri donus ayni komutla yapilir (ctmipc -msgid MFO -dest CA); birincil calisiyorsa birincilde, birincil kapaliysa ikincilde calistirilir; birincil kapaliysa ikincilde komutu calistirmadan once yaklasik 20 dakika bekle; sonra durumu ve aktif tarafi dogrula
+    steps: zamanlayici sunucusunda gecis ve geri donus ayni komutla yapilir (ctmipc -msgid MFO -dest CA); yonetim sunucusu (EM) HA'sinda iki dugum arasinda guvenlik duvari varsa gecis duser: duzeltme paketini uygula ve bilesen portlarini HostPort ile sabitleyip yalnizca onlari ac; birincil calisiyorsa birincilde, birincil kapaliysa ikincilde calistirilir; birincil kapaliysa ikincilde komutu calistirmadan once yaklasik 20 dakika bekle; sonra durumu ve aktif tarafi dogrula
     caution: iki tarafin ayni anda aktif olmasi veritabanini bozar; birincilin gercekten kapali oldugundan emin ol
   pg_yedek:
     title: Zamanlayici ya da yonetim sunucusunun PostgreSQL veritabanini yedeklemek
@@ -145,8 +145,8 @@ procedures:
     caution: yeniden kuyruga alinan is bastan baslar; is ara durumdan devam edecek bicimde yazilmadiysa ciktilari ezebilir
   kosul_ayarlama:
     title: Oncul o gun calismiyorken ardilin kosulu beklemeden calismasi (Adjust Condition)
-    triggers: [adjust condition, oncul calismiyor, predecessor does not run, ignore the condition, kosulu yok say, smart, pazartesi, only on monday, kosulunu bekliyor, beklemeden, waits for the condition]
-    steps: SMART klasorde Adjust Condition=Y kullan; zamanlayici sunucusunda config.dat'ta CTM_TABLE_ADJUST_DUMMY=Y ise o gun planlanmayan oncul yerine sahte bir is calisir, kosullari ekler ve ardil bekleme yapmaz; degisikligi bir gunluk planda dene
+    triggers: [adjust condition, oncul calismiyor, predecessor does not run, ignore the condition, kosulu yok say, smart, pazartesi, only on monday, kosulunu bekliyor, beklemeden, waits for the condition, her gun calismayan, calismadigi gunlerde, cikis kosul, ardillar bekliyor]
+    steps: SMART klasorde Adjust Condition=Y kullan; klasor duzeyinde ayni davranis icin config.dat'a CTM_FOLDER_ADJUST_DUMMY Y ekle (9.0 oncesinde CTM_GROUP_ADJUST_DUMMY) ve sunucuyu yeniden baslat; zamanlayici sunucusunda config.dat'ta CTM_TABLE_ADJUST_DUMMY=Y ise o gun planlanmayan oncul yerine sahte bir is calisir, kosullari ekler ve ardil bekleme yapmaz; degisikligi bir gunluk planda dene
     caution: sahte is oncunun Actions sekmesindeki eylemleri de yapar (kosul ekleme, bildirim); bunu bilerek ac
   kalici_baglanti:
     title: Sunucu ile agent arasinda guvenlik duvari varken kalici baglanti
@@ -188,6 +188,16 @@ procedures:
     triggers: [checked out, kilitli klasor, locked by another user, exclusive, workspace, calisma alani, folder is currently locked, take ownership]
     steps: Planning > Folders'ta klasoru sec, Used By ile kilidi tutan calisma alanini gor; o calisma alanini Take Ownership ile al ya da kilidi tutan kisiden klasoru check-in etmesini iste; calisma alani artik gerekmiyorsa silmek de kilidi kaldirir
     caution: baskasinin calisma alanini almak ya da silmek onun kaydedilmemis degisikliklerini kaybettirebilir; once sahibine sor
+  sunucu_adi:
+    title: Zamanlayici sunucusunun agent'lara kendini tanittigi adi degistirmek
+    triggers: [hostname, sunucu adi, host adi, alias, cname, virtual name, local ip host interface name, makine adi, takma ad, dns, kendini tanit, tanitmasi]
+    steps: ctm_menu > Parameter Customization > Basic Communication altindaki 'Local IP host interface name' degerini yeni ada cevir (ad sunucunun kendi IP'sine cozulmeli); agent'larin yetkili sunucu listesine de yeni adi ekle (ctmagcfg); sunucuyu yeniden baslatip agent'larla iletisimi dogrula
+    caution: agent'larda yetkili sunucu adi guncellenmeden degistirilirse agent'lar 'not authorized' der
+  agent_otomatik_kesif:
+    title: Agent'larin sunucuda kendiliginden kesfedilmesini kapatmak
+    triggers: [autodiscover, otomatik kesif, automatically discovered, discovering, kendiliginden, host_autodiscover, kesfedilip, kesfediliyor, istemedigimiz agent]
+    steps: config.dat'a HOST_AUTODISCOVER N ekle; ctmipc -DEST ALL -MSGID CFG ile yapilandirmayi yenile; yanlislikla kesfedilmis agent'lari sil ve yeniden gorunmediklerini dogrula
+    caution: kesfi kapatinca yeni agent'lari elle tanitmak gerekir
 ---
 
 # Adminlik yordamlari
