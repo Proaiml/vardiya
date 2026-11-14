@@ -61,7 +61,7 @@ def match_class(classes, text):
     for k, c in classes.items():
         hit = [s for s in c["signs"] if fold(s) in low]
         specific = [s for s in hit if s not in GENERIC]
-        rank = (len(hit), len(specific))
+        rank = (len(specific), len(hit))
         if (specific or len(hit) >= 2) and rank > best:
             best, best_key = rank, k
     return best_key
