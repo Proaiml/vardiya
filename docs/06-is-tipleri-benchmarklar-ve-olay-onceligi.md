@@ -341,6 +341,12 @@ eksik sipariş ettiği işleri bulup toplu sipariş etmek (5.614 görüntülenme
 sonra döngüsel işlerin sipariş edilip agent'a gönderilmemesi. Plan sınıfı bunlarla dolduruldu; sınıf sunucu değişikliği
 kanıtına da bakıyor.
 
+"İş başarılı bitti ama aslında hata verdi" araması (7.300 sonuç): bilgi makalelerinden biri .bat betiği hata verdiği
+halde işin başarılı bitmesi (3.180 görüntülenme; hata kodu betikte yakalanıp dışarı döndürülmüyor), biri işin çıktısında
+belirli sözcükler ya da kodlar geçince durumu başarısıza çevirmek (On/Do), biri de artık çalışmadığı halde ekranda
+"çalışıyor" görünen işi kapatmak (12.141 görüntülenme; force-end yerine ctm_setnotok). Sessiz hata sınıfına çıktı
+kuralı ve Windows çıkış kodu, takılı iş sınıfına "hayalet çalışan iş" ayrımı eklendi.
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların

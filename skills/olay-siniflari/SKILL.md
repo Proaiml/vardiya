@@ -19,16 +19,16 @@ classes:
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, certification path, sslhandshake]
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, certification path, sslhandshake, failed to submit]
     cause: agent sureci durmus ya da agent'in ic iletisimi (AM data pipe) kopmus; sik onceki olay agent'ta Java ya da surum degisikligi
     fix: agent'i yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, host_change, precedent]
   sessiz:
-    title: Sessiz hata: is basarili gorunuyor, veri eksik
-    signs: [rc=0, return code 0, row count, rows (expected, expected about, beklenen]
-    cause: saklı yordam hatayi yutuyor, is basarili gorunuyor
-    fix: yordamin hatayi yukseltmesini sagla (THROW/RAISE, commit), veriyi temizleyip yeniden yukle
+    title: Sessiz hata - is basarili gorunuyor, veri eksik
+    signs: [rc=0, return code 0, row count, rows (expected, expected about, beklenen, ended ok although, errorlevel, exit code 0 but]
+    cause: is hatayi cikis koduna yansitmiyor - sakli yordam hatayi yutuyor, commit yok ya da Windows .bat hata kodunu exit ile dondurmuyor
+    fix: yordamin ya da betigin hatayi yukseltmesini sagla (THROW/RAISE, commit, exit %ERRORLEVEL%); isin ciktisinda hata sozcuklerini ya da donus kodlarini arayan kural (On/Do) tanimla; veriyi temizleyip yeniden yukle
     harmful: [rerun, set_ok]
     evidence: [recent_change, precedent]
   dosya:
@@ -46,10 +46,10 @@ classes:
     harmful: [set_ok]
     evidence: [recent_change, precedent]
   takili:
-    title: Takili, bitmeyen is
-    signs: [still running, exceeded, child process, process tree, hang, keeps the job open]
-    cause: betik bir alt sureci beklemeden cikiyor
-    fix: betigi alt sureci bekleyecek bicimde duzelt (start /wait, wait), takili isi sonlandir
+    title: Takili, bitmeyen ya da hayalet calisan is
+    signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow]
+    cause: betik bir alt sureci beklemeden cikiyor ya da is ekranda calisiyor gorunuyor ama sureci artik yok (hayalet)
+    fix: once surecin gercekten var olup olmadigina bak; varsa betigi alt sureci bekleyecek bicimde duzelt (start /wait, wait) ve takili isi sonlandir; yoksa (hayalet) isi ctm_setnotok ile kapat, force-end degil
     harmful: [set_ok]
     evidence: [precedent]
   disk:
