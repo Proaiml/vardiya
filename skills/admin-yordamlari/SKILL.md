@@ -113,6 +113,21 @@ procedures:
     triggers: [quartz, disallowconcurrentexecution, jobexecutionexception, interruptablejob, jobstore, trigger, already exists, scheduler]
     steps: ayni isin ust uste calismamasi icin @DisallowConcurrentExecution; birden cok sunucuda tek calisma icin JDBC JobStore ile kumeleme; hatada yeniden denemek icin JobExecutionException ile refireImmediately (sinirli sayida); calisan isi durdurmak icin InterruptableJob ve scheduler.interrupt(jobKey); 'already exists' hatasinda once checkExists ve deleteJob ya da replace
     caution: sinirsiz refireImmediately hatali isi sonsuz donguye sokar
+  em_saglik:
+    title: Yonetim sunucusu (EM) bilesenlerinin calisip calismadigini denetlemek
+    triggers: [enterprise manager, yonetim sunucusu, gateway, gecit, gui server, gui sunucusu, emgtw, emguisrv, health, saglik, bilesen, component, calistigini]
+    steps: bilesen sureclerini bil (emmaintag yapilandirma agent'i, emcms, emguisrv GUI sunucusu, emgtw her veri merkezi icin gecit, GCS, BIM, Forecast, web sunucusu); ctl araciyla bilesenlere istek gonder ve calistiklarini sorgula (ornek: ctl -type GUI_Server -name <ad> -cmd ping); izlemeyi bu sureclere kur
+    caution: gecit ya da GUI sunucusu dusuk diye tum yonetim sunucusunu yeniden baslatma; once hangi bilesen oldugunu bul
+  ha_elle_gecis:
+    title: Yuksek erisilebilirlikte zamanlayici sunucusunu elle ikinciye gecirmek ve geri almak
+    triggers: [high availability, failover, fallback, yuksek erisilebilirlik, ikinci, birincil, secondary, primary, gecis, geceriz, ctmipc]
+    steps: gecis ve geri donus ayni komutla yapilir (ctmipc -msgid MFO -dest CA); birincil calisiyorsa birincilde, birincil kapaliysa ikincilde calistirilir; birincil kapaliysa ikincilde komutu calistirmadan once yaklasik 20 dakika bekle; sonra durumu ve aktif tarafi dogrula
+    caution: iki tarafin ayni anda aktif olmasi veritabanini bozar; birincilin gercekten kapali oldugundan emin ol
+  pg_yedek:
+    title: Zamanlayici ya da yonetim sunucusunun PostgreSQL veritabanini yedeklemek
+    triggers: [backup, yedek, postgres, postgresql, database, veritabani, dbuhotbackup, dbucoldbackup, restore]
+    steps: urunun kendi araclarini kullan: calisirken DBUHotBackup, durdurulmusken DBUColdBackup; geri yukleme icin DBUHotRestore ve DBUColdRestore; veritabani sahibi kullaniciyla calisan bir betik yazip zamanla ve yedeklerin geri yuklenebildigini duzenli dene
+    caution: veritabani dosyalarini calisirken dosya kopyasiyla almak tutarsiz yedek verir
 ---
 
 # Adminlik yordamlari
