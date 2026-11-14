@@ -13,7 +13,7 @@ import statistics
 from .graph import signature, similarity
 
 KIND_TR = {"host": "sunucu", "user": "kullanici", "connection": "baglanti profili", "table": "tablo",
-           "change": "tanim degisikligi", "job": "is"}
+           "change": "tanim degisikligi", "job": "is", "resource": "kaynak", "run": "calisma"}
 
 
 def failures(g, day=None):
@@ -66,13 +66,18 @@ def analyse(g, run_id, window=0):
             past.append(dict(info, similarity=round(best, 2), same_job=job in info["jobs"]))
     past.sort(key=lambda p: p["day"], reverse=True)
 
-    # 3. a change to this job just before
+    # 3. a change just before: to this job, or below it on its host (a patch, an upgrade)
     changes = [dict(g.get(e["from"])) for e in g.into(f"job:{job}", "changed")]
+    for a in mine:
+        if a.startswith("host:"):
+            changes += [dict(g.get(e["from"])) for e in g.into(a, "changed")]
     recent = [c for c in changes if 0 <= (d0 - datetime.date.fromisoformat(c["day"])).days <= 3]
 
     # 4. predecessors that did not end OK that day, and how long this job usually takes
     preds = [e["to"].split(":", 1)[1] for e in g.out(f"job:{job}", "after")]
     pred_bad = [p for p in preds if any(f["job"] == p and f["day"] == day for f in others)]
+    # a predecessor that failed and was marked OK by hand looks green; its missing data shows up here
+    pred_setok = [r for p in preds for r in g.runs(p, since=day, until=day) if r.get("set_ok")]
     durations = [r["minutes"] for r in g.runs(job) if r["ok"] and r["day"] < day][-30:]
 
     # candidates, ranked by code
@@ -84,8 +89,14 @@ def analyse(g, run_id, window=0):
                             f"({', '.join(sorted(js | {job}))}); bu {KIND_TR.get(a.split(':')[0], '')} toplam "
                             f"{len(users_of[a])} iste kullaniliyor"})
     for c in recent:
-        cand.append({"id": c["id"], "kind": "change", "score": 4.0,
-                     "why": f"hatadan {(d0 - datetime.date.fromisoformat(c['day'])).days} gun once tanim degisti: {c['what']}"})
+        where = f"{c['host']} sunucusunda" if c.get("host") else "tanim"
+        cand.append({"id": c["id"], "kind": "change", "score": 4.0 if not c.get("host") else 3.5,
+                     "why": f"hatadan {(d0 - datetime.date.fromisoformat(c['day'])).days} gun once {where} degisiklik: "
+                            f"{c['what']}"})
+    for r in pred_setok:
+        cand.append({"id": r["id"], "kind": "run", "score": 6.0,
+                     "why": f"oncul {r['job']} ayni gun hata verdi ve elle basarili sayildi (Set OK): zincir yesil "
+                            f"gorundu ama veri gelmedi. Oncul hatasi: {r.get('error')}"})
     for p in pred_bad:
         cand.append({"id": f"job:{p}", "kind": "job", "score": 3.0, "why": f"oncul is {p} ayni gun hata verdi"})
     for p in past[:3]:
@@ -119,21 +130,31 @@ def analyse(g, run_id, window=0):
     cand.sort(key=lambda c: (-c["score"], c["id"]))
 
     repeated_fix = [p for p in past if p["root"] and not p["verified"]]
+    # one incident per cause: an open incident for the same job and the same error is extended, not duplicated
+    existing = None
+    for inc in g.nodes("incident"):
+        info = _incident(g, inc["id"])
+        if info["open"] and job in info["jobs"] and run_id not in {e["to"] for e in g.out(inc["id"], "covers")}:
+            sigs = [signature(g.get(e["to"]).get("error")) for e in g.out(inc["id"], "covers")]
+            if sig in sigs:
+                existing = info["id"]
     return {
         "run": run_id, "job": job, "day": day, "error": run["error"], "signature": sig,
         "same_window": [{"job": f["job"], "day": f["day"], "error": f["error"]} for f in others],
         "shared": {a: sorted(js) for a, js in shared.items()}, "precedents": past[:6], "changes": recent,
         "predecessors_failed": pred_bad,
         "duration": {"median": round(statistics.median(durations), 1) if durations else None, "last": run["minutes"]},
-        "candidates": cand[:5], "known": known,
+        "candidates": cand[:5], "known": known, "existing_incident": existing,
+        "predecessor_set_ok": [r["id"] for r in pred_setok],
         "lesson": (f"Bu hata daha once {len(repeated_fix)} kez '{repeated_fix[0]['resolution']}' ile kapatilmis ve "
                    "tekrar etmis: o cozum kok nedeni gidermiyor." if len(repeated_fix) >= 2 else None),
     }
 
 
-def suggest(g, ev):
-    """What to do, from what fixed the same root before. Code only: a verified past fix is preferred."""
-    top = ev["candidates"][0] if ev["candidates"] else {"id": None}
+def suggest(g, ev, chosen=None):
+    """What to do, from what fixed the same root before. Code only: a verified past fix is preferred.
+    `chosen`: the candidate a model picked; by default code's first."""
+    top = {"id": chosen} if chosen else (ev["candidates"][0] if ev["candidates"] else {"id": None})
     fixes = [p for p in ev["precedents"] if p["root"] == top["id"] and p["resolution"]]
     good = [p for p in fixes if p["verified"]]
     if good:
@@ -145,12 +166,17 @@ def suggest(g, ev):
 
 
 def catalog_match(sig):
-    """The known failure kind (docs/06, section 7) whose error line looks most like this signature."""
-    from .gecmis import CATALOG
-    fill = dict(table="T", user="U", host="H", rows=0, expected=1, path="/p", minutes=1, proc="p")
-    best = max(((similarity(sig, signature(line.format(**fill))), kind, cause, fix)
-                for kind, (line, cause, fix) in CATALOG.items()), default=(0, None, None, None))
-    return {"kind": best[1], "cause": best[2], "fix": best[3]} if best[0] >= 0.5 else None
+    """The known failure kind (docs/06, section 7) of a signature: by its signs (SIGNS, any product's wording),
+    then by likeness to the catalog's own line."""
+    from .gecmis import CATALOG, SIGNS
+    fill = dict(table="T", user="U", host="H", rows=0, expected=1, path="/p", minutes=1, proc="p", resource="R")
+    scored = []
+    for kind, (line, cause, fix) in CATALOG.items():
+        hits = sum(1 for w in SIGNS.get(kind, ()) if w in sig)
+        sim = similarity(sig, signature(line.format(**fill)))
+        scored.append((hits + sim, hits, sim, kind, cause, fix))
+    best = max(scored, default=(0, 0, 0, None, None, None))
+    return {"kind": best[3], "cause": best[4], "fix": best[5]} if best[1] >= 1 or best[2] >= 0.5 else None
 
 
 def explain(model, ev):
@@ -175,6 +201,46 @@ def explain(model, ev):
         return {"candidate": None, "explanation": None, "rejected": True}
     return {"candidate": out["candidate"], "explanation": str(out.get("explanation") or "")[:600],
             "next_step": str(out.get("next_step") or "")[:300], "rejected": False}
+
+
+def disk_outlook(series, days=14, full=95.0):
+    """Days until `full` percent at the recent pace (Theil-Sen over the last `days` points), or None."""
+    ys = [v for _, v in series[-days:]]
+    if len(ys) < 5:
+        return None
+    slope = theil_sen(ys)
+    if slope <= 0.05 or ys[-1] >= full:
+        return None
+    return {"now": ys[-1], "per_day": round(slope, 2), "days": int((full - ys[-1]) / slope)}
+
+
+def reports(g, today, days=7):
+    """What an admin is asked for every week, read from the graph: recent changes, Set OK runs, failures per job
+    and month, the slowest and the most time-consuming jobs."""
+    t0 = datetime.date.fromisoformat(today)
+    since = (t0 - datetime.timedelta(days=days)).isoformat()
+    changes = sorted((c for c in g.nodes("change") if c["day"] >= since), key=lambda c: c["day"], reverse=True)
+    set_ok = [r for r in g.runs() if r.get("set_ok")]
+    monthly = {}
+    for f in failures(g):
+        monthly.setdefault(f["job"], {}).setdefault(f["day"][:7], 0)
+        monthly[f["job"]][f["day"][:7]] += 1
+    stats = []
+    for j in g.nodes("job"):
+        name = j["id"].split(":", 1)[1]
+        rs = [r for r in g.runs(name, since=(t0 - datetime.timedelta(days=30)).isoformat()) if r["ok"]]
+        if rs:
+            ms = sorted(r["minutes"] for r in rs)
+            stats.append({"job": name, "runs": len(rs), "median": round(statistics.median(ms), 1),
+                          "p90": ms[int(0.9 * (len(ms) - 1))], "total": round(sum(ms), 0)})
+    return {"since": since, "changes": changes,
+            "set_ok": [{"id": r["id"], "job": r["job"], "day": r["day"], "error": r.get("error"),
+                        "downstream": sorted({f["job"] for f in failures(g, r["day"])
+                                              if f"job:{r['job']}" in {e["to"] for e in g.out(f"job:{f['job']}", "after")}})}
+                       for r in set_ok],
+            "failures_by_month": monthly,
+            "slowest": sorted(stats, key=lambda s: -s["median"])[:6],
+            "heaviest": sorted(stats, key=lambda s: -s["total"])[:6]}
 
 
 def theil_sen(ys):
@@ -215,6 +281,21 @@ def warnings(g, today, horizon=7):
         info = _incident(g, inc["id"])
         if info["open"]:
             continue
+    for h in g.nodes("host"):
+        o = disk_outlook(h.get("disk") or [])
+        if o and o["days"] <= 21:
+            name = h["id"].split(":", 1)[1]
+            jobs = sorted(e["from"].split(":", 1)[1] for e in g.into(h["id"], "on") if e["from"].startswith("job:"))
+            out.append({"kind": "disk", "job": name, "level": "risk" if o["days"] <= 7 else "uyari",
+                        "text": f"{name} diski %{o['now']:.0f} dolu ve gunde %{o['per_day']} artiyor; bu hizla "
+                                f"{o['days']} gun icinde %95'i gecer. Bu sunucuda calisan isler: {', '.join(jobs)}. "
+                                "Ilk bakilacak: agent'in kendi loglari ve eski ciktilar",
+                        "series": [v for _, v in (h.get("disk") or [])[-30:]]})
+    for r in g.runs(since=(t0 - datetime.timedelta(days=30)).isoformat()):
+        if r.get("set_ok"):
+            out.append({"kind": "setok", "job": r["job"], "level": "uyari",
+                        "text": f"{r['job']} {r['day']} tarihinde hata verdi ve elle basarili sayildi (Set OK). Aşağı "
+                                "akistaki isler yesil gorunse de veri eksik olabilir; kok neden kapatilmadi"})
     roots = {}
     for inc in g.nodes("incident"):
         info = _incident(g, inc["id"])

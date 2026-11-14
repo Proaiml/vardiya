@@ -16,7 +16,7 @@ import pathlib
 import threading
 import urllib.parse
 
-from . import __version__, cozumle, gecmis
+from . import __version__, cozumle, gecmis, saglik
 from .adapter import RepoAdapter
 from .checks import redact
 from .desk import Desk, render
@@ -64,11 +64,23 @@ class Office:
         cals = {n: {"desc": c["desc"], "rule": c["rule"], "next": self.repo.forecast(n, 45)[:8]}
                 for n, c in sorted(self.repo.calendars.items())}
         changed = sorted(n for n in set(self.initial) | set(self.repo.jobs) if self.initial.get(n) != self.repo.jobs.get(n))
-        return {"today": env["today"], "hosts": env["hosts"], "folders": env["folders"], "standards": env["standards"],
-                "holidays": env["holidays"], "calendars": cals, "jobs": jobs, "waiting": waiting, "changed": changed,
-                "connections": env.get("connections", {}),
-                "site_file": str(self.site_path.name), "model": self.model.spec if self.model else None,
-                "licence": self.licence, "version": __version__}
+        out = {"today": env["today"], "hosts": env["hosts"], "folders": env["folders"], "standards": env["standards"],
+               "holidays": env["holidays"], "calendars": cals, "jobs": jobs, "waiting": waiting, "changed": changed,
+               "connections": env.get("connections", {}),
+               "site_file": str(self.site_path.name), "model": self.model.spec if self.model else None,
+               "licence": self.licence, "version": __version__}
+        return json.loads(redact(json.dumps(out, ensure_ascii=False)))  # an old definition may carry a password
+
+    def health(self):
+        with self.lock:
+            return {"findings": saglik.scan(self.repo, self.rules if hasattr(self, "rules") else ())}
+
+    def reports(self, days=7):
+        with self.lock:
+            out = cozumle.reports(self.graph, self.repo.today.isoformat(), days)
+            out["requests"] = [{"talep_no": h["talep_no"], "at": h["at"], "outcome": h["outcome"],
+                                "job": (h.get("definition") or h.get("before") or {}).get("name")} for h in self.history]
+            return json.loads(redact(json.dumps(out, ensure_ascii=False, default=str)))
 
     # ---- the one write ---------------------------------------------------------------
     def submit(self, text):
@@ -221,6 +233,10 @@ def make_handler(office):
                 return self._send(200, office.ledger_rows())
             if url.path == "/api/examples":
                 return self._send(200, examples())
+            if url.path == "/api/health":
+                return self._send(200, office.health())
+            if url.path == "/api/reports":
+                return self._send(200, office.reports(int((q.get("days") or ["7"])[0])))
             if url.path == "/api/graph":
                 return self._send(200, office.graph_summary())
             if url.path == "/api/graph/analyse":

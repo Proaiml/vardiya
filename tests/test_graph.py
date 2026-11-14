@@ -75,5 +75,45 @@ class History(unittest.TestCase):
         self.assertTrue(all(e[0] in {n["id"] for n in pic["nodes"]} for e in pic["edges"]))
 
 
+class IncidentBench(unittest.TestCase):
+    def test_code_arm_holds_on_renamed_sites_and_other_wordings(self):
+        from vardiya import olaybench
+        for split in ("dev", "test"):
+            g, cases = olaybench.cases(split)
+            self.assertGreaterEqual(len(cases), 15)
+            for c in cases:
+                root, action = olaybench.solve(g, c, "kod")
+                self.assertEqual(olaybench.verdict(c, root, action), "dogru", (split, c["id"], root, action))
+
+    def test_harmful_actions_are_scored_as_such(self):
+        from vardiya import olaybench
+        g, cases = olaybench.cases("dev")
+        silent = next(c for c in cases if c["kind"] == "sessiz")
+        self.assertEqual(olaybench.verdict(silent, silent["root"], olaybench.RERUN), "zararli")
+        self.assertEqual(olaybench.verdict(silent, silent["root"], olaybench.SETOK), "zararli")
+        self.assertEqual(olaybench.verdict(silent, "host:x", silent["actions"][0]), "yarim")
+
+    def test_the_raw_arm_gets_the_same_facts(self):
+        from vardiya import olaybench
+        g, cases = olaybench.cases("test")
+        c = next(x for x in cases if x["kind"] == "setok")
+        text = olaybench.raw_prompt(g, c)
+        self.assertIn("Set OK", text)          # what the harness sees, the raw model sees too
+        self.assertIn("Past incidents", text)
+        self.assertNotIn("ODM_", text)          # renamed through and through
+
+
+class Health(unittest.TestCase):
+    def test_the_scan_finds_what_came_in_before_the_checks(self):
+        from vardiya import saglik
+        from vardiya.repo import Repo
+        found = {(f["job"], f["code"]) for f in saglik.scan(Repo({**SITE, "request": {"talep_no": "_", "text": ""}}))}
+        self.assertIn(("RPR_HAFTALIK", "E_CAL_DEP"), found)
+        self.assertIn(("KRD_RISK_HESAP", "E_SECRET"), found)
+        self.assertIn(("ODM_WATCH_DOSYA", "E_REQUIRED"), found)
+        self.assertIn(("KRD_RAPOR", "W_SAME_COMMAND"), found)
+        self.assertFalse(any("Etl2024" in f["msg"] for f in saglik.scan(Repo({**SITE, "request": {"talep_no": "_", "text": ""}}))))
+
+
 if __name__ == "__main__":
     unittest.main()

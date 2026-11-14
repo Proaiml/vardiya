@@ -11,7 +11,8 @@ import json
 import re
 import sqlite3
 
-KINDS = ("job", "run", "host", "user", "connection", "table", "signature", "change", "incident", "resolution")
+KINDS = ("job", "run", "host", "user", "connection", "table", "resource", "signature", "change", "incident",
+         "resolution")
 
 
 def signature(text):
@@ -73,13 +74,17 @@ class Graph:
                 self.edge(jid, "uses", self.node("connection", j["connection"], desc=desc))
             for t in j.get("tables", []):
                 self.edge(jid, "writes", self.node("table", t))
+            for r in j.get("resources", []):
+                self.edge(jid, "needs", self.node("resource", r))
             for d in j.get("deps", []):
                 self.edge(jid, "after", f"job:{d}")
         self.commit()
 
-    def add_run(self, job, day, ok, minutes, error=None, rc=0, attempt=1):
+    def add_run(self, job, day, ok, minutes, error=None, rc=0, attempt=1, set_ok=False):
+        """`set_ok`: the run failed and an operator marked it OK by hand. It counts as green downstream, which
+        is exactly why it has to stay visible (a BMC Community request open since 2022 asks for the same)."""
         rid = self.node("run", f"{job}@{day}#{attempt}", f"{job} {day}", job=job, day=day, ok=bool(ok),
-                        minutes=round(minutes, 1), rc=rc, error=error, attempt=attempt)
+                        minutes=round(minutes, 1), rc=rc, error=error, attempt=attempt, set_ok=bool(set_ok))
         self.edge(rid, "of", f"job:{job}", at=day)
         if not ok and error:
             sig = signature(error)
@@ -90,6 +95,12 @@ class Graph:
     def add_change(self, key, job, day, what, by="talep"):
         cid = self.node("change", key, f"{key} {job}", job=job, day=day, what=what, by=by)
         self.edge(cid, "changed", f"job:{job}", at=day)
+        return cid
+
+    def add_host_change(self, key, host, day, what, by="platform"):
+        """A change below the jobs: a patch, an upgrade, a new Java. Forums show many incidents start here."""
+        cid = self.node("change", key, f"{key} {host}", host=host, day=day, what=what, by=by)
+        self.edge(cid, "changed", f"host:{host}", at=day)
         return cid
 
     def add_incident(self, key, day, run_ids, root, cause, resolution=None, verified=False, minutes=None):
@@ -131,7 +142,7 @@ class Graph:
 
     def attrs(self, job):
         """Host, user, connection and tables of a job: the places a shared cause can sit."""
-        return [e["to"] for e in self.out(f"job:{job}") if e["kind"] in ("on", "as", "uses", "writes")]
+        return [e["to"] for e in self.out(f"job:{job}") if e["kind"] in ("on", "as", "uses", "writes", "needs")]
 
     def neighbourhood(self, seeds, depth=1, limit=60):
         """Nodes and edges within `depth` steps of the seeds, for drawing and for a model's context."""

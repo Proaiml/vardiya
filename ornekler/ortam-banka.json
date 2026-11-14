@@ -148,8 +148,7 @@
    "time": "01:00",
    "deps": [],
    "notify": "odeme-nobet@ornek.local",
-   "description": "Odeme dosyasinin gelmesini bekler",
-   "timeout": "240"
+   "description": "Odeme dosyasinin gelmesini bekler"
   },
   {
    "name": "ODM_LOAD_ODEME",
@@ -334,7 +333,7 @@
     "KRD_LOAD_SKOR"
    ],
    "notify": "kredi-nobet@ornek.local",
-   "description": "ETL kumesinde risk hesaplamasini calistirir",
+   "description": "ETL kumesinde risk hesaplamasini calistirir; eski not: ssh sifre: Etl2024",
    "connection": "SSH_ETL_KUME"
   },
   {
@@ -343,7 +342,7 @@
    "type": "komut",
    "host": "rpr01",
    "run_as": "rprusr",
-   "command": "/opt/kredi/bin/kredi_rapor.sh",
+   "command": "/opt/rapor/bin/gunluk_ozet.sh",
    "calendar": "IS_GUNU",
    "time": "05:30",
    "deps": [
@@ -359,13 +358,13 @@
    "host": "rpr01",
    "run_as": "rprusr",
    "command": "/opt/rapor/bin/haftalik.sh",
-   "calendar": "IS_GUNU",
+   "calendar": "HERGUN",
    "time": "06:00",
    "deps": [
     "RPR_GUNLUK_OZET"
    ],
    "notify": "rapor-nobet@ornek.local",
-   "description": "Gunluk yonetim ozeti (haftalik rapor icin)"
+   "description": "Yonetim ozeti (eski tanim: hafta sonu da calisir)"
   }
  ]
 }

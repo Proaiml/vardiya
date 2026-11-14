@@ -339,6 +339,49 @@ ve erken uyarı). Önyüzde "Olaylar ve kök neden" ile "Erken uyarılar" bölü
 değil, bağlantıların doğru kurulduğunun sınamasıdır: geçmişi ve hata kataloğunu aynı el yazdı. Gerçek bir ölçüm
 için bench'in ikinci hattı (bölüm 5) ve gerçek bir zamanlayıcının geçmişi gerekiyor.
 
+### 8.1 Forumdan gelen adminlik yetenekleri (sürüm 0.3)
+
+Bölüm 7'deki sorunlar harness'e genelleştirilmiş çözücü olarak yüklendi: her olay sınıfı için hangi kanıta
+bakılacağı, hangi adayların çıkacağı ve hangi müdahalenin işe yarayıp hangisinin yaramadığı. Küçük modele kalan iş
+yalnızca adaylar arasında seçim ve gerekçe.
+
+| Sorun (kaynak) | Harness'teki yetenek |
+| --- | --- |
+| Kaynaklar boşken iş kaynak bekliyor (BMC, 27 cevap) | Çizgede kaynak düğümleri; hata satırı kaynağı adlandırınca aday; çözüm: asılı kaydı serbest bırak, havuz sınırını yükseltme |
+| Yama ya da yükseltme sonrası işler bozuluyor (BMC: CScript, MS yamaları) | Sunucu düzeyinde değişiklik düğümü; hatadan önceki üç günde o sunucuya gelen yama aday olur |
+| "Set OK" ile "gerçekten başarılı" ayrılmıyor (BMC, 2022'den beri açık istek) | Elle başarılı sayılan çalışmalar ayrı işaretli; ardılda veri hatası çıkınca ilk aday o çalışma; Raporlar sayfasında liste |
+| Agent'ın kendi logları diski dolduruyor (BMC: XT_*.log 60 GB) | Sunucu başına disk serisi; eğilimle dolma süresi tahmini; 21 gün içinde dolacaksa erken uyarı |
+| Döngüsel iş her düşüşte yeni olay açıyor (BMC) | Aynı iş ve aynı hata için açık olay varsa yeni olay açılmaz, çalışma ona eklenir |
+| Son 7 günün tanım değişiklikleri, aylık hata raporu (BMC) | Raporlar: son değişiklikler, aylık hata sayıları, en uzun süren ve en çok zaman alan işler |
+| Kontroller yokken girmiş tanımlar | Tanım sağlığı taraması: her iş yeni talep gibi denetlenir; takvim uyumsuzluğu, süre sınırsız dosya izleme, tanımdaki parola, aynı komutu çalıştıran iki iş |
+| Kilit, parola dönüşü, saklı yordamın hatayı yutması, bitmeyen iş (Stack Overflow) | Bölüm 8'deki çözücüler |
+
+Her hata türü artık bir üründeki tek bir hata satırına değil, işaretlerine göre tanınıyor (`gecmis.SIGNS`): kilit
+için "lock", "resource busy", "55P03"; parola için "logon failure", "1326" gibi.
+
+### 8.2 Olay bench'i: küçük model tek başına ve harness içinde
+
+`python -m vardiya olay run --split test --model ollama:qwen3:8b`. Her vaka örnek geçmişteki bir olay; doğru kök neden
+ve doğru müdahale bilinir. Üç kol aynı bilgiyle çalışır:
+
+- **kod:** harness'in kodu, ilk aday ve önerilen müdahale.
+- **raw_llm:** model tek başına; başarısız çalışma, iş, son 90 günün bütün hataları, değişiklikleri, Set OK'leri ve
+  olayları düz metin olarak, varlık ve müdahale listeleriyle verilir.
+- **harness_llm:** kod kanıtı toplar ve adayları sıralar, model birini seçer; müdahale seçilen adaydan gelir.
+
+Puan: kök neden doğru mu, müdahale doğru mu, zararlı mı (Set OK, ya da yeniden çalıştırmanın veri bozacağı
+olaylarda yeniden çalıştırma).
+
+Ezbere karşı iki bölüm var. `dev`: çözücülerin yazıldığı adlar ve hata satırları. `test`: bütün iş, sunucu,
+kullanıcı, tablo ve kaynak adları değiştirilmiş, her hata başka bir ürünün diliyle yazılmış (PostgreSQL kilidi,
+Windows 1326 oturum hatası gibi).
+
+İlk sonuç, yalnızca kod kolu: `dev` 19 olayın 19'unda, `test` 19'unun 19'unda doğru kök neden ve doğru müdahale.
+
+Sınır: `test` bölümünün yeni adlarını ve hata yazımlarını da çözücüleri yazan el, aynı oturumda yazdı. Bu, adlara
+ve tek bir hata satırına bağımlılığı sınıyor ama bağımsız bir sınama değil. Sıradaki adım: hata yazımlarını başka bir
+modele yazdırmak (gün ifadelerinde `ext2` ile yapıldığı gibi) ve gerçek bir zamanlayıcının geçmişi.
+
 ## Kaynaklar
 
 - [BMC: Automation API iş tipleri kod başvurusu (Control-M SaaS)](https://documents.bmc.com/supportu/controlm-saas/en-US/Documentation/API_CodeRef_JobTypes.htm)

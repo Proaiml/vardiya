@@ -188,12 +188,14 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.5 var(--mono);
       <button data-page="genel"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/></svg>Genel bakış</button>
       <button data-page="olay"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 15 14H1z"/><path d="M8 6v3.5M8 11.5v.5"/></svg>Olaylar ve kök neden<span class="count" id="nav-open" hidden></span></button>
       <button data-page="uyari"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 12 5.5 7l3 3 6-7"/><path d="M10.5 3h4v4"/></svg>Erken uyarılar<span class="count warn" id="nav-warn" hidden></span></button>
+      <button data-page="rapor"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1.5h10v13H3z"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg>Raporlar</button>
       <div class="group">Talep</div>
       <button data-page="talep"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1.5h7l3 3v10H3z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg>Talep masası</button>
       <button data-page="gecmis"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5V8l2.5 1.5"/></svg>Talep geçmişi</button>
       <button data-page="defter"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7.5" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Denetim defteri</button>
       <div class="group">Ortam ve ölçüm</div>
       <button data-page="ortam"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="3.5" r="2"/><circle cx="12.5" cy="12.5" r="2"/><path d="M5.3 7.1 10.7 4.4M5.3 8.9l5.4 2.7"/></svg>Ortam ve işler</button>
+      <button data-page="saglik"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14.5s-6-3.6-6-8A3.3 3.3 0 0 1 8 4.3 3.3 3.3 0 0 1 14 6.5c0 4.4-6 8-6 8z"/></svg>Tanım sağlığı<span class="count warn" id="nav-health" hidden></span></button>
       <button data-page="bench"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14.5h12M4 12V8M8 12V3.5M12 12V6"/></svg>Bench sonuçları</button>
     </nav>
     <div class="side-foot" id="side-foot"></div>
@@ -230,6 +232,22 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.5 var(--mono);
 
       <section data-page="uyari" hidden>
         <div class="card"><header><h2>Olaydan önce</h2><span class="hint">geçmiş çalışmalardan, kodla hesaplanır</span></header><div class="body" id="warn-list"></div></div>
+      </section>
+
+      <section data-page="rapor" hidden>
+        <div class="grid g2">
+          <div class="card"><header><h2>Elle başarılı sayılan işler (Set OK)</h2><span class="hint">yeşil görünür, veri gelmemiş olabilir</span></header><div class="body" id="rep-setok"></div></div>
+          <div class="card"><header><h2>Son değişiklikler</h2><select id="rep-days" aria-label="Gün" style="margin-left:auto"><option value="7">7 gün</option><option value="30">30 gün</option><option value="90">90 gün</option></select></header><div class="body" id="rep-changes"></div></div>
+        </div>
+        <div class="grid g2 mt">
+          <div class="card"><header><h2>En uzun süren işler</h2><span class="hint">son 30 gün, medyan</span></header><div class="scroll" id="rep-slow"></div></div>
+          <div class="card"><header><h2>Toplamda en çok zaman alan işler</h2><span class="hint">son 30 gün</span></header><div class="scroll" id="rep-heavy"></div></div>
+        </div>
+        <div class="card mt"><header><h2>Aylık hata sayıları</h2></header><div class="scroll" id="rep-monthly"></div></div>
+      </section>
+
+      <section data-page="saglik" hidden>
+        <div class="card"><header><h2>Tanım sağlığı taraması</h2><span class="hint">ortamdaki her iş, yeni bir talep gibi denetlenir</span></header><div class="body" id="health"></div></div>
       </section>
 
       <section data-page="talep" hidden>
@@ -289,7 +307,7 @@ const FIELD = {name:"is_adi", folder:"klasor", type:"tip", host:"host", run_as:"
 const TYPE_TR = {komut:"Komut", dosya_izleme:"Dosya izleme", veritabani:"Veritabanı", dosya_aktarimi:"Dosya aktarımı", ssh:"SSH", bos:"Boş (Dummy)"};
 const KIND = {job:["İş","--k-job"], host:["Sunucu","--k-host"], user:["Kullanıcı","--k-user"], connection:["Bağlantı","--k-conn"],
   table:["Tablo","--k-table"], signature:["Hata imzası","--k-sig"], change:["Değişiklik","--k-change"], incident:["Olay","--k-incident"],
-  resolution:["Çözüm","--k-res"], run:["Çalışma","--k-run"], dis:["Dış kaynak","--k-run"]};
+  resolution:["Çözüm","--k-res"], run:["Çalışma","--k-run"], dis:["Dış kaynak","--k-run"], resource:["Kaynak","--k-table"]};
 const ICON = {
   ok: '<svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="var(--good)"/><path d="m4.8 8.2 2.2 2.2 4.2-4.6" stroke="#fff" stroke-width="1.8" fill="none"/></svg>',
   warn: '<svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1 15.5 14.5H.5z" fill="var(--warning)"/><path d="M8 6v4M8 12v.6" stroke="#1a1300" stroke-width="1.7"/></svg>',
@@ -317,7 +335,9 @@ const untip = () => $("#tip").style.display = "none";
 const TITLES = {genel:["Genel bakış","Ortamın durumu ve önümüzdeki riskler"], olay:["Olaylar ve kök neden","Yerel hata çizgesinden kanıt, aday nedenler ve geçmişte işe yarayan çözüm"],
   uyari:["Erken uyarılar","Olay olmadan önce: yavaşlayan işler, tekrarlayan hatalar, kalıcı çözülmemiş nedenler"], talep:["Talep masası","Zorunlu şablonla gelen tanım talepleri: denetle, uygula, kaydet ya da gerekçeyle iade et"],
   gecmis:["Talep geçmişi","Bu oturumda işlenen talepler"], defter:["Denetim defteri","Değiştirilemez, özet zincirli kayıt"], ortam:["Ortam ve işler","Tanımlar, bağımlılıklar, takvimler ve bağlantı profilleri"],
-  bench:["Bench sonuçları","Scheduler Admin Bench: harness ile ve harness olmadan"]};
+  bench:["Bench sonuçları","Scheduler Admin Bench: harness ile ve harness olmadan"],
+  rapor:["Raporlar","Haftalık sorulanlar: değişiklikler, Set OK, en uzun süren işler, aylık hatalar"],
+  saglik:["Tanım sağlığı","Kontroller yokken girmiş tanımlar: olay olmadan temizlenmek üzere"]};
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => go(b.dataset.page));
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
 $("#menu").onclick = () => $("#side").classList.toggle("open");
@@ -327,7 +347,7 @@ function go(page) {
   $("#title").textContent = TITLES[page][0]; $("#subtitle").textContent = TITLES[page][1];
   $("#side").classList.remove("open");
   try { localStorage.setItem("vardiya-page", page); } catch (e) {}
-  ({ortam: renderSite, gecmis: loadHistory, defter: loadLedger, bench: () => loadBench()})[page]?.();
+  ({ortam: renderSite, gecmis: loadHistory, defter: loadLedger, bench: () => loadBench(), rapor: () => loadReports(), saglik: loadHealth})[page]?.();
 }
 $("#refresh").onclick = () => boot(true);
 
@@ -412,6 +432,8 @@ function renderAnalysis(inc, ev) {
   let h = `<div class="card"><header><h2>${esc(ev.job)} · ${day(ev.day)}</h2>${inc.open ? badge("s-crit", "crit", "Açık olay") : badge(inc.verified ? "s-good" : "s-warn", inc.verified ? "ok" : "warn", inc.verified ? "Çözüldü, doğrulandı" : "Kapandı, doğrulanmadı")}
     <span class="hint">olağan süre ${ev.duration.median ?? "?"} dk · bu çalışma ${ev.duration.last} dk</span></header><div class="body">
     <div class="err">${esc(ev.error)}</div><div class="hint mt">İmza: <span class="mono">${esc(ev.signature)}</span></div>`;
+  if (ev.existing_incident) h += `<div class="notice info">${ICON.info}<div><b>Aynı olay zaten açık.</b> Bu iş için aynı hatayla açılmış ${esc(ev.existing_incident.replace("incident:", ""))} var; yeni olay açılmaz, bu çalışma ona eklenir.</div></div>`;
+  if (ev.predecessor_set_ok?.length) h += `<div class="notice crit">${ICON.crit}<div><b>Öncül elle başarılı sayılmış.</b> ${ev.predecessor_set_ok.map(x => esc(x.replace("run:", ""))).join(", ")} hata verdi ve Set OK yapıldı; zincir yeşil göründü ama veri gelmedi.</div></div>`;
   if (ev.lesson) h += `<div class="notice crit">${ICON.crit}<div><b>Geçmişten ders.</b> ${esc(ev.lesson)}</div></div>`;
   if (ev.suggestion) h += `<div class="notice ${ev.suggestion.verified ? "info" : "warn"}">${ev.suggestion.verified ? ICON.ok : ICON.info}<div><b>Önerilen müdahale.</b> ${esc(ev.suggestion.action)}
       <div class="hint">${ev.suggestion.verified ? `Aynı kök nedende ${esc(ev.suggestion.from.replace("incident:", ""))} olayında uygulandı ve işe yaradığı doğrulandı.` : "Bilinen hata türünün çözümü; bu ortamda daha önce doğrulanmadı."}</div></div></div>`;
@@ -434,7 +456,7 @@ function renderAnalysis(inc, ev) {
 }
 function drawPicture(ev) {
   const all = ev.picture.nodes, top = ev.candidates[0]?.id;
-  const COL = {run: 0, job: 1, host: 2, user: 2, connection: 2, table: 2, change: 2, signature: 3, incident: 3, resolution: 4};
+  const COL = {run: 0, job: 1, host: 2, user: 2, connection: 2, table: 2, resource: 2, change: 2, signature: 3, incident: 3, resolution: 4};
   const nodes = all.filter(n => COL[n.kind] !== undefined), cols = [[], [], [], [], []];
   nodes.forEach(n => cols[COL[n.kind]].push(n));
   cols.forEach(c => c.sort((x, y) => (y.id === top) - (x.id === top) || (y.id === ev.run) - (x.id === ev.run) || x.kind.localeCompare(y.kind) || String(x.day || x.id).localeCompare(String(y.day || y.id))));
@@ -464,11 +486,34 @@ const LVL = {risk: ["Risk", "s-crit", "crit"], uyari: ["Uyarı", "s-warn", "warn
 function spark(series) { if (!series) return ""; const W = 120, H = 28, mx = Math.max(...series), mn = Math.min(...series);
   const pts = series.map((v, i) => `${(i * W / (series.length - 1)).toFixed(1)},${(H - 3 - (H - 6) * (v - mn) / Math.max(.001, mx - mn)).toFixed(1)}`).join(" ");
   return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>`; }
-const warnItem = w => `<div class="notice ${w.level === "risk" ? "crit" : "warn"}">${ICON[LVL[w.level][2]]}<div style="flex:1"><div class="row"><b>${esc({yavaslama: "Yavaşlama", tekrar: "Tekrarlayan hata", kalici: "Kök neden giderilmemiş"}[w.kind] || w.kind)}</b>${tag(w.job)}</div>
+const warnItem = w => `<div class="notice ${w.level === "risk" ? "crit" : "warn"}">${ICON[LVL[w.level][2]]}<div style="flex:1"><div class="row"><b>${esc({yavaslama: "Yavaşlama", tekrar: "Tekrarlayan hata", kalici: "Kök neden giderilmemiş", disk: "Disk doluyor", setok: "Elle başarılı sayılan iş"}[w.kind] || w.kind)}</b>${tag(w.job)}</div>
   <div>${esc(w.text)}</div>${w.days ? `<div class="hint">Görüldüğü günler: ${w.days.map(day).join(", ")}</div>` : ""}</div>${spark(w.series)}</div>`;
 function renderWarnings() {
   $("#warn-list").innerHTML = (graph.warnings.map(warnItem).join("") || `<div class="empty">Önümüzdeki günler için uyarı yok.</div>`) +
     `<p class="hint mt">Uyarılar kodla hesaplanır: süre eğilimi (Theil-Sen), aynı hatanın aynı gün tekrarı, kök nedeni giderilmeden kapatılmış olaylar. ${graph.generated ? "Bu ortamın geçmişi örnek olarak üretildi (gecmis.py); gerçek bir zamanlayıcı bağlanınca onun geçmişi kullanılır." : ""}</p>`;
+}
+
+// ---- reports and health
+async function loadReports() {
+  const r = await api("/api/reports?days=" + ($("#rep-days").value || 7));
+  $("#rep-setok").innerHTML = r.set_ok.length ? `<ul class="plain">${r.set_ok.map(x => `<li><div class="row">${badge("s-warn", "warn", "Set OK")}<b class="mono">${esc(x.job)}</b><span class="hint">${day(x.day)}</span></div>
+      <div class="hint mono">${esc(x.error || "")}</div>${x.downstream.length ? `<div>Aynı gün hata veren ardıllar: ${x.downstream.map(tag).join("")}</div>` : ""}</li>`).join("")}</ul>` : `<div class="empty">Elle başarılı sayılan iş yok.</div>`;
+  $("#rep-changes").innerHTML = (r.changes.length ? `<ul class="plain">${r.changes.map(c => `<li><div class="row"><b class="mono">${esc(c.id.replace("change:", ""))}</b><span class="hint">${day(c.day)}</span>${c.host ? `<span class="type">sunucu ${esc(c.host)}</span>` : c.job ? tag(c.job) : ""}</div><div class="hint">${esc(c.what)}</div></li>`).join("")}</ul>` : `<div class="empty">Bu aralıkta değişiklik yok.</div>`) +
+    (r.requests.length ? `<h3 style="font-size:13px">Bu oturumda işlenen talepler</h3>${r.requests.map(q => `<div class="row">${outBadge(q.outcome)}<span class="mono">${esc(q.talep_no)}</span>${q.job ? tag(q.job) : ""}</div>`).join("")}` : "");
+  const tbl = (rows, col, unit) => `<table><thead><tr><th>İş</th><th>Çalışma</th><th>Medyan</th><th>%90</th><th>Toplam</th></tr></thead><tbody>${rows.map(x => `<tr><td class="mono">${esc(x.job)}</td><td>${x.runs}</td><td>${x.median} dk</td><td>${x.p90} dk</td><td>${x.total} dk</td></tr>`).join("")}</tbody></table>`;
+  $("#rep-slow").innerHTML = tbl(r.slowest); $("#rep-heavy").innerHTML = tbl(r.heaviest);
+  const months = [...new Set(Object.values(r.failures_by_month).flatMap(Object.keys))].sort();
+  $("#rep-monthly").innerHTML = `<table><thead><tr><th>İş</th>${months.map(m => `<th>${m}</th>`).join("")}<th>Toplam</th></tr></thead><tbody>${Object.entries(r.failures_by_month).sort((a, b) => Object.values(b[1]).reduce((x, y) => x + y, 0) - Object.values(a[1]).reduce((x, y) => x + y, 0)).map(([j, m]) => `<tr><td class="mono">${esc(j)}</td>${months.map(k => `<td>${m[k] || ""}</td>`).join("")}<td><b>${Object.values(m).reduce((x, y) => x + y, 0)}</b></td></tr>`).join("")}</tbody></table>`;
+}
+$("#rep-days").onchange = () => loadReports();
+const HLVL = {risk: ["Risk", "s-crit", "crit"], uyari: ["Uyarı", "s-warn", "warn"], bilgi: ["Bilgi", "s-info", "info"]};
+async function loadHealth() {
+  const h = await api("/api/health"), f = h.findings;
+  const count = l => f.filter(x => x.level === l).length;
+  $("#nav-health").hidden = !count("risk"); $("#nav-health").textContent = count("risk");
+  $("#health").innerHTML = `<div class="row" style="margin-bottom:10px">${badge("s-crit", "crit", count("risk") + " risk")}${badge("s-warn", "warn", count("uyari") + " uyarı")}${badge("s-info", "info", count("bilgi") + " bilgi")}<span class="hint">${site.jobs.length} iş tarandı</span></div>` +
+    (f.length ? `<div class="scroll"><table><thead><tr><th>Düzey</th><th>İş</th><th>Bulgu</th><th>Kod</th></tr></thead><tbody>${f.map(x => `<tr><td>${badge(HLVL[x.level][1], HLVL[x.level][2], HLVL[x.level][0])}</td><td class="mono">${esc(x.job)}</td><td>${esc(x.msg)}</td><td class="mono hint">${esc(x.code)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">Bulgu yok.</div>`) +
+    `<p class="hint mt">Düzeltmek için ilgili iş için bir değişiklik talebi açın; talep masası aynı denetimlerden geçirir.</p>`;
 }
 
 // ---- request desk
@@ -577,7 +622,7 @@ $("#bfile").onchange = e => loadBench(e.target.value);
 // ---- start
 async function boot(again) {
   await Promise.all([loadSite(), loadGraph(), again ? null : loadExamples(), api("/api/history").then(h => window._hist = h)]);
-  renderOverview();
+  renderOverview(); loadHealth().catch(() => {});
   if (!again) { let page = "genel"; try { page = localStorage.getItem("vardiya-page") || "genel"; } catch (e) {} go(TITLES[page] ? page : "genel"); }
   else { renderSite(); toast("Yenilendi"); }
   if (!current) { const first = graph.incidents.find(i => i.open) || graph.incidents[0]; if (first) current = first.id; }
