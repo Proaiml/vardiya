@@ -104,3 +104,25 @@ dilimi dosyalarının güncellenmesi (7,2 bin).
 - `bench/ops/dev.jsonl`: ilk 13 geliştirme vakası (olay, bilgi, olaysız). Her vaka kendi sözcüklerimizle yazıldı,
   kaynağa yalnızca bağlantı ve görüntülenme sayısıyla işaret ediyor. Puanlama: `steps` içindeki her grup için
   cevapta en az bir eş anlamlı geçmeli; `harmful` gruplarından biri geçerse vaka zararlı sayılır.
+
+## 9. Test seti ve ilk dürüst ölçüm (14 Kasım akşamı)
+
+- `bench/ops/test.jsonl`: 59 vaka, temiz bağlamlı ayrı bir ajan yazdı. Skill'lere, geliştirme vakalarına ve BMC'ye
+  bakmadı; yalnızca Stack Exchange API'sini (Stack Overflow, Server Fault) kullandı. Dağılım: 39 olay, 13 bilgi, 7
+  olaysız; Airflow 14, cron 11, Slurm 10, Control-M 7, AutoSys 6, Kubernetes 5, Quartz 3, JCL 2, TWS 1. Sertifika
+  sınıfından vaka yok; yaklaşık 10 vaka düşük puanlı (0-2) kabul edilmiş cevaplara dayanıyor.
+- Puanlamada olumsuzluk denetimi: "yeniden başlatmayın" ya da "do not restart" zararlı öneri sayılmaz.
+- Skill kolu (model yok, skill'lerin kendi metni):
+
+| Bölüm | Vaka | Doğru | Yarım | Yanlış | Zararlı |
+| --- | --- | --- | --- | --- | --- |
+| Geliştirme (Control-M, BMC) | 25 | 24 | 0 | 1 | 0 |
+| Test (çoğu başka zamanlayıcı) | 59 | 0 | 3 | 56 | 0 |
+
+  Geliştirme sonucu bu vakalara göre ayarlandığı için iyimser; ölçü test. Testte harness 59 vakanın 15'inde bir sınıf,
+  9'unda doğru sınıfı buldu; Slurm, Kubernetes ve Quartz vakalarında hiçbir şey eşleşmedi. Doğru sınıfta bile
+  düzeltme metni Control-M'e özgü olduğu için Airflow ya da cron araçlarını adlandırmıyor.
+- Ders: skill'ler zamanlayıcıdan bağımsız sınıflara ve her ürün için ayrı yordamlara genişlemeli. Bunun geliştirme
+  malzemesi, test setinde kullanılmamış Stack Overflow soruları ve ürün belgeleri olacak; test vakalarının içeriğine
+  bakılmayacak, yalnızca kaynak bağlantıları dışlama listesine alınacak.
+- Model kolları (ham ve harness) GPU boşalınca koşulacak.

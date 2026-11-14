@@ -17,6 +17,9 @@ class Scoring(unittest.TestCase):
         # a warning is not an action
         self.assertEqual(opsbench.score(CASE, {"cause": "signal, oom", "steps": [], "avoid": ["set ok"]})[0], "dogru")
         self.assertEqual(opsbench.score(CASE, None)[0], "yanlis")
+        # a negated harmful action in the steps is a warning, not a recommendation
+        self.assertEqual(opsbench.score(CASE, {"cause": "signal, oom", "steps": ["Isi basarili saymayin"]})[0], "dogru")
+        self.assertEqual(opsbench.score(CASE, {"cause": "signal, oom", "steps": ["Do not set ok the job"]})[0], "dogru")
 
     def test_fold(self):
         self.assertEqual(fold("Yeniden BAŞLAT, güncelle"), "yeniden baslat, guncelle")

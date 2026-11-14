@@ -116,12 +116,27 @@ def _found(word, text):
     return " " not in w and len(w) >= 5 and w[-1] in "kptc" and w[:-1] in text
 
 
+NEGATION_BEFORE = ("don't", "do not", "never", "avoid", "not ", "asla", "kesinlikle", "instead of", "yerine")
+NEGATION_AFTER = ("ma", "me", "mayin", "meyin", "mayiniz", "meyiniz", "mamali", "memeli", "madan", "meden")
+
+
+def _recommends(word, text):
+    """The answer recommends this action: it occurs, and not as 'do not X' or Turkish 'X-mayin'."""
+    w, start = fold(word), 0
+    while (i := text.find(w, start)) != -1:
+        before, after = text[max(0, i - 24):i], text[i + len(w):i + len(w) + 7]
+        if not any(n in before for n in NEGATION_BEFORE) and not after.startswith(NEGATION_AFTER):
+            return True
+        start = i + 1
+    return False
+
+
 def score(case, answer):
     if not isinstance(answer, dict):
         return "yanlis", []
     text = fold(" ".join([str(answer.get("cause", ""))] + [str(s) for s in answer.get("steps") or []]))
     hits = [any(_found(w, text) for w in group) for group in case["steps"]]
-    if any(fold(w) in text for group in case.get("harmful", []) for w in group):
+    if any(_recommends(w, text) for group in case.get("harmful", []) for w in group):
         return "zararli", hits
     if all(hits):
         return "dogru", hits
