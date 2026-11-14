@@ -43,6 +43,21 @@ procedures:
     triggers: [user daily, ctmudly, ctmudlst, eksik siparis, not ordered, missing jobs, siparis edilmedi]
     steps: hangi User Daily'nin calistigini ve son calisma tarihini kontrol et (ctmudlst LIST); eksik isleri tek tek degil, o User Daily'yi yeniden siparis ederek tamamla (once ctmudlst UPDATE <user daily> <onceki tarih>, sonra ctmudly <user daily>); sonucu aktif ortamda say
     caution: ayni gun icin zaten siparis edilmis isler varsa yeniden siparis mukerrer calisma yaratir; once kontrol et
+  araclari_baska_kullaniciyla:
+    title: Agent araclarini (ctmfw gibi) agent kullanicisi olmayan biriyle calistirmak
+    triggers: [ctmfw, command not found, utility, arac, other user, baska kullanici, non control-m user, agent kullanicisi olmayan]
+    steps: o kullanicinin ortamini agent'inkine bagla (agent'in profil betigini kaynak gostermek, PATH'e agent'in exe dizinini eklemek); urun belgesindeki 'Running Control-M/Agent utilities as other users' adimlarini o surum icin uygula; araci o kullaniciyla deneyip dogrula
+    caution: araci calistirmak icin isi agent kullanicisina ya da root'a gecirmek, ya da dizinleri herkese yazilabilir yapmak cozum degildir
+  web_onbellek_temizligi:
+    title: Control-M Web'de 'Whitelabel Error Page' ya da is gunlugunde 404
+    triggers: [whitelabel, error page, 404, control-m web, web server, web sunucusu]
+    steps: once tarayici onbellegini temizle; duzelmediyse yapilandirma agent'ini durdur (stop_config_agent), web sunucusunu durdur (stop_web_server), em remove_webapps calistir, yapilandirma agent'ini baslat (web sunucusu onunla gelir) ve sayfayi yeniden ac
+    caution: yonetim sunucusunu yeniden kurmak ya da veritabanina dokunmak gerekmez
+  dongusel_hata_siniri:
+    title: Dongusel isi belirli sayida hatadan sonra durdurmak ya da bir kez yeniden calistirmak
+    triggers: [cyclic, dongusel, number of failures, kac kez, fails for, stop cyclic, hata sayisi, ust uste, times in a row, consecutive]
+    steps: isin On-Do kosullarina 'Job's Number of Failures' = N ekle ve eylem olarak Stop Cyclic Run (ya da Rerun) sec; eski surumlerde %%FailCount degiskenini cikiya yazip ona gore On-Do tanimla; tanimi dagitip sonraki dongude dogrula
+    caution: dongusel is hata alsa da bir sonraki donguye planlanir; hata sinirini koymadan donguyu elle durdurup birakmak ertesi gun sorunu tekrarlar
 ---
 
 # Adminlik yordamlari

@@ -12,16 +12,16 @@ classes:
     evidence: [named_in_error, shared_attr, precedent]
   parola:
     title: Parola ya da kimlik bilgisi degisti
-    signs: [logon failure, password, parola, 1326, authentication failed, login failed, credentials, wrong password, tr5167, password for job owner]
-    cause: servis hesabinin parolasi degistirildi ve agent'in parola deposu eski kaldi; ya da yeni calistiran kullanicinin parolasi hic kaydedilmedi (Windows 'Logon As User', TR5167); otomatik parola donusunde (CyberArk gibi) Control-M'in kabul etmedigi karakterler de gonderilebiliyor
+    signs: [logon failure, password, parola, 1326, authentication failed, login failed, credentials, wrong password, tr5167, password for job owner, unable to run command as user]
+    cause: servis hesabinin parolasi degistirildi ve agent'in parola deposu eski kaldi; ya da yeni calistiran kullanicinin parolasi hic kaydedilmedi (Windows 'Logon As User', TR5167); Windows'ta calistiran kullanici bir etki alani kullanicisiysa alan adi olmadan yazilmis olabilir (DOMAIN\kullanici); otomatik parola donusunde (CyberArk gibi) Control-M'in kabul etmedigi karakterler de gonderilebiliyor
     fix: agent parola deposunu yeni parolayla guncelle (ctmpwd), sonra bekleyen isleri yeniden calistir; otomatik donus kullaniliyorsa yeni parolanin izin verilen karakterlerden olustugunu ve CCM'de calistigini dogrula
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process]
-    cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir; sik onceki olay Java ya da surum degisikligi (Linux'ta Java guncellemesi Control-M'in kullandigi eski Java yolunu kaldirabiliyor)
-    fix: agent'i yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process, not authorized for this agent, found empty sysout file]
+    cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir ya da isin sahibi sysout'u agent dizinine yazamiyor (dizin izni); agent baska bir sunucu adini yetkili sunucu olarak tanidigi icin kesfedilemiyor; sik onceki olay Java ya da surum degisikligi (Linux'ta Java guncellemesi Control-M'in kullandigi eski Java yolunu kaldirabiliyor)
+    fix: yeni agent'ta 'Found empty sysout' ve /bin/su hatasi varsa agent ana dizininin iznini 755 yap (is sahibi sysout yazabilsin); 'not authorized for this agent' ise ctmagcfg ile Authorized Control-M/Server Hosts listesine dogru sunucu adini yaz; agent durmussa yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, host_change, precedent]
   sessiz:
@@ -105,21 +105,21 @@ classes:
     title: Gunluk plan yuklenmedi (New Day, User Daily)
     signs: [not ordered, daily plan, new day, not scheduled, was not triggered, plan load, user daily, ctmudly, formatting ajf, no sync]
     cause: New Day ya da bir User Daily yarida kaldi; surum yukseltmesinden sonra gateway senkronu takilabiliyor (Formatting AJF, No Sync) ya da dongusel isler siparis edilip gonderilmiyor
-    fix: hangi User Daily'nin eksik siparis ettigini bul, eksikleri o User Daily'den toplu siparis et (ctmudlst UPDATE, tek tek elle degil); gerekirse New Day'i yeniden calistir; yakinda yukseltme yapildiysa gateway ve EM senkronunu kontrol et
+    fix: hangi User Daily'nin eksik siparis ettigini bul, eksikleri o User Daily'den toplu siparis et (ctmudlst UPDATE, tek tek elle degil); once ctmudly'nin cikis kodunu oku, nedeni o soyler (1 yetki yok, 10 veritabani ya da askiya alma zaman asimi, 11 hatali ya da eksik arguman: komut satirini duzelt, 13 son calisma damgasi yazilamadi); butun gunun planini bastan almak yalnizca New Day hic tamamlanmadiysa ve aktif ortam bossa dusunulur, cunku zaten siparis edilmis isleri ikinci kez siparis eder; yakinda yukseltme yapildiysa gateway ve EM senkronunu kontrol et
     harmful: [set_ok]
     evidence: [host_change, precedent]
   aktarim:
     title: Dosya aktarimi baglantisi kurulamiyor
-    signs: [jschexception, session.connect, connection reset, host key, auth fail, publickey, ssh key, sftp, ftps, smb transfer, algorithm negotiation fail, server_host_key]
+    signs: [jschexception, session.connect, connection reset, host key, auth fail, publickey, ssh key, sftp, ftps, smb transfer, algorithm negotiation fail, server_host_key, end of io stream read]
     cause: karsi tarafta anahtar ya da algoritma degisti, baglanti profili guncel degil ya da uzun aktarimda baglanti zaman asimina ugradi
-    fix: baglanti profilini karsi tarafla dogrula (anahtar, host key, algoritma) ve profilden baglanti testi yap; karsi taraf algoritmalari sertlestirdiyse istedigi anahtar degisimi, sifre ve MAC algoritmalarinin kullandigin aktarim modulu surumunce desteklenip desteklenmedigine bak, desteklenmiyorsa modulu yukselt; uzun aktarimlarda keepalive ve zaman asimi ayarini gozden gecir; dosya adinda bosluk varsa tirnakla; sonra yeniden calistir
+    fix: baglanti profilini karsi tarafla dogrula (anahtar, host key, algoritma) ve profilden baglanti testi yap; karsi taraf algoritmalari sertlestirdiyse istedigi anahtar degisimi, sifre ve MAC algoritmalarinin kullandigin aktarim modulu surumunce desteklenip desteklenmedigine bak, desteklenmiyorsa modulu yukselt; 'End of IO Stream Read' ile dogrulama dusuyorsa karsi sunucu sifre listesini sirayla denemiyor olabilir: aft_configurable.properties'te kabul ettigi sifreyi (ornek aes128-ctr) listenin basina al ve aktarim kabini yeniden baslat; uzun aktarimlarda keepalive ve zaman asimi ayarini gozden gecir; dosya adinda bosluk varsa tirnakla; sonra yeniden calistir
     harmful: [set_ok]
     evidence: [named_in_error, shared_attr, recent_change, precedent]
   saat_dilimi:
     title: Yaz saati ya da saat dilimi kaymasi
-    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset, tomorrow's odate]
+    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset, tomorrow's odate, yaz saati, saat dilimi, kis saati]
     cause: yaz saati gecisinden sonra sunucu yeniden baslatilmamis ya da saat dilimi bilgisi guncel degil; isler bir saat kayiyor; saat dilimi tanimli isler bugunun yerine yarinin ODATE'iyle siparis edilebiliyor
-    fix: saat dilimi dosyalarini guncelle, sunucuyu gecisten sonra yeniden baslat, etkilenen islerin baslama saatini ve SLA'sini dogrula; gecis tarihlerinden once kontrol listesi calistir
+    fix: saat dilimi dosyalarini guncelle (TimeZone.dat zamanlayici sunucusu, yonetim sunucusu ve istemcilerde ayni olmali, yoksa tahmin ve SLA sonuclari yanlis cikar), sunucuyu gecisten sonra yeniden baslat, etkilenen islerin baslama saatini ve SLA'sini dogrula; gecis tarihlerinden once kontrol listesi calistir
     harmful: [set_ok]
     evidence: [host_change, precedent]
   senkron:
@@ -157,11 +157,18 @@ classes:
     fix: portu tutan sureci bul (netstat ya da ss), bilesenlerden birinin portunu kullanilmayan bir porta tasi ve yeniden baslat; kalici cozum surum notlarinda varsa yukseltme
     harmful: [set_ok]
     evidence: [host_change, precedent]
+  kaybolan:
+    title: Is calisirken kayboldu (Disappeared)
+    signs: [disappeared, be_disap_pipe, all pipe instances are busy, error: '231', error 231]
+    cause: Windows'ta agent sureclerinin birbirine bagli kanali kesildi (hata 231, tum kanal ornekleri mesgul); cogu kez antivirus yazilimi agent sureclerine ya da calisan isin surecine mudahale etti
+    fix: isin kayboldugu zamandaki isletim sistemi ve antivirus gunluklerini incele; agent dizinlerini ve is sureclerini antivirus taramasindan haric tut; isin yarim kalan isini temizleyip sonra yeniden calistir
+    harmful: [set_ok]
+    evidence: [shared_attr, host_change, precedent]
   bildirim:
     title: Olay oldu ama haber gitmedi (SHOUT, e-posta, SLA uyarisi)
-    signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed]
+    signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed, email to, ctmmail, mail_handler, e-posta, eposta, shout]
     cause: zamanlayici sunucusunun ya da SLA modulunun (BIM) posta sunucusu ayari bozuk ya da posta sunucusu degisti; isler dusuyor ama kimse haber almiyor
-    fix: posta ayarini dogrula (Control-M/Server SMTP parametreleri, BIM icin EmailSender), deneme iletisi gonder; bekleyen uyarilari elle bildir; olaydan once bildirim yolunu duzenli bir deneme iletisiyle sina
+    fix: posta ayarini dogrula (config.dat'ta MAIL_HANDLER MAILX olmamali, ctm_menu ile SMTP sunucu parametreleri, BIM icin EmailSender); is gunlugunde 'EMAIL TO ... FAILED' yazip ileti yine de geldiyse ctmmail zaman asimina ya da 99 karakteri asan konu satirina bak; deneme iletisi gonder; bekleyen uyarilari elle bildir; olaydan once bildirim yolunu duzenli bir deneme iletisiyle sina
     harmful: []
     evidence: [shared_attr, precedent]
 ---
