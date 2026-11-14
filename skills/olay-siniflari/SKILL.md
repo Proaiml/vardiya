@@ -19,9 +19,9 @@ classes:
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process, not authorized for this agent, found empty sysout file, drain, drained, slurmd, node down, worker lost]
-    cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir ya da isin sahibi sysout'u agent dizinine yazamiyor (dizin izni); agent baska bir sunucu adini yetkili sunucu olarak tanidigi icin kesfedilemiyor; sik onceki olay Java ya da surum degisikligi (Linux'ta Java guncellemesi Control-M'in kullandigi eski Java yolunu kaldirabiliyor)
-    fix: yeni agent'ta 'Found empty sysout' ve /bin/su hatasi varsa agent ana dizininin iznini 755 yap (is sahibi sysout yazabilsin); 'not authorized for this agent' ise ctmagcfg ile Authorized Control-M/Server Hosts listesine dogru sunucu adini yaz; agent durmussa yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process, not authorized for this agent, found empty sysout file, drain, drained, slurmd, node down, worker lost, failed to attach be library, noroutetohostexception, no route to host, am_read_data_from_pipe]
+    cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir ya da isin sahibi sysout'u agent dizinine yazamiyor (dizin izni); agent baska bir sunucu adini yetkili sunucu olarak tanidigi icin kesfedilemiyor; sik onceki olay Java ya da surum degisikligi (Linux'ta Java guncellemesi Control-M'in kullandigi eski Java yolunu kaldirabiliyor); Linux agent'ta 32 ve 64 bit libstdc++.so.5 kutuphanesi eksik olabilir; sunucu agent'a ag yolu bulamiyor olabilir (guvenlik duvari, yonlendirici); 9.0.21 agent'inda bilinen bir cokme hatasi var
+    fix: 'Failed to Attach BE Library' ise root olarak compat-libstdc++-33 paketinin 32 ve 64 bit surumlerini kur; 'NoRouteToHostException' ise sunucudan agent'a ag yolunu ve guvenlik duvarini ag ekibiyle incele; 9.0.21'de 'am_read_data_from_pipe' cokmesi icin agent'i 9.0.21.201 ya da sonrasina yukselt; yeni agent'ta 'Found empty sysout' ve /bin/su hatasi varsa agent ana dizininin iznini 755 yap (is sahibi sysout yazabilsin); 'not authorized for this agent' ise ctmagcfg ile Authorized Control-M/Server Hosts listesine dogru sunucu adini yaz; agent durmussa yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
     fix_slurm: sinfo -R ile dugumun durumuna ve nedenine bak; durumun yanindaki '*' dugumun yanit vermedigini gosterir, slurmd'yi kontrol et; drain/drained dugum bakim icin yeni is almaz, bakim bittiyse scontrol update nodename=<dugum> state=resume
     fix_airflow: scheduler ve worker sureclerinin calistigini dogrula (airflow jobs check, Celery worker durumu); gorevler kuyrukta kaliyorsa executor ile worker arasindaki baglantiya bak
     fix_kubernetes: dugum ve pod durumunu kubectl get nodes, kubectl describe pod ve olaylarla kontrol et
@@ -113,9 +113,9 @@ classes:
     evidence: [recent_change, precedent]
   zaman:
     title: Zaman asimi: is siniri asti
-    signs: [max run time, timed out, execution_timeout, term_run_time, killed, sigkill, terminated, due to time limit, deadline exceeded, term_run_time, activedeadlineseconds]
-    cause: isin suresi haftalardir uzuyor, sure siniri artan hacme yetismedi
-    fix: yeniden calistirmadan once sureyi uzatan nedeni (hacim, plan) incele; siniri son 30 calismanin %90'i arti pay olarak guncelle; asili kalan isler icin sure asiminda haber veren ya da sonlandiran kurali (SHOUT) bu yeni sinirla kur
+    signs: [max run time, timed out, execution_timeout, term_run_time, killed, sigkill, terminated, due to time limit, deadline exceeded, term_run_time, activedeadlineseconds, read timed out, sockettimeoutexception]
+    cause: isin suresi haftalardir uzuyor, sure siniri artan hacme yetismedi; REST ya da web servisi islerinde karsi taraf varsayilan baglanti zaman asimindan gec yanit veriyor olabilir
+    fix: REST ya da web servisi isinde 'Read timed out' ise isin gelismis seceneklerinde baglanti zaman asimini (Override connection timeout) karsi tarafin en uzun yanit suresine gore artir; yeniden calistirmadan once sureyi uzatan nedeni (hacim, plan) incele; siniri son 30 calismanin %90'i arti pay olarak guncelle; asili kalan isler icin sure asiminda haber veren ya da sonlandiran kurali (SHOUT) bu yeni sinirla kur
     fix_slurm: is 'DUE TO TIME LIMIT' ile bittiyse --time degerini artir ya da isi parcala; sacct -j <id> -o jobid,elapsed,timelimit,state ile dogrula
     fix_autosys: term_run_time ve n_retrys ayarlarini incele
     fix_kubernetes: activeDeadlineSeconds ve backoffLimit degerlerini incele
@@ -123,9 +123,9 @@ classes:
     evidence: [slowing, precedent]
   plan:
     title: Gunluk plan yuklenmedi (New Day, User Daily)
-    signs: [not ordered, daily plan, new day, not scheduled, was not triggered, plan load, user daily, ctmudly, formatting ajf, no sync, dag not visible, not showing, paused, missed schedule, startingdeadlineseconds, anacron, never ran, hic calismadi]
-    cause: New Day ya da bir User Daily yarida kaldi; surum yukseltmesinden sonra gateway senkronu takilabiliyor (Formatting AJF, No Sync) ya da dongusel isler siparis edilip gonderilmiyor
-    fix: hangi User Daily'nin eksik siparis ettigini bul, eksikleri o User Daily'den toplu siparis et (ctmudlst UPDATE, tek tek elle degil); once ctmudly'nin cikis kodunu oku, nedeni o soyler (1 yetki yok, 10 veritabani ya da askiya alma zaman asimi, 11 hatali ya da eksik arguman: komut satirini duzelt, 13 son calisma damgasi yazilamadi); butun gunun planini bastan almak yalnizca New Day hic tamamlanmadiysa ve aktif ortam bossa dusunulur, cunku zaten siparis edilmis isleri ikinci kez siparis eder; yakinda yukseltme yapildiysa gateway ve EM senkronunu kontrol et
+    signs: [not ordered, daily plan, new day, not scheduled, was not triggered, plan load, user daily, ctmudly, formatting ajf, no sync, dag not visible, not showing, paused, missed schedule, startingdeadlineseconds, anacron, never ran, hic calismadi, ctmdbtrans, cmr_runinf]
+    cause: New Day ya da bir User Daily yarida kaldi; surum yukseltmesinden sonra gateway senkronu takilabiliyor (Formatting AJF, No Sync) ya da dongusel isler siparis edilip gonderilmiyor; New Day 'formatting AJF' adiminda takildiysa bozuk bir is kaydi veritabaninda islem kilidi yaratmis olabilir
+    fix: New Day 'formatting AJF'de takildiysa ctmdbtrans ile kilidi tutan isi ve SQL surecini bul, isi ctmpsm ile tut, ureticinin destegiyle o isin durum dosyalarini temizleyip kilitli sureci sonlandir; hangi User Daily'nin eksik siparis ettigini bul, eksikleri o User Daily'den toplu siparis et (ctmudlst UPDATE, tek tek elle degil); once ctmudly'nin cikis kodunu oku, nedeni o soyler (1 yetki yok, 10 veritabani ya da askiya alma zaman asimi, 11 hatali ya da eksik arguman: komut satirini duzelt, 13 son calisma damgasi yazilamadi); butun gunun planini bastan almak yalnizca New Day hic tamamlanmadiysa ve aktif ortam bossa dusunulur, cunku zaten siparis edilmis isleri ikinci kez siparis eder; yakinda yukseltme yapildiysa gateway ve EM senkronunu kontrol et
     fix_airflow: DAG dosyasi dags_folder altinda mi, ice aktarma hatasi var mi (airflow dags list-import-errors), DAG duraklatilmis mi (unpause), scheduler calisiyor mu; start_date ve schedule degerine bak
     fix_cron: cron surecinin calistigini dogrula (systemctl status cron), syslog'da CRON satirlarina bak; makine o saatte kapaliysa cron isi sonradan calistirmaz, anacron kullan
     fix_kubernetes: startingDeadlineSeconds cok kucukse ya da 100'den fazla zaman kacirildiysa CronJob isi baslatmaz; startingDeadlineSeconds'i ayarla, concurrencyPolicy'ye bak
@@ -151,9 +151,9 @@ classes:
     evidence: [host_change, precedent]
   senkron:
     title: Izleme ekrani sunucuyla senkron degil
-    signs: [no sync, out of sync, gateway, downloading, status not updated, formatting ajf, not getting a response]
-    cause: yonetim sunucusunun gecidi (EM gateway) zamanlayici sunucusuyla senkronu kaybetti, cogu kez New Day sonrasi; isler sunucuda calisiyor ama ekrandaki durumlar eski
-    fix: ekrandaki duruma gore mudahale etme; durumu sunucu tarafinda dogrula (ctmpsm, ctm_agstat); gecidi CCM'den yeniden baslatip yeniden indirmeyi zorla
+    signs: [no sync, out of sync, gateway, downloading, status not updated, formatting ajf, not getting a response, viewpoint, ctmpsm shows, ekranda gorunmuyor, ekraninda gorunmuyor, not shown in the gui, do not appear in the gui]
+    cause: yonetim sunucusunun gecidi (EM gateway) zamanlayici sunucusuyla senkronu kaybetti, cogu kez New Day sonrasi; isler sunucuda calisiyor ama ekrandaki durumlar eski; ekranda gorunmeyen is cogu kez gercekte vardir: viewpoint filtresi ya da koleksiyonu, kullanicinin yetkileri ya da bos SMART klasorleri gizleme secenegi onu saklar
+    fix: ctmpsm'de olup ekranda olmayan is icin viewpoint filtresini ve koleksiyonunu, kullanicinin ve gruplarinin yetkilerini, bos SMART klasorleri gizleme secenegini kontrol et; ekrandaki duruma gore mudahale etme; durumu sunucu tarafinda dogrula (ctmpsm, ctm_agstat); gecidi CCM'den yeniden baslatip yeniden indirmeyi zorla
     harmful: [rerun, set_ok, run_now]
     evidence: [host_change, precedent]
   sertifika:
@@ -202,6 +202,13 @@ classes:
     fix_controlm: calistiran kullanicinin profilinin yuklenip yuklenmedigine bak; gerekirse is tanimina ortami kuran bir on komut ekle
     harmful: [set_ok]
     evidence: [recent_change, precedent]
+  windows_yetki:
+    title: Windows'ta isi calistirma yetkisi yok
+    signs: [createprocessasuser, 1314, a required privilege is not held, tr5111, fork failure, failed to execute due to fork failure, logon as a batch job]
+    cause: calistiran kullanicinin ya da agent servis hesabinin Windows haklari eksik (Logon as User aciksa 'Replace a process level token'), cmd.exe uzerinde okuma ve calistirma izni yok ya da antivirus agent dosyalarini engelliyor
+    fix: Logon as User aciksa calistiran kullaniciyi Yerel Guvenlik Ilkesi'nde 'Replace a process level token' hakkina ekle (oturumu kapatip acmak ya da yeniden baslatmak gerekebilir); is sahibinin ya da servis hesabinin %SYSTEMROOT%\System32\cmd.exe uzerinde okuma ve calistirma iznini dogrula; antivirus agent dosyalarini engelliyorsa haric tut
+    harmful: [set_ok]
+    evidence: [shared_attr, host_change, precedent]
   bildirim:
     title: Olay oldu ama haber gitmedi (SHOUT, e-posta, SLA uyarisi)
     signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed, email to, ctmmail, mail_handler, e-posta, eposta, shout, email_on_failure, mailto, smtp_host]
