@@ -153,6 +153,11 @@ procedures:
     triggers: [persistent, kalici baglanti, transient, firewall, guvenlik duvari, server to agent port, tek yonlu, one direction, sunucudan agent'a, from server to agent, iletisim]
     steps: ag ekibinden sunucudan agent'a giden portu iki yonlu actir (port ctm_menu > Parameter Customization > Parameters for Communicating with Specific Agent Platforms altinda); ayni menuden o agent icin baglanti tipini Persistent yap; agent'i yeniden baslatip iletisimi dogrula
     caution: tum portlari acmak gerekmez; yalnizca ilgili portu
+  dongusel_kacirilan:
+    title: Belirli saatlerde calisan dongusel isin kacirdigi calismayi telafi etmek
+    triggers: [cyclic, dongusel, missed, kacirdi, kacirilan, specific times, belirli saat, telafi, compensate, tolerance]
+    steps: belirli saatlerde calisan dongusel is saati gecmis bir calismayi sonradan telafi etmez; telafi istiyorsan listeye sonraki saatlere kisa aralikli ek saatler ekle, Maximum Rerun ile toplam calisma sayisini sinirla ve Tolerance ile gec kalan saatin ne kadar sonra hala calisabilecegini ayarla
+    caution: telafi calismalari ayni veriyi iki kez isleyebilir; is tekrar calismaya dayanikli degilse telafiyi elle ve kontrollu yap
 ---
 
 # Adminlik yordamlari
