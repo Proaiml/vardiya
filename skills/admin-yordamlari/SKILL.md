@@ -163,6 +163,11 @@ procedures:
     triggers: [alert, uyari, alerts console, e-posta, email, unavailability, erisilemez, snmp, sendalarmtoscript]
     steps: CCM'de EM sistem parametrelerinin gelismis sekmesinde SendSnmp=1 ve SendAlarmToScript=<betigin tam yolu> yap; betik gelen uyari alanlarini ayristirip e-posta gondersin; parametrelerden sonra ilgili EM bilesenlerini yeniden baslat ve deneme uyarisiyla dogrula
     caution: her uyariyi e-postaya cevirmek gurultu yaratir; betikte yalnizca istenen uyari turlerini ilet
+  aktif_ortam_temizligi:
+    title: Zamanlayici sunucusunun aktif ortamini tamamen bosaltmak
+    triggers: [clean up the active environment, aktif ortami temizle, aktif ortami bosalt, empty the ajf, tum isleri sil, all jobs conditions and resources]
+    steps: bu islem aktif ortamdaki butun isleri, kosullari, degiskenleri, kontrol ve sayisal kaynaklari siler; yalnizca bilincli olarak (test ortami, felaket sonrasi temiz baslangic) ve degisiklik onayiyla yapilir; once sayisal kaynaklari ve gerekli kosullari disari aktar, sunucunun belgelenmis temizleme adimlarini uygula, sonra kaynaklari geri tanimla ve planlari yeniden siparis et
+    caution: tek bir klasor ya da birkac takili is icin bu yol kullanilmaz; once ctmpsm ile yalnizca ilgili isleri tut ve sil
 ---
 
 # Adminlik yordamlari
