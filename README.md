@@ -26,6 +26,7 @@ python -m vardiya fuzz -n 3000              # guvenlik hatti: rastgele ajan ve b
 python -m vardiya talep t-yeni-001          # tek talep: sablon, sonuc, denetim kaydi
 python -m vardiya talep --file ornekler/talep-yeni.txt   # kendi talep dosyaniz (--site ile kendi ortaminiz)
 python -m vardiya olay run --split test --model ollama:qwen3:8b   # olay bench'i: kucuk model tek basina ve harness icinde
+python -m vardiya ops run --split test --arms skill,ham,harness --model ollama:qwen3:8b   # ops bench: forumlardaki gercek admin sorunlari (docs/07)
 python -m vardiya web                       # operasyon konsolu: talepler, olaylar, kok neden: http://127.0.0.1:8765
 python -m vardiya run partial-load-001      # tek ariza vakasi, operator raporu
 ```

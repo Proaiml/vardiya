@@ -126,3 +126,33 @@ dilimi dosyalarının güncellenmesi (7,2 bin).
   malzemesi, test setinde kullanılmamış Stack Overflow soruları ve ürün belgeleri olacak; test vakalarının içeriğine
   bakılmayacak, yalnızca kaynak bağlantıları dışlama listesine alınacak.
 - Model kolları (ham ve harness) GPU boşalınca koşulacak.
+
+## 10. Skill'leri zamanlayıcıdan bağımsız yapmak (14 Kasım akşamı)
+
+İlk test ölçümü skill'lerin Control-M'e kapalı olduğunu gösterdi. Test vakalarına bakılmadan, test kaynakları
+dışlanmış yaklaşık 450 Stack Overflow ve Server Fault sorusundan (Airflow, cron, Slurm, AutoSys, Kubernetes CronJob,
+Quartz) ve BMC'nin en çok okunan 45 geliştirme makalesinden şu değişiklikler yapıldı:
+
+- **Sınıflar ürün dili taşıyor.** Bir sınıf genel düzeltmesinin yanında `fix_airflow`, `fix_cron`, `fix_slurm`,
+  `fix_autosys`, `fix_kubernetes`, `fix_quartz`, `fix_controlm` satırları taşıyabiliyor. Harness metinden zamanlayıcıyı
+  tanıyor ve modele önce o ürünün satırını veriyor.
+- **Yeni sınıflar:** `ortam_farki` (elle çalışıyor, zamanlayıcıdan çalışmıyor: PATH, profil, çalışma dizini, TTY,
+  cron'da `%`), `windows_yetki` (CreateProcessAsUser 1314, TR5111, cmd.exe izni), `kaybolan` (Windows'ta iş kayboluyor,
+  hata 231, antivirüs). Toplam 27 sınıf.
+- **Yordamlar 33'e çıktı:** cron sorun giderme ve kaçırılan işler (anacron), Airflow'da görevi yeniden çalıştırma,
+  backfill, görünmeyen DAG, paralellik ve tetikleme kuralları, Slurm düğüm durumu, iş bilgisi ve kesinti, AutoSys
+  durum değiştirme ve ardılları buza alarak tek başına deneme, Kubernetes CronJob ayarları, Quartz, Control-M'de EM
+  sağlığı, HA elle geçiş, PostgreSQL yedeği, döngüsel işe hata sınırı ve diğerleri.
+- **Sınıf eşleştirme:** her yönetici metninde geçen genel sözcükler (`agent`, `ssl`, `password` gibi) tek başına bir
+  sınıfı çağırmıyor; 129-255 arası çıkış kodu metinde de `signal` olarak okunuyor.
+- **Puanlama:** Türkçe ünsüz yumuşaması (bellek/belleği) ve olumsuzluk ("yeniden başlatmayın") doğru değerlendiriliyor.
+
+| Bölüm | Kol | Vaka | Doğru | Yarım | Yanlış | Zararlı |
+| --- | --- | --- | --- | --- | --- | --- |
+| Geliştirme | skill | 48 | 47 | 0 | 1 | 0 |
+| Test | skill (ilk) | 59 | 0 | 3 | 56 | 0 |
+| Test | skill (şimdi) | 59 | 4 | 10 | 44 | 1 |
+
+Skill kolu modeli olmayan bir taban çizgisi: yalnızca skill metninin kendisini puanlıyor. Bir vaka için gereken
+2-4 belirleyici adımın hepsini tek bir metnin taşıması zor; asıl ölçü, modelin bu bağlamla ne yaptığı (ham ve
+harness kolları).
