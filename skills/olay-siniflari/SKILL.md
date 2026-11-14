@@ -12,9 +12,9 @@ classes:
     evidence: [named_in_error, shared_attr, precedent]
   parola:
     title: Parola ya da kimlik bilgisi degisti
-    signs: [logon failure, password, parola, 1326, authentication failed, login failed, credentials, wrong password, tr5167, password for job owner, unable to run command as user]
+    signs: [logon failure, password, parola, 1326, authentication failed, login failed, credentials, wrong password, tr5167, password for job owner, unable to run command as user, credentials validations is inapplicable, without logon user mode]
     cause: servis hesabinin parolasi degistirildi ve agent'in parola deposu eski kaldi; ya da yeni calistiran kullanicinin parolasi hic kaydedilmedi (Windows 'Logon As User', TR5167); Windows'ta calistiran kullanici bir etki alani kullanicisiysa alan adi olmadan yazilmis olabilir (DOMAIN\kullanici); otomatik parola donusunde (CyberArk gibi) Control-M'in kabul etmedigi karakterler de gonderilebiliyor
-    fix: agent parola deposunu yeni parolayla guncelle (ctmpwd), sonra bekleyen isleri yeniden calistir; otomatik donus kullaniliyorsa yeni parolanin izin verilen karakterlerden olustugunu ve CCM'de calistigini dogrula
+    fix: Windows agent'ta Run As kullanicisinin testi 'Credentials validations is inapplicable ... without Logon User mode' diyorsa agent'ta ctmwincfg ile Logon As User'i Y yap ve testi tekrarla; agent parola deposunu yeni parolayla guncelle (ctmpwd), sonra bekleyen isleri yeniden calistir; otomatik donus kullaniliyorsa yeni parolanin izin verilen karakterlerden olustugunu ve CCM'de calistigini dogrula
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, precedent]
   host:
@@ -79,9 +79,9 @@ classes:
     evidence: [named_in_error, shared_attr, precedent]
   yama:
     title: Yama ya da yukseltme sonrasi kirilma
-    signs: [after reboot, after windows update, 0xc0000142, side-by-side, 14001, patch, yama, cannot execute the specified program, version cannot execute this job, after upgrading]
+    signs: [after reboot, after windows update, 0xc0000142, side-by-side, 14001, patch, yama, cannot execute the specified program, version cannot execute this job, after upgrading, apigtw_port, api gateway service port cannot be set]
     cause: sunucuya isletim sistemi yamasi yuklendi, betik calistiricisi bozuldu
-    fix: yamanin etkisini dogrula, betik calistiricisini onar ya da yamayi geri al; agent'i yeniden baslat
+    fix: 9.0.21 yukseltmesi 'Ctms Api Gateway Service port cannot be set' ile duruyorsa kurulumdan once BMC_INST_CTM_APIGTW_PORT ortam degiskenini ayarla (onerilen 8393), portu yonetim sunucusuyla arasindaki guvenlik duvarinda ac ve yukseltmeyi yeniden baslat; yamanin etkisini dogrula, betik calistiricisini onar ya da yamayi geri al; agent'i yeniden baslat
     harmful: [set_ok]
     evidence: [host_change, shared_attr, precedent]
   setok:
@@ -93,7 +93,7 @@ classes:
     evidence: [pred_setok, pred_failed, precedent]
   tarih:
     title: Siparis tarihi uyusmazligi (ODATE, execution_date)
-    signs: [order date, odate, execution_date, logical date, wait condition, condition was added, data interval, keep active, removed by new day, logical_date, catchup, backfill, data_interval, ds_nodash]
+    signs: [order date, odate, execution_date, logical date, wait condition, condition was added, data interval, keep active, removed by new day, logical_date, catchup, backfill, data_interval, ds_nodash, adjust condition, ctm_table_adjust_dummy]
     cause: oncul is New Day'i gecti ve kosulunu bir onceki siparis tarihiyle uretti, ardil kendi tarihini bekliyor; ya da IN kosulundaki PREV onceki siparis tarihini degil ODAT-1'i veriyor (hafta sonu calismayan zincir pazartesi pazar tarihini bekler); Keep Active 0 ise bekleyen ardil New Day'de sessizce siliniyor
     fix: kosulu dogru tarihle elle ekle ve ardili serbest birak; kalici cozum: iki isi ayni siparis tarihiyle siparis et ya da kosula +1 gun kaydirma ver; gece yarisini gecebilecek zincirlerde Keep Active'i 0'dan buyuk yap
     fix_airflow: execution_date (logical_date) aralik baslangicidir, calisma ani degil; sablonda {{ ds }} ya da data_interval_start kullan; istenmeyen gecmis calismalari catchup=False onler

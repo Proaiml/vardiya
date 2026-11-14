@@ -143,6 +143,16 @@ procedures:
     triggers: [slurm, preemption, preempt, requeue, cancelled, iptal, time limit, signal, scavenge]
     steps: oncelik nedeniyle kesilen isin yeniden kuyruga girmesi icin #SBATCH --requeue (kumede PreemptMode=requeue ya da JobRequeue=1 olmali, scontrol show config ile bak); sure sinirindan once temiz kapanma icin #SBATCH --signal=B:TERM@05:00 ve betikte sinyali yakalayip ara durumu kaydet
     caution: yeniden kuyruga alinan is bastan baslar; is ara durumdan devam edecek bicimde yazilmadiysa ciktilari ezebilir
+  kosul_ayarlama:
+    title: Oncul o gun calismiyorken ardilin kosulu beklemeden calismasi (Adjust Condition)
+    triggers: [adjust condition, oncul calismiyor, predecessor does not run, ignore the condition, kosulu yok say, smart, pazartesi, only on monday, kosulunu bekliyor, beklemeden, waits for the condition]
+    steps: SMART klasorde Adjust Condition=Y kullan; zamanlayici sunucusunda config.dat'ta CTM_TABLE_ADJUST_DUMMY=Y ise o gun planlanmayan oncul yerine sahte bir is calisir, kosullari ekler ve ardil bekleme yapmaz; degisikligi bir gunluk planda dene
+    caution: sahte is oncunun Actions sekmesindeki eylemleri de yapar (kosul ekleme, bildirim); bunu bilerek ac
+  kalici_baglanti:
+    title: Sunucu ile agent arasinda guvenlik duvari varken kalici baglanti
+    triggers: [persistent, kalici baglanti, transient, firewall, guvenlik duvari, server to agent port, tek yonlu, one direction, sunucudan agent'a, from server to agent, iletisim]
+    steps: ag ekibinden sunucudan agent'a giden portu iki yonlu actir (port ctm_menu > Parameter Customization > Parameters for Communicating with Specific Agent Platforms altinda); ayni menuden o agent icin baglanti tipini Persistent yap; agent'i yeniden baslatip iletisimi dogrula
+    caution: tum portlari acmak gerekmez; yalnizca ilgili portu
 ---
 
 # Adminlik yordamlari
