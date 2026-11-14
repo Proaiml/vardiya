@@ -6,7 +6,7 @@ var mı; (3) geçmişi bir çizgeye yazıp modele bağlam olarak vermek ve olayd
 Vardiya'ya nasıl girer.
 
 Kaynaklar sonda. Ürün belgeleri resmî sayfalardan okundu; makale ve satıcı rakamları kaynağın kendi iddiasıdır,
-bağımsız doğrulanmadı. BMC topluluk forumu girişe kapalı; forum taraması Stack Overflow'un açık arşiviyle yapıldı (Bölüm 7).
+bağımsız doğrulanmadı. Forum taraması iki kaynaktan: Stack Overflow'un açık arşivi ve BMC topluluğu (giriş yapılarak) (Bölüm 7).
 
 ## 1. Control-M iş tipleri
 
@@ -273,8 +273,36 @@ Sınırlar: Stack Overflow soruları çoğunlukla geliştiricilerden geliyor, ad
 şirket içi deneyim farklı bir dağılım gösterebilir. Sorular sahadaki sıklığı değil, insanların takılıp sorduğu
 şeyi gösteriyor.
 
+### 7.1 BMC topluluğu (Control-M konusu)
+
+14 Kasım 2026'da İlhan'ın hesabıyla girilerek okundu. Konu sayfası 5,95 bin takipçi ve 10,44 bin gönderi gösteriyor.
+"Son etkinlik" listesinin 14 sayfasının 13'ü okundu (yaklaşık 260 gönderi): son bir yılın soruları ve blog yazıları,
+2021'e kadar giden geliştirme istekleri (idea). Birkaç soru açılmak istenince site çok sık istek uyarısı (429) verdi;
+tarama orada bırakıldı, soru içleri ve cevaplar okunamadı. Aşağıdakiler başlıklardan ve cevap sayılarından çıkıyor.
+
+| Tema | Örnek başlıklar (cevap sayısı) | Vardiya için anlamı |
+| --- | --- | --- |
+| Sürüm yükseltme ve platform | Yükseltme ön kontrolü ODBC ve sqlcmd sürümünü bulamıyor; 9.0.21.300 sonrası viewpoint'ler kendiliğinden kapanıyor; Microsoft yamaları sonrası sorun; "CScript.exe 5.6 gerekli" hatası (15); Java 11, log4j, Oracle 26ai ve RHEL desteği; yükseltme sonrası arşiv sunucusu | Olayların önemli bir kısmı iş tanımından değil platform değişikliğinden geliyor: çizgede "değişiklik" yalnızca iş tanımı değil, yama ve yükseltme de olmalı |
+| SaaS'a geçiş ve karma kurulum | Agent sürümlerini kendimiz yönetmek; AS/400 işlerini SaaS'a taşımak; 4.290 AS/400 işi için hacim sınırı; karma kurulumda felaket kurtarma testi; geçmişi SaaS arşivine taşımak; denetim kaydı saklamayı 90 günden 24 aya çıkarmak | Denetim kaydının uzun süre saklanması ve taşınabilmesi gerçek bir ihtiyaç; Vardiya'nın kaydı yerelde ve özet zincirli |
+| Kimlik bilgisi ve güvenlik | CyberArk'taki parolaları CCM'e almak (8); gMSA hesabını "run as" yapamamak; MFT işinde "run as"ın bağlantı profili adına zorlanması ve ctmsec'in reddetmesi; tedarikçilerin anahtara geçmesi; SSL sonrası CCM'de hâlâ HTTP; agent'ın belli komutları çalıştırmasını engellemek; iki CVE sorusu | Parolanın talepte değil kasada durması (0.3'teki parola denetimi) doğru yön; bağlantı profili ile çalıştıran kullanıcı ilişkisi denetlenmeli |
+| Zamanlama anlamı | Cuma sipariş edilip cumartesi biten işin koşulu yürütme değil sipariş tarihiyle ekleniyor, sonraki çalışma etkileniyor (8); Keep Active davranışı; işi gecikmeli sipariş etmek; çocuk iş ancak üç ebeveyn de başarılıysa; döngüsel işte TIME UNTIL sonrası LATESUB uyarısı; önceki yıl değişkeni (7) | Koşul ve sipariş tarihi (ODATE) hataları sahada sürüyor; bench'e "hafta sonuna taşan iş" ailesi eklenebilir |
+| Kaynak bekleme | Nicel kaynak (QR) kullanan iş, kaynakların hepsi boşken bekliyor (27, en çok cevaplanan); z/OS'ta adında `$` olan kaynakta bekleme | Olay tarafında "kaynak bekliyor" ailesinin sahadaki karşılığı; en çok tartışılan konu |
+| Agent ve sunucu işletimi | Agent başlarken pid dosyası bulunamıyor; SAP işleri çalıştıran agent'ta XT_*.log dosyaları 60 GB'ı geçip diski dolduruyor; listede hayalet host grupları; bütün agent'larda debug durumunu görmek; EM ile sunucunun eşzamanı bozuluyor | Hata çizgesindeki "disk doldu" türünün sahadaki bir nedeni: agent'ın kendi logları |
+| Tanım bütünlüğü ve denetim | Kaydetmeden üst üste değişiklik yapınca aynı adla mükerrer iş kaydı oluşuyor; son 7 günün tanım değişikliklerini almak; döngüsel iş tekrar tekrar düşse de tek olay kaydı açmak; aylık hata sayısı raporu | Vardiya'nın talep masası ve olay çizgesinin doğrudan karşıladığı ihtiyaçlar |
+| Geliştirme istekleri (2021-2026) | İzleme ekranında "Ended OK" ile "Set OK" işleri ayırt edilsin; denetim raporunda iş sürüm geçmişi; değişiklik geçmişinde güncel sürüm; hata olunca hizmet masasıyla daha iyi bütünleşme; iş yükü için "ne olurdu" tahmin senaryoları; dinamik tahmin; JVM kullanımını izleme; iş alanı taleplerinden önce not zorunlu olsun; her sürümün bilinen sorunlarının tam listesi | Kullanıcıların istediklerinin çoğu Vardiya'nın tasarımında var: zorla başarılı sayılan işi (sahte yeşil) ayırmak, sürüm geçmişi, zorunlu talep şablonu, emülatörle ileri sarma |
+
+En çok öne çıkan iki gözlem:
+
+- **"Set OK" ile gerçekten başarılı işi ayırma isteği** (2022'den beri açık) Vardiya'nın sahte yeşil kavramının sahadaki
+  karşılığı. İzleme ekranı bu ikisini aynı gösteriyor; aşağı akışta veri hatasının kaynağı buradan kayboluyor.
+- **En çok cevaplanan soru kaynak beklemesi** (27 cevap). Olay tarafının ilk yeni ailesi olarak bu seçilmeli.
+
+Sınırlar: yalnızca başlıklar ve cevap sayıları okundu; son etkinlik listesi bütün forumun küçük bir kesiti ve son bir
+yıla ağırlık veriyor.
+
 Kaynaklar (bölüm 7):
 
+- [BMC Community: Control-M konusu (giriş gerekir)](https://community.bmc.com/s/topic/0TO3n000000WJUCGA4/controlm)
 - [Stack Exchange API, control-m etiketi](https://api.stackexchange.com/docs/questions)
 - [Aynı tabloya yazan işler ve kilit](https://stackoverflow.com/questions/6910999/scheduling-issues-with-control-m)
 - [Saklı yordamın hatası Control-M'e gelmiyor](https://stackoverflow.com/questions/67971977/control-m-does-not-get-error-from-stored-procedure)
