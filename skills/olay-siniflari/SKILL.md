@@ -55,9 +55,10 @@ classes:
     evidence: [recent_change, precedent]
   takili:
     title: Takili, bitmeyen ya da hayalet calisan is
-    signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow, unknown state, istio, sidecar, never completes, hic bitmiyor]
+    signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow, unknown state, istio, sidecar, never completes, hic bitmiyor, stuck in executing, executing state]
     cause: betik bir alt sureci beklemeden cikiyor ya da is ekranda calisiyor gorunuyor ama sureci artik yok (hayalet)
     fix: once surecin gercekten var olup olmadigina bak; varsa betigi alt sureci bekleyecek bicimde duzelt (start /wait, wait) ve takili isi sonlandir; yoksa (hayalet) agent'taki takili durum dosyasini kontrol et ve isi ctm_setnotok ile kapat, force-end degil
+    fix_controlm: Windows'ta .ps1 betigi OS isinde dogrudan 'Script' olarak cagrilirsa is Executing'de takili kalabilir; betigi powershell.exe -File <betik.ps1> ile cagir
     fix_kubernetes: is podunda istio gibi bir yan konteyner varsa ana konteyner bitince yan konteyner surer ve is tamamlanmaz; is bitince yan konteynere cikis istegi gonder (curl -X POST localhost:15000/quitquitquit) ya da bu podda enjeksiyonu kapat
     fix_quartz: uzun isi InterruptableJob olarak yaz ve scheduler.interrupt(jobKey) ile durdur
     harmful: [set_ok]
@@ -153,9 +154,10 @@ classes:
     evidence: [host_change, precedent]
   senkron:
     title: Izleme ekrani sunucuyla senkron degil
-    signs: [no sync, out of sync, gateway, downloading, status not updated, formatting ajf, not getting a response, viewpoint, ctmpsm shows, ekranda gorunmuyor, ekraninda gorunmuyor, not shown in the gui, do not appear in the gui, error code 760, ctm6, cmscommmode, gorunuyor ama, even though it is running, displayed as unavailable, can't find it in the monitoring, bulamiyorum, ordered but not visible]
+    signs: [no sync, out of sync, gateway, downloading, status not updated, formatting ajf, not getting a response, viewpoint, ctmpsm shows, ekranda gorunmuyor, ekraninda gorunmuyor, not shown in the gui, do not appear in the gui, error code 760, ctm6, cmscommmode, gorunuyor ama, even though it is running, displayed as unavailable, can't find it in the monitoring, bulamiyorum, ordered but not visible, output and log not showing, unable to open the output, ciktisini acamiyor, gunlugunu acamiyor, cannot open the output, ciktiyi acamiyor]
     cause: yonetim sunucusunun gecidi (EM gateway) zamanlayici sunucusuyla senkronu kaybetti, cogu kez New Day sonrasi; isler sunucuda calisiyor ama ekrandaki durumlar eski; ekranda gorunmeyen is cogu kez gercekte vardir: viewpoint filtresi ya da koleksiyonu, kullanicinin yetkileri ya da bos SMART klasorleri gizleme secenegi onu saklar
     fix: elle siparis edilen is ekranda yoksa siparis penceresindeki ActionReport'a bak; siparisin gercekten yapilip yapilmadigini ve neden reddedildigini orada gorursun; CCM zamanlayici sunucusunu unavailable gosteriyor ama yapilandirma agent'i (CA) calisiyorsa EM sistem parametresi CmsCommMode'u tcp yerine auto yap ve yapilandirma agent'i ile CMS'yi yeniden baslat; gecit CCM'de Disconnected ve gunlukte CTM6/760 senkron hatasi varsa zamanlayici sunucusundaki 'Control-M/EM TCP/IP Port Number' (ctm_menu) ile CCM'deki sunucu tanimindaki port ayni mi bak, esitleyip gecidi yeniden baslat; ctmpsm'de olup ekranda olmayan is icin viewpoint filtresini ve koleksiyonunu, kullanicinin ve gruplarinin yetkilerini, bos SMART klasorleri gizleme secenegini kontrol et; ekrandaki duruma gore mudahale etme; durumu sunucu tarafinda dogrula (ctmpsm, ctm_agstat); gecidi CCM'den yeniden baslatip yeniden indirmeyi zorla
+    fix_controlm: isler calisiyor ama cikti ve gunluk acilmiyorsa GUI sunucusunu yeniden baslat, ardindan zamanlayici sunucusunun yapilandirma agent'ini durdurup baslat
     harmful: [rerun, set_ok, run_now]
     evidence: [host_change, precedent]
   sertifika:
