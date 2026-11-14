@@ -83,7 +83,7 @@ classes:
   tarih:
     title: Siparis tarihi uyusmazligi (ODATE, execution_date)
     signs: [order date, odate, execution_date, logical date, wait condition, condition was added, data interval, keep active, removed by new day]
-    cause: oncul is New Day'i gecti ve kosulunu bir onceki siparis tarihiyle uretti, ardil kendi tarihini bekliyor; Keep Active 0 ise bekleyen ardil New Day'de sessizce siliniyor
+    cause: oncul is New Day'i gecti ve kosulunu bir onceki siparis tarihiyle uretti, ardil kendi tarihini bekliyor; ya da IN kosulundaki PREV onceki siparis tarihini degil ODAT-1'i veriyor (hafta sonu calismayan zincir pazartesi pazar tarihini bekler); Keep Active 0 ise bekleyen ardil New Day'de sessizce siliniyor
     fix: kosulu dogru tarihle elle ekle ve ardili serbest birak; kalici cozum: iki isi ayni siparis tarihiyle siparis et ya da kosula +1 gun kaydirma ver; gece yarisini gecebilecek zincirlerde Keep Active'i 0'dan buyuk yap
     harmful: [run_now, set_ok]
     evidence: [crossed_new_day, pred_failed, precedent]
@@ -110,15 +110,15 @@ classes:
     evidence: [host_change, precedent]
   aktarim:
     title: Dosya aktarimi baglantisi kurulamiyor
-    signs: [jschexception, session.connect, connection reset, host key, auth fail, publickey, ssh key, sftp, ftps, smb transfer]
+    signs: [jschexception, session.connect, connection reset, host key, auth fail, publickey, ssh key, sftp, ftps, smb transfer, algorithm negotiation fail, server_host_key]
     cause: karsi tarafta anahtar ya da algoritma degisti, baglanti profili guncel degil ya da uzun aktarimda baglanti zaman asimina ugradi
     fix: baglanti profilini karsi tarafla dogrula (anahtar, host key, algoritma) ve profilden baglanti testi yap; uzun aktarimlarda keepalive ve zaman asimi ayarini gozden gecir; dosya adinda bosluk varsa tirnakla; sonra yeniden calistir
     harmful: [set_ok]
     evidence: [named_in_error, shared_attr, recent_change, precedent]
   saat_dilimi:
     title: Yaz saati ya da saat dilimi kaymasi
-    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset]
-    cause: yaz saati gecisinden sonra sunucu yeniden baslatilmamis ya da saat dilimi bilgisi guncel degil; isler bir saat kayiyor
+    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset, tomorrow's odate]
+    cause: yaz saati gecisinden sonra sunucu yeniden baslatilmamis ya da saat dilimi bilgisi guncel degil; isler bir saat kayiyor; saat dilimi tanimli isler bugunun yerine yarinin ODATE'iyle siparis edilebiliyor
     fix: saat dilimi dosyalarini guncelle, sunucuyu gecisten sonra yeniden baslat, etkilenen islerin baslama saatini ve SLA'sini dogrula; gecis tarihlerinden once kontrol listesi calistir
     harmful: [set_ok]
     evidence: [host_change, precedent]
