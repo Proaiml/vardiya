@@ -53,7 +53,8 @@ CATALOG = {
 SIGNS = {
     "kilit": ("lock", "resource busy", "nowait", "deadlock", "kilit", "ora-00054", "55p03", "timeout period exceeded"),
     "parola": ("logon failure", "password", "parola", "1326", "authentication failed", "login failed", "credentials"),
-    "host": ("agent", "unavailable", "not responding", "wait host", "communication", "unreachable"),
+    "host": ("agent", "unavailable", "not responding", "wait host", "communication", "unreachable", "data pipe",
+             "certification path", "sslhandshake"),
     "sessiz": ("rc=0", "return code 0", "row count", "rows (expected", "expected about", "beklenen"),
     "dosya": ("did not arrive", "not arrive", "file watcher", "no file matching", "dosya gelmedi"),
     "degisiklik": ("not found", "no such file", "exit 127", "rc 127", "command not found"),

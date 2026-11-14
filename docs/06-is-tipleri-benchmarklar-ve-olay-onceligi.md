@@ -300,6 +300,19 @@ En çok öne çıkan iki gözlem:
 Sınırlar: yalnızca başlıklar ve cevap sayıları okundu; son etkinlik listesi bütün forumun küçük bir kesiti ve son bir
 yıla ağırlık veriyor.
 
+Sonradan okunan bir soru (14 Kasım 2026, tek sayfa): **cuma sipariş edilip cumartesi biten işin koşulu sipariş
+tarihiyle ekleniyor, cumartesi sipariş edilen ardıl iş bekleyip kalıyor** (8 cevap, 126 görüntülenme). BMC'nin ve
+kullanıcıların önerdiği çözümler: iki işi aynı sipariş tarihiyle aynı akışta sipariş etmek; koşulu "tarihsiz" (No
+Date) üretip ardıl bitince silmek; ya da koşul tarihine +1 gün kaydırma vermek. Soran kişi "herhangi bir tarih"
+seçeneğini denemiş, ardıl yine beklemiş; konu çözülmemiş görünüyor. Vardiya'ya karşılığı: farklı sipariş sıklığındaki
+iki işi bağlayan talepte (haftalık ile günlük, ya da gece yarısını geçen öncül) sipariş tarihi uyarısı; takvim uyumu
+denetiminin (`E_CAL_DEP`) bir sonraki adımı.
+
+Aynı sayfanın "öne çıkan bilgi makaleleri" kutusunda agent tarafı hatalar görünüyor: "failed to write submit message
+to AM data pipe" (hata 232), sertifika yolu bulunamadı (SunCertPathBuilderException), SAP önbellek dosyalarının
+silinmemesi ve gereken güvenlik duvarı portları. Bunların ilk ikisi hata çizgesinde "agent iletişimi" işaretlerine
+eklendi; üçüncüsü disk dolma uyarısının bir başka nedeni.
+
 Kaynaklar (bölüm 7):
 
 - [BMC Community: Control-M konusu (giriş gerekir)](https://community.bmc.com/s/topic/0TO3n000000WJUCGA4/controlm)
