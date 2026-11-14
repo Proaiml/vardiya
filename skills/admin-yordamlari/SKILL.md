@@ -173,6 +173,11 @@ procedures:
     triggers: [sub folder, alt klasor, smart folder, ended not ok, folder ended, klasor hata, herhangi bir is, any job fails]
     steps: 'When Folder Ended Not OK' ancak klasordeki butun isler bittikten sonra (basarili ya da degil) devreye girer; herhangi bir isin hatasinda hemen tetiklemek istiyorsan her ise hata durumunda kosul ekleyen bir On-Do tanimla ya da hizmet akisini BIM ile izleyip hata aninda kosul ekletmeyi kullan
     caution: klasor seviyesindeki kosul ani bir hata bildirimi icin uygun degildir
+  run_now_smart:
+    title: SMART klasordeki bir isi hemen calistirmak (Run Now calismiyor)
+    triggers: [run now, simdi calistir, smart folder, smart klasor, cyclic folder, container, kosullari atladi ama]
+    steps: Run Now isin kosullarini ve zaman penceresini atlar ama is bir SMART klasorun icindeyse klasor de calisir durumda (zaman penceresi icinde) olmalidir; klasor penceresi disindaysa klasoru de serbest birak ya da isi klasorden bagimsiz olarak siparis et
+    caution: Run Now kosullari atladigi icin oncul tamamlanmadan veri eksik calisabilir; once onculun durumuna bak
 ---
 
 # Adminlik yordamlari

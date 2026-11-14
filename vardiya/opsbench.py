@@ -71,7 +71,7 @@ PRODUCTS = {"airflow": ["airflow", " dag", "dag ", "dags", "operator", "xcom"], 
             "slurm": ["slurm", "sbatch", "squeue", "srun", "sinfo", "scontrol"],
             "autosys": ["autosys", "jil", "sendevent", "autorep"],
             "kubernetes": ["kubernetes", "kubectl", "k8s", "cronjob", " pod"], "quartz": ["quartz"],
-            "controlm": ["control-m", "ctm", "ccm", "user daily", "new day"]}
+            "controlm": ["control-m", "ctm", "ccm", "user daily", "new day", " agent", "smart folder", "oscompstat"]}
 
 
 def product(text):
