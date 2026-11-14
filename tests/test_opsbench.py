@@ -35,6 +35,12 @@ class HarnessSide(unittest.TestCase):
         self.assertEqual(opsbench.match_class(self.classes, CASE["prompt"]), "sinyal")
         self.assertIsNone(opsbench.match_class(self.classes, "How do I run a script on the agent?"))
 
+    def test_triggers_survive_turkish_suffixes(self):
+        from vardiya.skills import soft_in
+        self.assertTrue(soft_in("baslama saati", "islerin baslama ve bitis saatlerini"))
+        self.assertTrue(soft_in("kilit", "kilitli tablo"))
+        self.assertFalse(soft_in("baslama saati", "bitis zamani"))
+
     def test_procedures_need_two_triggers(self):
         self.assertIn("ajf_toplu_islem", match_procedures(self.procs, "hold and kill all jobs of a folder via ctmpsm"))
         self.assertEqual(match_procedures(self.procs, "hold"), [])

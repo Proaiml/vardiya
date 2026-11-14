@@ -198,6 +198,41 @@ procedures:
     triggers: [autodiscover, otomatik kesif, automatically discovered, discovering, kendiliginden, host_autodiscover, kesfedilip, kesfediliyor, istemedigimiz agent]
     steps: config.dat'a HOST_AUTODISCOVER N ekle; ctmipc -DEST ALL -MSGID CFG ile yapilandirmayi yenile; yanlislikla kesfedilmis agent'lari sil ve yeniden gorunmediklerini dogrula
     caution: kesfi kapatinca yeni agent'lari elle tanitmak gerekir
+  tek_tekrar_bildirim:
+    title: Isi hatada bir kez yeniden calistirip yalnizca ikinci hatada bildirim gondermek
+    triggers: [rerun on failure, bir kez yeniden, tek tekrar, ilk hatada bildirim gitmesin, notification only, ikinci hatada, sadece tekrar basarisiz olursa, bir kez yeniden, e-posta gitmesin, ikinci deneme, basarisiz olursa]
+    steps: isi dongusel tanimla: 5 dakikada bir, bitisten itibaren (from end), Maximum Reruns=2; On-Do: is OK bitince Stop Cyclic; 'Job's Number of Failures' = 2 olunca e-posta gonder ve gerekiyorsa kosul ekle
+    caution: temizlik adimi olmayan yukleme islerinde otomatik tekrar mukerrer veri yazabilir
+  agent_discovering_sil:
+    title: Discovering durumunda kalan agent'i devre disi birakip silmek
+    triggers: [discovering, agent sil, delete the agent, kesif durumunda, disable the agent, ctm_agstat, discovering durumunda, listeden, kaldiririz, artik var olmayan]
+    steps: once agent'in gercekten gereksiz oldugunu dogrula; sunucuda ctm_agstat -AGSTAT <agent dugum adi> R D ile Disabled yap; sonra ctm_menu ya da CCM'den sil
+    caution: gecici iletisim sorunu yuzunden Discovering'de kalan bir uretim agent'ini silme; once iletisimi tani
+  pg_parola_sifirlama:
+    title: Zamanlayicinin PostgreSQL yonetici kullanicisinin kaybolan parolasini sifirlamak
+    triggers: [postgres password, postgres parola, lost the password, parolayi kaybettik, dba password, reset the password, pg_hba, postgres kullanici, parolasini kaybettik]
+    steps: tum zamanlayici ve yonetim sunucusu sureclerini durdur; kurulum dizinlerinin (Windows'ta kayit defterinin) yedegini al; PostgreSQL'i gecici olarak isletim sistemi kullanicisina parolasiz giris verecek bicimde ayarla (pg_hba.conf), baglanip ALTER USER postgres WITH PASSWORD '...' calistir; kimlik dogrulama ayarini eski haline getir ve surecleri baslat
+    caution: parolasiz giris ayarini acik birakma; isin sonunda mutlaka geri al
+  aktarim_dosya_adi:
+    title: Aktarilan dosyanin adina tarih ve saat eklemek
+    triggers: [rename, yeniden adlandir, dosya adina tarih, date and time in the file name, after completion, aktarim sonrasi, file transfer, dosya aktarim]
+    steps: dosya aktarim isinin Advanced > General > After Completion bolumunde, aktarim modulunun aktarim sonunda doldurdugu degiskenleri (dosya adi, tarih, saat) kullanarak yeniden adlandirma tanimla; degisken adlarini modulun yonetici kilavuzundan al ve once bir deneme isinde dogrula
+    caution: hedefte ayni adla dosya varsa ustune yazmamak icin tarih-saat bicimini benzersiz sec
+  global_degisken_degeri:
+    title: Tek bir global degiskenin degerini komut satirindan gormek
+    triggers: [global variable, global degisken, ctmvar, ctmstvar, degiskenin degeri, value of a specific]
+    steps: ctmvar -action LIST tum global degiskenleri listeler; tek birinin degeri icin ctmstvar 0 "%%DEGISKEN_ADI" kullan (0: belirli bir siparis numarasi olmadan)
+    caution: degeri degistirmeden once onu kullanan isleri kontrol et
+  ajf_zaman_listesi:
+    title: Aktif ortamdaki islerin baslama ve bitis saatlerini komut satirindan listelemek
+    triggers: [ctmpsm, started time, ended time, baslama saati, bitis saati, listall, active jobs file, aktif ortam listesi]
+    steps: zamanlayici sunucusunda ctmpsm -LISTALL TIME ile aktif ortamdaki islerin durumunu, baslama ve bitis saatini al; ciktiyi dosyaya yonlendirip rapora donustur
+    caution: buyuk ortamlarda sik calistirmak sunucuya yuk bindirir; zamanlanmis bir iste seyrek calistir
+  ai_proxy:
+    title: Application Integrator islerini bir proxy uzerinden web servisine baglamak
+    triggers: [proxy, application integrator, ai job, rest job, web service, vekil sunucu, aicm.properties]
+    steps: tasarim arayuzu icin AI web arayuzunde Settings > Proxy ayarlarini doldur; islerin calismasi icin agent'ta CM/AP/data/AI altinda (surume gore yol degisir) aicm.properties dosyasina proxy host ve port degerlerini yaz ve modulu yeniden baslat
+    caution: proxy kimlik bilgilerini dosyaya acik metin olarak yazma; kurumun gizli bilgi kasasi ya da baglanti profili kullan
 ---
 
 # Adminlik yordamlari

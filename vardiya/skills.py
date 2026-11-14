@@ -216,10 +216,25 @@ def load_procedures(directory):
     return out
 
 
+def _stem(word):
+    """A rough Turkish/English stem: long words lose their last two letters (saati -> saa, kilitli -> kilit)."""
+    return word[:max(4, len(word) - 2)] if len(word) >= 5 else word
+
+
+def soft_in(phrase, text):
+    """The phrase occurs in the text, exactly or word by word with suffixes ('baslama saati' in
+    'baslama ve bitis saatlerini'). Every word of the phrase must start some word of the text."""
+    p, t = fold(phrase), fold(text)
+    if p in t:
+        return True
+    words = re.findall(r"[a-z0-9_.%$-]+", t)
+    parts = re.findall(r"[a-z0-9_.%$-]+", p)
+    return bool(parts) and all(len(w) >= 3 and any(x.startswith(_stem(w)) for x in words) for w in parts)
+
+
 def match_procedures(procedures, text, need=2, limit=2):
     """The procedures whose triggers occur in the text, best first; a procedure needs `need` hits."""
-    low = fold(text)
-    scored = sorted(((sum(fold(t) in low for t in p["triggers"]), name) for name, p in procedures.items()),
+    scored = sorted(((sum(soft_in(t, text) for t in p["triggers"]), name) for name, p in procedures.items()),
                     reverse=True)
     return [name for hits, name in scored if hits >= need][:limit]
 
