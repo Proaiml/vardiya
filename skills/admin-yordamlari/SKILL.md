@@ -55,8 +55,8 @@ procedures:
     caution: yonetim sunucusunu yeniden kurmak ya da veritabanina dokunmak gerekmez
   dongusel_hata_siniri:
     title: Dongusel isi belirli sayida hatadan sonra durdurmak ya da bir kez yeniden calistirmak
-    triggers: [cyclic, dongusel, number of failures, kac kez, fails for, stop cyclic, hata sayisi, ust uste, times in a row, consecutive]
-    steps: isin On-Do kosullarina 'Job's Number of Failures' = N ekle ve eylem olarak Stop Cyclic Run (ya da Rerun) sec; eski surumlerde %%FailCount degiskenini cikiya yazip ona gore On-Do tanimla; tanimi dagitip sonraki dongude dogrula
+    triggers: [cyclic, dongusel, number of failures, kac kez, fails for, stop cyclic, hata sayisi, ust uste, times in a row, consecutive, hata alinca, dongu devam, durmasini, stop when it fails]
+    steps: ilk hatada durmasi icin On-Do'da ON COMPSTAT>0 DO Stop Cyclic tanimla; belirli sayida hatadan sonra durmasi icin isin On-Do kosullarina 'Job's Number of Failures' = N ekle ve eylem olarak Stop Cyclic Run (ya da Rerun) sec; eski surumlerde %%FailCount degiskenini cikiya yazip ona gore On-Do tanimla; tanimi dagitip sonraki dongude dogrula
     caution: dongusel is hata alsa da bir sonraki donguye planlanir; hata sinirini koymadan donguyu elle durdurup birakmak ertesi gun sorunu tekrarlar
   cron_sorun_giderme:
     title: Cron isi calismiyor, nereden baslanir
@@ -168,6 +168,11 @@ procedures:
     triggers: [clean up the active environment, aktif ortami temizle, aktif ortami bosalt, empty the ajf, tum isleri sil, all jobs conditions and resources]
     steps: bu islem aktif ortamdaki butun isleri, kosullari, degiskenleri, kontrol ve sayisal kaynaklari siler; yalnizca bilincli olarak (test ortami, felaket sonrasi temiz baslangic) ve degisiklik onayiyla yapilir; once sayisal kaynaklari ve gerekli kosullari disari aktar, sunucunun belgelenmis temizleme adimlarini uygula, sonra kaynaklari geri tanimla ve planlari yeniden siparis et
     caution: tek bir klasor ya da birkac takili is icin bu yol kullanilmaz; once ctmpsm ile yalnizca ilgili isleri tut ve sil
+  klasor_hata_kosulu:
+    title: Bir alt klasordeki herhangi bir is hata alinca baska bir akisi tetiklemek
+    triggers: [sub folder, alt klasor, smart folder, ended not ok, folder ended, klasor hata, herhangi bir is, any job fails]
+    steps: 'When Folder Ended Not OK' ancak klasordeki butun isler bittikten sonra (basarili ya da degil) devreye girer; herhangi bir isin hatasinda hemen tetiklemek istiyorsan her ise hata durumunda kosul ekleyen bir On-Do tanimla ya da hizmet akisini BIM ile izleyip hata aninda kosul ekletmeyi kullan
+    caution: klasor seviyesindeki kosul ani bir hata bildirimi icin uygun degildir
 ---
 
 # Adminlik yordamlari

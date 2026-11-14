@@ -39,9 +39,9 @@ classes:
     evidence: [recent_change, precedent]
   dosya:
     title: Beklenen dosya gelmedi ya da izleyici gormedi
-    signs: [did not arrive, not arrive, file watcher, no file matching, dosya gelmedi, ctmfw, wildcard, unsupported mode]
+    signs: [did not arrive, not arrive, file watcher, no file matching, dosya gelmedi, ctmfw, wildcard, unsupported mode, minimum size, min size, minimum boyut, dosya izleme, dosyayi bulamiyor, dosyayi gormuyor]
     cause: kaynak sistem dosyayi gec gonderiyor; ya da dosya geldi ama izleyici gormedi (joker karakterli izleme, dosyanin izleyiciden once gelmesi, silinip yeniden gelen dosya)
-    fix: Unix'te joker karakterli izlemede 'unsupported mode' cikiyorsa yalnizca dosya adini tirnak icine al, yolu tirnaga koyma (ctmfw /yol/ "DOSYA*.csv"); once dosya gercekten yerinde mi bak; yerinde degilse kaynak sistemin sahibine haber ver ve dosya gelince zinciri serbest birak, bos dosyayla devam etme; yerindeyse izleyiciyi yeniden taratma secenegiyle ya da tam adla calistir
+    fix: dosya yerindeyse izleyicinin minimum boyut ayarina bak; belirtilen boyuttan kucuk dosya gorulmez; Unix'te joker karakterli izlemede 'unsupported mode' cikiyorsa yalnizca dosya adini tirnak icine al, yolu tirnaga koyma (ctmfw /yol/ "DOSYA*.csv"); once dosya gercekten yerinde mi bak; yerinde degilse kaynak sistemin sahibine haber ver ve dosya gelince zinciri serbest birak, bos dosyayla devam etme; yerindeyse izleyiciyi yeniden taratma secenegiyle ya da tam adla calistir
     harmful: [set_ok, run_now]
     evidence: [external_source, precedent]
   degisiklik:
@@ -152,9 +152,9 @@ classes:
     evidence: [host_change, precedent]
   senkron:
     title: Izleme ekrani sunucuyla senkron degil
-    signs: [no sync, out of sync, gateway, downloading, status not updated, formatting ajf, not getting a response, viewpoint, ctmpsm shows, ekranda gorunmuyor, ekraninda gorunmuyor, not shown in the gui, do not appear in the gui, error code 760, ctm6, cmscommmode, gorunuyor ama, even though it is running, displayed as unavailable]
+    signs: [no sync, out of sync, gateway, downloading, status not updated, formatting ajf, not getting a response, viewpoint, ctmpsm shows, ekranda gorunmuyor, ekraninda gorunmuyor, not shown in the gui, do not appear in the gui, error code 760, ctm6, cmscommmode, gorunuyor ama, even though it is running, displayed as unavailable, can't find it in the monitoring, bulamiyorum, ordered but not visible]
     cause: yonetim sunucusunun gecidi (EM gateway) zamanlayici sunucusuyla senkronu kaybetti, cogu kez New Day sonrasi; isler sunucuda calisiyor ama ekrandaki durumlar eski; ekranda gorunmeyen is cogu kez gercekte vardir: viewpoint filtresi ya da koleksiyonu, kullanicinin yetkileri ya da bos SMART klasorleri gizleme secenegi onu saklar
-    fix: CCM zamanlayici sunucusunu unavailable gosteriyor ama yapilandirma agent'i (CA) calisiyorsa EM sistem parametresi CmsCommMode'u tcp yerine auto yap ve yapilandirma agent'i ile CMS'yi yeniden baslat; gecit CCM'de Disconnected ve gunlukte CTM6/760 senkron hatasi varsa zamanlayici sunucusundaki 'Control-M/EM TCP/IP Port Number' (ctm_menu) ile CCM'deki sunucu tanimindaki port ayni mi bak, esitleyip gecidi yeniden baslat; ctmpsm'de olup ekranda olmayan is icin viewpoint filtresini ve koleksiyonunu, kullanicinin ve gruplarinin yetkilerini, bos SMART klasorleri gizleme secenegini kontrol et; ekrandaki duruma gore mudahale etme; durumu sunucu tarafinda dogrula (ctmpsm, ctm_agstat); gecidi CCM'den yeniden baslatip yeniden indirmeyi zorla
+    fix: elle siparis edilen is ekranda yoksa siparis penceresindeki ActionReport'a bak; siparisin gercekten yapilip yapilmadigini ve neden reddedildigini orada gorursun; CCM zamanlayici sunucusunu unavailable gosteriyor ama yapilandirma agent'i (CA) calisiyorsa EM sistem parametresi CmsCommMode'u tcp yerine auto yap ve yapilandirma agent'i ile CMS'yi yeniden baslat; gecit CCM'de Disconnected ve gunlukte CTM6/760 senkron hatasi varsa zamanlayici sunucusundaki 'Control-M/EM TCP/IP Port Number' (ctm_menu) ile CCM'deki sunucu tanimindaki port ayni mi bak, esitleyip gecidi yeniden baslat; ctmpsm'de olup ekranda olmayan is icin viewpoint filtresini ve koleksiyonunu, kullanicinin ve gruplarinin yetkilerini, bos SMART klasorleri gizleme secenegini kontrol et; ekrandaki duruma gore mudahale etme; durumu sunucu tarafinda dogrula (ctmpsm, ctm_agstat); gecidi CCM'den yeniden baslatip yeniden indirmeyi zorla
     harmful: [rerun, set_ok, run_now]
     evidence: [host_change, precedent]
   sertifika:
@@ -167,7 +167,7 @@ classes:
   sinyal:
     title: Is bir sinyalle sonlandirildi (cikis kodu 128 ve ustu)
     signs: [signal, sigsegv, segmentation fault, oom-killer, killed process, core dumped, oomkilled, out_of_memory, exceeded memory limit, maxrss, sigterm, received sigterm]
-    cause: is kendi hatasiyla degil disaridan gelen bir sinyalle bitti; kod 128 arti sinyal numarasidir (137 SIGKILL, 143 SIGTERM, 139 SIGSEGV). Sik nedenler isletim sisteminin bellek doldugunda sureci oldurmesi, sure asiminda SHOUT ya da operatorun isi oldurmesi, programin cokmesi
+    cause: is kendi hatasiyla degil disaridan gelen bir sinyalle bitti; kod 128 arti sinyal numarasidir (137 SIGKILL, 143 SIGTERM, 139 SIGSEGV). Sik nedenler isletim sisteminin bellek doldugunda sureci oldurmesi, sure asiminda SHOUT ya da operatorun isi oldurmesi, programin cokmesi; bu yorum Unix icin gecerlidir; Windows'ta ayni sayilar Win32 hata kodudur
     fix: once sinyali ve kimin gonderdigini bul (sistem gunlugunde oom-killer, Control-M gunlugunde kill ya da SHOUT, operator islemleri); bellek yuzundense isin bellek ihtiyacini ya da sunucu bellegini ele al, sure siniri yuzundense zaman asimi sinifina bak; ayni kosulda yeniden calistirmak ayni sonucu verir
     fix_airflow: gorev SIGTERM aldiysa once disaridan durdurulup durdurulmadigina bak (clear, mark failed, execution_timeout, kalp atisi kesilen zombie gorev); alt surecler erken olduruluyorsa killed_task_cleanup_time degerini artir
     fix_slurm: sacct -j <id> -o jobid,maxrss,reqmem,state ile bellek kullanimini gor (OUT_OF_MEMORY); --mem degerini artir; is sure sinirina yaklasirken temiz kapanmak icin #SBATCH --signal=B:TERM@05:00 ile sinyali onceden iste ve betikte yakala
@@ -206,9 +206,9 @@ classes:
     evidence: [recent_change, precedent]
   windows_yetki:
     title: Windows'ta isi calistirma yetkisi yok
-    signs: [createprocessasuser, 1314, a required privilege is not held, tr5111, fork failure, failed to execute due to fork failure, logon as a batch job]
-    cause: calistiran kullanicinin ya da agent servis hesabinin Windows haklari eksik (Logon as User aciksa 'Replace a process level token'), cmd.exe uzerinde okuma ve calistirma izni yok ya da antivirus agent dosyalarini engelliyor
-    fix: 'Logon as a batch job' hatasinda calistiran kullaniciya su haklari ver: Logon as a batch job, Log on as a service, Replace a process level token, Adjust memory quotas for a process; ayni kullanici 'Deny' ilkelerinde olmamali; Logon as User aciksa calistiran kullaniciyi Yerel Guvenlik Ilkesi'nde 'Replace a process level token' hakkina ekle (oturumu kapatip acmak ya da yeniden baslatmak gerekebilir); is sahibinin ya da servis hesabinin %SYSTEMROOT%\System32\cmd.exe uzerinde okuma ve calistirma iznini dogrula; antivirus agent dosyalarini engelliyorsa haric tut
+    signs: [createprocessasuser, 1314, a required privilege is not held, tr5111, fork failure, failed to execute due to fork failure, logon as a batch job, oscompstat 128, error_wait_no_children]
+    cause: calistiran kullanicinin ya da agent servis hesabinin Windows haklari eksik (Logon as User aciksa 'Replace a process level token'), cmd.exe uzerinde okuma ve calistirma izni yok ya da antivirus agent dosyalarini engelliyor; Windows'ta 128 ve ustu cikis kodlari Unix'teki gibi sinyal anlamina gelmez
+    fix: Windows'ta cikis kodlari sinyal degil Win32 hata kodudur: OSCOMPSTAT 128 (ERROR_WAIT_NO_CHILDREN) genellikle bir .vbs'nin dogrudan calistirilmasindan gelir; betigi cscript /nologo <betik.vbs> ile ya da bir .bat sarmalayicidan calistir; 'Logon as a batch job' hatasinda calistiran kullaniciya su haklari ver: Logon as a batch job, Log on as a service, Replace a process level token, Adjust memory quotas for a process; ayni kullanici 'Deny' ilkelerinde olmamali; Logon as User aciksa calistiran kullaniciyi Yerel Guvenlik Ilkesi'nde 'Replace a process level token' hakkina ekle (oturumu kapatip acmak ya da yeniden baslatmak gerekebilir); is sahibinin ya da servis hesabinin %SYSTEMROOT%\System32\cmd.exe uzerinde okuma ve calistirma iznini dogrula; antivirus agent dosyalarini engelliyorsa haric tut
     harmful: [set_ok]
     evidence: [shared_attr, host_change, precedent]
   veritabani:
