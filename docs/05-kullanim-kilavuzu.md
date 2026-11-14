@@ -94,6 +94,22 @@ python -m vardiya talep --file benim-talebim.txt --site benim-ortamim.json
 | `degisiklik` | `klasor`, `is_adi` ve yalnızca değişecek alanlar | Yalnızca yazılan alanlar değişir |
 | `kaldir` | Yalnızca `klasor` ve `is_adi` | İş kaldırılır; başka iş ona bağımlıysa iade edilir |
 
+İş tipleri ve her tipin ek alanları:
+
+| `tip` | `komut` ne demek | Ek zorunlu alanlar |
+| --- | --- | --- |
+| `komut` | İşletim sistemi komutu ya da betik, tam yol | — |
+| `dosya_izleme` | İzlenecek dosya yolu ya da deseni | `sure_siniri`: dakika, 1-1440 (yeni işte) |
+| `veritabani` | Çalışacak SQL dosyası | `baglanti`: ortamdaki bir veritabanı profili |
+| `dosya_aktarimi` | Kaynak yol | `baglanti`: aktarım profili; `hedef`: hedef yol, kaynaktan farklı |
+| `ssh` | Uzak sunucuda çalışacak komut | `baglanti`: ssh profili |
+| `bos` | Yazılmaz (Dummy) | — |
+
+Bağlantı profilleri ortam dosyasında `connections` altında tanımlıdır; profilin türü işin tipiyle aynı olmalıdır.
+Talebin hiçbir alanına parola ya da gizli bilgi yazılmaz: `password=`, `sifre:`, `kullanici:parola@sunucu` ya da
+`kullanici/parola@veritabani` görülen talep gerekçesiyle iade edilir ve önyüz parolayı hiçbir yerde saklamaz ya da
+göstermez. Örnekler: `ornekler/talep-veritabani.txt`, `ornekler/talep-aktarim-parola.txt`.
+
 `gunler` alanına takvim adı yazılabilir (`IS_GUNU`) ya da günler kendi cümlenizle anlatılabilir ("her ayın son iş
 günü"). Kalıp ifadeleri kod okur; gerisi için bir model bağlı olmalıdır. Model bağlı değilken okunamayan ifade iade
 edilir, tahmin edilmez.

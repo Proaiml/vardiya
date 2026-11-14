@@ -55,6 +55,15 @@ class OfficeTest(unittest.TestCase):
         self.assertEqual(office.submit(NEW)["outcome"], "proposed")
         self.assertEqual(office.site()["changed"], [])
 
+    def test_a_password_in_a_request_is_returned_and_never_kept(self):
+        office = web.Office()
+        text = (web.ROOT / "ornekler" / "talep-aktarim-parola.txt").read_text(encoding="utf-8")
+        out = office.submit(text)
+        self.assertEqual(out["outcome"], "returned")
+        self.assertNotIn("Gizli2026", json.dumps(office.history, ensure_ascii=False))
+        self.assertEqual(office.submit((web.ROOT / "ornekler" / "talep-veritabani.txt").read_text(encoding="utf-8"))["outcome"],
+                         "closed")
+
     def test_bench_summary_reads_only_the_results_folder(self):
         self.assertIsNone(web.bench_summary("../README.md")["file"])
 

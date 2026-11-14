@@ -160,7 +160,7 @@ RUNBOOK = (
     "3. Read list_env and list_defs before acting. 'yeni' must name a job that does not exist; 'degisiklik' must name "
     "a job that exists in the stated folder. Otherwise return the request.\n"
     "4. Check against the site: folder exists; name matches standards.name_regex and starts with the folder prefix; "
-    "type is 'komut' or 'dosya_izleme'; host exists and run_as is one of its users; time is HH:MM (00:00-23:59); "
+    "type is one of komut, dosya_izleme, veritabani, dosya_aktarimi, ssh, bos (rule 11); host exists and run_as is one of its users; time is HH:MM (00:00-23:59); "
     "command is an absolute path; notify ends with standards.notify_suffix; every dependency is an existing job; "
     "the job must not depend on itself and the new dependencies must not create a cycle. If any check fails, return.\n"
     "5. `gunler` must become one of the site's calendar names. If it is written in free text, use forecast to compare "
@@ -175,7 +175,12 @@ RUNBOOK = (
     "10. A job may only run on days when every job it depends on also runs, otherwise it waits forever. Compare the "
     "calendars with forecast: for a new job or a calendar/dependency change, the job's run dates must all be run dates "
     "of each predecessor, and the run dates of the jobs that depend on it must all be run dates of the job. If not, "
-    "return the request.")
+    "return the request.\n"
+    "11. Job types: komut (komut = OS command), dosya_izleme (komut = path to watch; a new one needs sure_siniri, "
+    "minutes 1-1440), veritabani (komut = SQL file; needs baglanti), dosya_aktarimi (komut = source path, hedef = "
+    "target path, different from the source; needs baglanti), ssh (komut = remote command; needs baglanti), bos "
+    "(Dummy: no komut). baglanti must be a connection profile of the site of the same kind. No field may contain a "
+    "password or other secret. Otherwise return the request.")
 
 
 def _raw_args(out):

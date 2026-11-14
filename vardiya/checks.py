@@ -5,9 +5,19 @@ agent could not see. Every check here is something an admin does by eye.
 """
 import re
 
+from . import intake
 from .skills import holds
 
-TYPES = ("komut", "dosya_izleme")
+TYPES = ("komut", "dosya_izleme", "veritabani", "dosya_aktarimi", "ssh", "bos")
+# What each job type needs beyond the common fields. "command" means: komut the OS command, dosya_izleme the
+# path or pattern to watch, veritabani the SQL file, dosya_aktarimi the source path, ssh the remote command.
+NEEDS = {"komut": ("command",), "dosya_izleme": ("command", "timeout"), "veritabani": ("command", "connection"),
+         "dosya_aktarimi": ("command", "connection", "target"), "ssh": ("command", "connection"), "bos": ()}
+CONNECTION_KIND = ("veritabani", "dosya_aktarimi", "ssh")
+TEMPLATE_KEY = {field: key for key, field in intake.FIELDS.items()}  # definition field -> template key
+# password=..., sifre: ..., a URL with user:password@, an Oracle connect string user/password@db
+SECRET = re.compile(r"(passw(or)?d|parola|sifre|şifre|pwd)\s*[=:]|://[^/\s:@]+:[^/\s@]+@|(^|\s)[\w.-]+/[^\s/@]+@\S+",
+                    re.I)
 REQUIRED = ("name", "folder", "type", "host", "run_as", "command", "calendar", "time", "notify", "description")
 TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
@@ -41,9 +51,11 @@ def check(env, jobs, d, is_new, rules=(), runs=None):
         add("E_EXISTS", "name", f"{name} zaten tanimli; yeni is degil, degisiklik talebi acilmali")
     if not is_new and name not in jobs:
         add("E_MISSING", "name", f"{name} tanimli degil; degisiklik degil, yeni is talebi acilmali")
+    kind = d.get("type")
     for f in REQUIRED:
-        if d.get(f) in (None, ""):
+        if d.get(f) in (None, "") and not (f == "command" and kind == "bos"):
             add("E_REQUIRED", f, f"zorunlu alan bos: {f}")
+    _type_checks(env, jobs, d, is_new, add)
 
     folder = env["folders"].get(d.get("folder"))
     if d.get("folder") and folder is None:
@@ -120,6 +132,52 @@ def check(env, jobs, d, is_new, rules=(), runs=None):
             add(f"S_{rule.skill}.{rule.id}", field,
                 f"{rule.message}: {facts[left]} (kural: {left} {op} {facts.get(right.strip(), right.strip())})", rule.severity)
     return out
+
+
+def redact(text):
+    """The text with any secret it carries replaced by ***, for whatever is kept or shown afterwards."""
+    text = re.sub(r"((passw(?:or)?d|parola|sifre|şifre|pwd)\s*[=:]\s*)[^\s;,\"']+", r"\1***", str(text), flags=re.I)
+    text = re.sub(r"(://[^/\s:@\"']+:)[^/\s@\"']+@", r"\1***@", text)
+    return re.sub(r"((?:^|[\s\"'])[\w.-]+/)[^\s/@\"']+@", r"\1***@", text)
+
+
+def _type_checks(env, jobs, d, is_new, add):
+    """What each job type needs. Judged when the request sets the type up (a new job, or a change of type);
+    a job already on the site that lacks a field, say an old file watch without a time limit, is not the
+    requester's doing."""
+    kind, before = d.get("type"), None if is_new else jobs.get(d.get("name"))
+    for f, v in d.items():
+        if isinstance(v, str) and SECRET.search(v):
+            add("E_SECRET", f, f"{TEMPLATE_KEY.get(f, f)} alaninda parola ya da gizli bilgi var; gizli bilgi talebe "
+                               "yazilmaz, ortamdaki bir baglanti profili kullanilir")
+    if kind not in NEEDS:
+        return
+    fresh = before is None or before.get("type") != kind
+    if fresh:
+        for f in NEEDS[kind]:
+            if d.get(f) in (None, ""):
+                add("E_REQUIRED", f, f"{kind} isi icin zorunlu alan bos: {TEMPLATE_KEY[f]}")
+    if kind == "bos" and d.get("command") not in (None, ""):
+        add("E_TYPE_FIELD", "command", "bos (Dummy) is komut calistirmaz; komut alani bos birakilmali ya da tip degistirilmeli")
+    if kind != "dosya_aktarimi" and d.get("target") not in (None, "") and fresh:
+        add("E_TYPE_FIELD", "target", f"hedef alani yalnizca dosya_aktarimi islerinde yazilir; bu is {kind}")
+    if kind not in CONNECTION_KIND and d.get("connection") not in (None, "") and fresh:
+        add("E_TYPE_FIELD", "connection", f"baglanti alani {kind} islerinde kullanilmaz")
+    conn, profiles = d.get("connection"), env.get("connections") or {}
+    if kind in CONNECTION_KIND and conn not in (None, ""):
+        valid = ", ".join(sorted(n for n, p in profiles.items() if p.get("kind") == kind)) or "yok"
+        if conn not in profiles:
+            add("E_CONNECTION", "connection", f"baglanti profili tanimli degil: {conn}. Gecerli {kind} profilleri: {valid}")
+        elif profiles[conn].get("kind") != kind:
+            add("E_CONNECTION", "connection",
+                f"{conn} bir {profiles[conn].get('kind')} profili; {kind} isi icin kullanilamaz. Gecerli: {valid}")
+    if kind == "dosya_izleme" and d.get("timeout") not in (None, ""):
+        t = str(d["timeout"]).strip()
+        if not t.isdigit() or not 1 <= int(t) <= 1440:
+            add("E_TIMEOUT", "timeout", f"sure_siniri dakika olarak 1 ile 1440 arasinda bir sayi olmali: {t}")
+    if kind == "dosya_aktarimi" and d.get("target") and d.get("command") and \
+            str(d["target"]).rstrip("/") == str(d["command"]).rstrip("/"):
+        add("E_TARGET", "target", "hedef yol kaynak yolla ayni; aktarim dosyanin uzerine yazar")
 
 
 def check_removal(jobs, name):

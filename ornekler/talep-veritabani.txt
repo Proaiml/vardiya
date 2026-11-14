@@ -1,0 +1,16 @@
+# Ornek talep: veritabani isi. baglanti, ortamdaki bir veritabani profilinin adidir; parola yazilmaz.
+talep_no: CHG-2003
+talep_eden: rapor-ekibi
+islem: yeni
+klasor: RAPOR
+is_adi: RPR_GUNLUK_TOPLAM
+tip: veritabani
+host: db01
+calistiran: dbbatch
+komut: /opt/rapor/sql/gunluk_toplam.sql
+baglanti: PG_RAPOR_PRD
+gunler: IS_GUNU
+saat: 06:00
+bagimlilik: [RPR_GUNLUK_OZET]
+bildirim: rapor-nobet@ornek.local
+aciklama: Gunluk ozet tablosundan toplamlari hesaplar

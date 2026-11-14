@@ -1,0 +1,17 @@
+# Ornek talep: dosya aktarimi, ama hedefe kullanici adi ve parola yazilmis. Masa iade eder.
+talep_no: CHG-2004
+talep_eden: odeme-ekibi
+islem: yeni
+klasor: ODEME_GUNLUK
+is_adi: ODM_GIDEN_AKTARIM
+tip: dosya_aktarimi
+host: app01
+calistiran: batchusr
+komut: /data/odeme/giden/odeme.txt
+baglanti: SFTP_BANKA_GIDEN
+hedef: sftp://odeme_app:Gizli2026@sftp.ornek.local/gelen/odeme.txt
+gunler: IS_GUNU
+saat: 04:00
+bagimlilik: [ODM_POST_DEFTER]
+bildirim: odeme-nobet@ornek.local
+aciklama: Gunluk odeme dosyasini bankaya gonderir

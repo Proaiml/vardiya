@@ -7,7 +7,10 @@ the template goes back to the requester.
 HEADER = ("talep_no", "talep_eden", "islem")
 FIELDS = {"klasor": "folder", "is_adi": "name", "tip": "type", "host": "host", "calistiran": "run_as",
           "komut": "command", "gunler": "calendar", "saat": "time", "bagimlilik": "deps",
-          "bildirim": "notify", "aciklama": "description"}
+          "bildirim": "notify", "aciklama": "description",
+          "baglanti": "connection", "hedef": "target", "sure_siniri": "timeout"}
+# Written only for the job types that use them; which type needs which is a check, not a template rule.
+TYPE_KEYS = ("baglanti", "hedef", "sure_siniri")
 OPS = ("yeni", "degisiklik", "kaldir")
 IDENTITY = ("klasor", "is_adi")
 
@@ -36,7 +39,8 @@ def parse(text):
     if op and op not in OPS:
         errors.append("islem 'yeni', 'degisiklik' ya da 'kaldir' olmali")
     if op == "yeni":
-        errors += [f"zorunlu alan bos: {k}" for k in FIELDS if k != "bagimlilik" and not values.get(k)]
+        optional = set(TYPE_KEYS) | {"bagimlilik"} | ({"komut"} if values.get("tip") == "bos" else set())
+        errors += [f"zorunlu alan bos: {k}" for k in FIELDS if k not in optional and not values.get(k)]
         if "bagimlilik" not in values:
             errors.append("zorunlu alan bos: bagimlilik (bagimlilik yoksa [] yazin)")
     elif op == "degisiklik":

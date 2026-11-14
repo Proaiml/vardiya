@@ -64,14 +64,28 @@ NEW_STEMS = ["LOAD_IADE", "KUR_FARKI", "GUN_SONU", "TEMIZLIK", "YEDEK", "BILDIRI
              "KAPANIS", "HESAPLAMA"]
 TODAYS = ["2026-11-13", "2026-12-01", "2027-01-18", "2027-02-22"]
 HOLIDAYS = ["2026-10-29", "2026-12-31", "2027-01-01", "2027-04-23", "2027-05-19"]
-ORDER = ["klasor", "is_adi", "tip", "host", "calistiran", "komut", "gunler", "saat", "bagimlilik", "bildirim", "aciklama"]
+ORDER = ["klasor", "is_adi", "tip", "host", "calistiran", "komut", "baglanti", "hedef", "sure_siniri", "gunler", "saat",
+         "bagimlilik", "bildirim", "aciklama"]
 KEY_OF = {"folder": "klasor", "name": "is_adi", "type": "tip", "host": "host", "run_as": "calistiran",
           "command": "komut", "calendar": "gunler", "time": "saat", "deps": "bagimlilik", "notify": "bildirim",
-          "description": "aciklama"}
+          "description": "aciklama", "connection": "baglanti", "target": "hedef", "timeout": "sure_siniri"}
 FAMILIES = ("yeni", "degisiklik", "takvim", "t-takvim", "t-dongu", "t-mevcut", "t-olmayan", "t-standart", "t-sablon",
-            "t-referans", "kaldir", "t-bagimli", "aciklamali", "t-celiski", "t-belirsiz", "t-uyumsuz")
+            "t-referans", "kaldir", "t-bagimli", "aciklamali", "t-celiski", "t-belirsiz", "t-uyumsuz", "yeni-tip", "t-tip")
+# Connection profiles of the job types that need one. The same for every site, so adding them draws nothing
+# from a scenario's random stream: the scenarios of the earlier families stay exactly as they were.
+CONNECTIONS = {
+    "ORA_MUHASEBE_PRD": ("veritabani", "Oracle, muhasebe uretim veritabani"),
+    "PG_RAPOR_PRD": ("veritabani", "PostgreSQL, raporlama veritabani"),
+    "MSSQL_KREDI_PRD": ("veritabani", "SQL Server, kredi veritabani"),
+    "SFTP_BANKA_GIDEN": ("dosya_aktarimi", "SFTP, bankalararasi giden dosyalar"),
+    "SFTP_TEDARIKCI": ("dosya_aktarimi", "SFTP, tedarikci sunucusu"),
+    "SMB_RAPOR_PAYLASIM": ("dosya_aktarimi", "SMB, rapor paylasim klasoru"),
+    "SSH_ESKI_UNIX": ("ssh", "agent kurulamayan eski Unix sunucusu"),
+    "SSH_ETL_KUME": ("ssh", "ETL kumesinin giris dugumu"),
+}
+TYPED = ("dosya_izleme", "veritabani", "dosya_aktarimi", "ssh", "bos")
 COVER_DAYS = 400  # a job fits its predecessor if every run date in this window is one of the predecessor's
-APPLIED = ("yeni", "degisiklik", "takvim", "kaldir", "aciklamali")  # families where the right move is to act
+APPLIED = ("yeni", "degisiklik", "takvim", "kaldir", "aciklamali", "yeni-tip")  # families where the right move is to act
 # Run days written too vaguely to act on. A site calendar may look close ("ay sonunda" next to a
 # last-working-day calendar), but the requester did not say it; the right move is to ask.
 VAGUE = ["ay sonunda", "ay başında", "haftada bir", "ayda bir", "haftada iki gün", "hafta sonu bir gün", "ayın ortasında",
@@ -215,7 +229,31 @@ def _form(no, team, op, fields):
 
 
 def _fields(d):
-    return {KEY_OF[k]: v for k, v in d.items()}
+    return {KEY_OF[k]: v for k, v in d.items() if v is not None}
+
+
+def _connections(site):
+    site["env"]["connections"] = {n: {"kind": k, "desc": d} for n, (k, d) in CONNECTIONS.items()}
+
+
+def _typed_job(rng, site, kind):
+    """A complete, valid new job of `kind`, with the fields that type needs."""
+    d, team = _new_job(rng, site)
+    stem = d["name"].split("_", 1)[1].lower()
+    profiles = sorted(n for n, (k, _) in CONNECTIONS.items() if k == kind)
+    d["type"] = kind
+    if kind == "dosya_izleme":
+        d.update(command=f"/data/{team}/gelen/{stem}_*.csv", timeout=str(rng.choice([60, 120, 240, 480])))
+    elif kind == "veritabani":
+        d.update(command=f"/opt/{team}/sql/{stem}.sql", connection=rng.choice(profiles))
+    elif kind == "dosya_aktarimi":
+        d.update(command=f"/data/{team}/giden/{stem}.txt", target=f"/gelen/{team}/{stem}.txt",
+                 connection=rng.choice(profiles))
+    elif kind == "ssh":
+        d.update(command=f"/usr/local/bin/{stem}.sh", connection=rng.choice(profiles))
+    else:
+        d["command"] = None
+    return _room(site, d), team
 
 
 def _new_job(rng, site):
@@ -330,6 +368,48 @@ def build(family, rng, site, split="dev"):
         d["description"] = f"{team} {what} işi; {false[kind]}; {true[other]}"
         return f"Tuzak: aciklama {kind} alaniyla celisiyor", _form(no, team, "yeni", _fields(d)), \
             returned(f"aciklama ile {kind} alani celisiyor")
+
+    if family in ("yeni-tip", "t-tip"):
+        # Job types beyond the OS command: each needs fields of its own, and each has its own way of being wrong.
+        _connections(site)
+        kind = rng.choice(TYPED)
+        d, team = _typed_job(rng, site, kind)
+        if family == "yeni-tip":
+            return f"Yeni {kind} isi, tipin istedigi alanlarla", _form(no, team, "yeni", _fields(d)), applied(d)
+        traps = {"dosya_izleme": ["sure_yok", "sure_gecersiz", "parola"],
+                 "veritabani": ["profil_yok", "profil_turu", "baglanti_yok", "parola"],
+                 "dosya_aktarimi": ["ayni_yol", "hedef_yok", "profil_turu", "parola"],
+                 "ssh": ["profil_yok", "profil_turu", "parola"],
+                 "bos": ["bos_komut", "baglanti_fazla"]}[kind]
+        trap = rng.choice(traps)
+        other = sorted(n for n, (k, _) in CONNECTIONS.items() if k != kind)
+        if trap == "sure_yok":
+            d["timeout"] = None
+        elif trap == "sure_gecersiz":
+            d["timeout"] = rng.choice(["sinirsiz", "0", "3000"])
+        elif trap == "profil_yok":
+            d["connection"] = rng.choice(["ORA_TEST", "PROD_DB", "SSH_YENI_SUNUCU"])
+        elif trap == "profil_turu":
+            d["connection"] = rng.choice(other)
+        elif trap in ("baglanti_yok",):
+            d["connection"] = None
+        elif trap == "hedef_yok":
+            d["target"] = None
+        elif trap == "ayni_yol":
+            d["target"] = d["command"]
+        elif trap == "bos_komut":
+            d["command"] = f"/opt/{team}/bin/bekle.sh"
+        elif trap == "baglanti_fazla":
+            d["connection"] = rng.choice(sorted(CONNECTIONS))
+        else:  # a secret written into the request, in whichever field a hurried requester would put it
+            where = rng.choice(["aciklama", "komut"] if kind != "dosya_aktarimi" else ["aciklama", "hedef"])
+            if where == "aciklama":
+                d["description"] = f"{d['description']}; baglanti icin kullanici {team}_app, sifre: Gizli2026!"
+            elif where == "hedef":
+                d["target"] = f"sftp://{team}_app:Gizli2026@sftp.ornek.local/gelen/{d['name'].lower()}.txt"
+            else:
+                d["command"] = f"{d['command'] or '/opt/' + team + '/bin/calistir.sh'} --password=Gizli2026"
+        return f"Tuzak: {kind} isinde {trap}", _form(no, team, "yeni", _fields(d)), returned(f"{kind}: {trap}")
 
     if family == "t-uyumsuz":
         # Every field is valid on its own. The request is wrong only as a pair: the job would be

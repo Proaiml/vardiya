@@ -11,6 +11,10 @@ import json
 
 DEF_FIELDS = ("name", "folder", "type", "host", "run_as", "command", "calendar", "time", "deps", "notify",
               "description")
+# Fields only some job types use: a connection profile (database, file transfer, ssh), a transfer target and
+# a file-watch time limit in minutes. A definition carries them only when they are set, so the definitions of
+# the first two job types, and every recorded result, stay exactly as they were.
+TYPE_FIELDS = ("connection", "target", "timeout")
 READ_VERBS = ("get_request", "list_defs", "get_def", "list_env", "forecast")
 ACTION_VERBS = ("deploy_job", "delete_job", "close_request", "return_request")
 DAY = datetime.timedelta(days=1)
@@ -19,6 +23,7 @@ DAY = datetime.timedelta(days=1)
 def normalise(definition):
     """Canonical form of a job definition: known fields only, dependencies as a sorted list."""
     out = {k: definition.get(k) for k in DEF_FIELDS}
+    out.update({k: str(definition[k]) for k in TYPE_FIELDS if definition.get(k) not in (None, "")})
     deps = definition.get("deps") or []
     out["deps"] = sorted(str(x) for x in deps) if isinstance(deps, (list, tuple)) else [str(deps)]
     return out
@@ -75,6 +80,7 @@ class Repo:
         self.folders = env["folders"]        # {folder: {"prefix": "..."}}
         self.standards = env["standards"]
         self.holidays = env.get("holidays", [])
+        self.connections = env.get("connections", {})  # {profile: {"kind": job type, "env": ..., "desc": ...}}
         self.jobs = {j["name"]: normalise(j) for j in s.get("jobs", [])}
         self.versions = {n: [copy.deepcopy(j)] for n, j in self.jobs.items()}
         r = s["request"]
@@ -123,9 +129,12 @@ class Repo:
         return self.jobs.get(job)
 
     def list_env(self):
-        return {"today": self.today.isoformat(), "hosts": self.hosts, "folders": self.folders,
-                "calendars": {n: c["desc"] for n, c in sorted(self.calendars.items())},
-                "standards": self.standards, "holidays": self.holidays}
+        out = {"today": self.today.isoformat(), "hosts": self.hosts, "folders": self.folders,
+               "calendars": {n: c["desc"] for n, c in sorted(self.calendars.items())},
+               "standards": self.standards, "holidays": self.holidays}
+        if self.connections:
+            out["connections"] = self.connections
+        return out
 
     def forecast(self, calendar, days=60):
         c = self.calendars.get(calendar)

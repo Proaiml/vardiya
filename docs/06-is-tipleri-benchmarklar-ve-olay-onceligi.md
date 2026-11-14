@@ -82,10 +82,17 @@ tanımlanamıyor.
 
 ## 3. Vardiya'da bugün olan ve eklenmesi gerekenler
 
-Vardiya'nın şablonu bugün iki tip tanıyor: `komut` ve `dosya_izleme`. JS7 bağdaştırıcısı da yalnızca kabuk işi
-üretiyor. Bench'teki bütün senaryolar bu iki tiple.
+**Güncelleme (14 Kasım 2026, sürüm 0.3):** aşağıdaki tablonun ilk beş satırı yapıldı. Şablon artık altı tip
+tanıyor (`komut`, `dosya_izleme`, `veritabani`, `dosya_aktarimi`, `ssh`, `bos`) ve üç tipe özel alan taşıyor
+(`baglanti`, `hedef`, `sure_siniri`). Çekirdek denetimleri tipin istediği alanları, bağlantı profilinin varlığını ve
+türünü, dosya izlemenin süre sınırını, aktarımda kaynak ile hedefin aynı olmasını, boş işte komut yazılmasını ve
+herhangi bir alana yazılmış parolayı yakalıyor. Bench'e iki aile eklendi: `yeni-tip` (beş tipten biriyle geçerli
+yeni iş) ve `t-tip` (o tipin kendi tuzağı). JS7 bağdaştırıcısı tipe özel alanları meta veri olarak taşıyor ama işi
+hâlâ kabuk işi olarak kuruyor; `SQLExecutorJob` ve dosya aktarımına eşleme yapılmadı. "Ortak" satırı (yeniden
+deneme, çıktı kuralı) yapılmadı.
 
-Her tip, talebe yeni zorunlu alanlar ve yeni tanım hataları getiriyor. Bench'e aile olarak eklenecek olanlar:
+İlk durum şuydu: şablon iki tip tanıyordu, `komut` ve `dosya_izleme`, ve bench'teki bütün senaryolar bu iki
+tipleydi. Her tip, talebe yeni zorunlu alanlar ve yeni tanım hataları getiriyor:
 
 | Tip | Talepte bulunması gereken | Tuzak (doğru hamle iade) |
 | --- | --- | --- |

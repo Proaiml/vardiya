@@ -19,7 +19,7 @@ Durum: isler emulatorde ya da yerel JS7 laboratuvarinda durur; uretim ortami ici
 ## Calistirma
 
 ```
-python -m unittest discover -s tests        # 71 test
+python -m unittest discover -s tests        # 73 test
 python -m vardiya bench                     # iki is kolu icin senaryo x kol matrisi (betik kollar)
 python -m vardiya bench --only talep        # yalnizca talep karsilama
 python -m vardiya fuzz -n 3000              # guvenlik hatti: rastgele ajan ve bozuk talep, ham vs harness
@@ -105,7 +105,7 @@ Yalnizca Ollama yolu hedeflendi; barindirilan saglayicilar henuz denenmedi.
 | `bench.py` | Bench | Kollar, hukum siniflari, yeniden oynatma, guvenlik fuzz'i |
 | `repo.py` | Tanim deposu | Is tanimlari, takvimler, hostlar, talep bileti; takvim ileri sarma |
 | `intake.py` | Talep girisi | Zorunlu sablonun kati ayristiricisi |
-| `checks.py` | On ucus denetimleri | Standart, referans, dongu, mevcut is, saat ve bagimlilik denetimleri; isin takvimi, bagimli oldugu islerin takvimine sigmali |
+| `checks.py` | On ucus denetimleri | Standart, referans, dongu, mevcut is, saat ve bagimlilik denetimleri; isin takvimi, bagimli oldugu islerin takvimine sigmali; is tipine gore alanlar, baglanti profili, talebe yazilmis parola |
 | `desk.py` | Talep masasi | Sablon, derleme, denetim, yukleme, geri okuma, denetim kaydi |
 | `bench_req.py` | Talep bench'i | Kollar, hukum, bozuk talep fuzz'i; hakem denetimleri `checks.py`'den bagimsiz |
 | `gunler.py` | Gun ifadesi sozlugu | Kalip halindeki Turkce gun ifadelerini kodla takvim kuralina cevirir; gerisi modele kalir |

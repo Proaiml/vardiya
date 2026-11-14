@@ -75,7 +75,25 @@
   "holidays": [
    "2026-12-31",
    "2027-01-01"
-  ]
+  ],
+  "connections": {
+   "ORA_ODEME_PRD": {
+    "kind": "veritabani",
+    "desc": "Oracle, odeme uretim veritabani"
+   },
+   "PG_RAPOR_PRD": {
+    "kind": "veritabani",
+    "desc": "PostgreSQL, raporlama veritabani"
+   },
+   "SFTP_BANKA_GIDEN": {
+    "kind": "dosya_aktarimi",
+    "desc": "SFTP, bankalararasi giden dosyalar"
+   },
+   "SSH_ESKI_UNIX": {
+    "kind": "ssh",
+    "desc": "agent kurulamayan eski Unix sunucusu"
+   }
+  }
  },
  "jobs": [
   {

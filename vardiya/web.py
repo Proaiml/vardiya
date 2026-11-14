@@ -18,6 +18,7 @@ import urllib.parse
 
 from . import __version__
 from .adapter import RepoAdapter
+from .checks import redact
 from .desk import Desk, render
 from .ledger import Ledger
 from .repo import Repo
@@ -76,13 +77,15 @@ class Office:
             desk = Desk(adapter, model=self.model, ledger=self.ledger, licence=self.licence)
             started = datetime.datetime.now()
             report = desk.handle(no)
-            entry = {"talep_no": no, "text": text, "at": started.isoformat(timespec="seconds"),
+            # A request that carries a password is returned for it; the page never keeps or shows the password.
+            entry = {"talep_no": no, "text": redact(text), "at": started.isoformat(timespec="seconds"),
                      "seconds": round((datetime.datetime.now() - started).total_seconds(), 2),
                      "outcome": report["outcome"], "reasons": report["reasons"], "definition": report["definition"],
                      "before": report["before"], "findings": report["findings"], "notes": report["notes"],
                      "forecast": report["forecast"], "record": report.get("record"), "agent": report["agent"],
                      "steps": report["steps"], "trace": adapter.trace,
                      "model_calls": getattr(self.model, "calls", 0), "summary": render(report)}
+            entry = json.loads(redact(json.dumps(entry, ensure_ascii=False, default=str)))  # every copy shown
             self.history.insert(0, entry)
             return entry
 

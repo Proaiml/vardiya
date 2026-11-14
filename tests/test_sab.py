@@ -29,7 +29,7 @@ class GeneratedScenarios(unittest.TestCase):
         apply, refuse = verdicts(bench_req.arm_naive_apply), verdicts(bench_req.arm_naive_return)
         for sc in SCENARIOS:
             fam, sid = sc["family"], sc["id"]
-            if fam in ("yeni", "degisiklik", "kaldir", "aciklamali"):
+            if fam in ("yeni", "degisiklik", "kaldir", "aciklamali", "yeni-tip"):
                 self.assertEqual((apply[sid], refuse[sid]), ("correct", "safe_fail"), sid)
             elif fam == "takvim":
                 self.assertEqual((apply[sid], refuse[sid]), ("false_green", "safe_fail"), sid)
@@ -124,6 +124,28 @@ class GeneratedScenarios(unittest.TestCase):
             self.assertEqual(errors(), set(), sc["id"])  # every field is fine on its own
             codes = errors((), {c: set(repo.forecast(c, 180)) for c in env["calendars"]})
             self.assertEqual(codes, {"E_CAL_DEP"} if new else {"E_CAL_DEPENDENT"}, sc["id"])
+
+    def test_typed_job_traps_are_caught_for_their_own_reason(self):
+        from vardiya.adapter import RepoAdapter
+        from vardiya.desk import Desk
+        from vardiya.repo import Repo
+        why = {"sure_yok": "sure_siniri", "sure_gecersiz": "sure_siniri", "parola": "gizli bilgi",
+               "profil_yok": "tanimli degil", "profil_turu": "kullanilamaz", "baglanti_yok": "baglanti",
+               "hedef_yok": "hedef", "ayni_yol": "kaynak yolla ayni", "bos_komut": "komut calistirmaz",
+               "baglanti_fazla": "kullanilmaz"}
+        seen = set()
+        for sc in sabgen.generate(40, 4, ("t-tip",)):
+            trap = sc["title"].rsplit(" ", 1)[1]
+            seen.add(sc["title"])
+            rep = Desk(RepoAdapter(Repo(sc))).handle()
+            self.assertEqual(rep["outcome"], "returned", sc["id"])
+            self.assertTrue(any(why[trap] in r for r in rep["reasons"]), (sc["id"], rep["reasons"]))
+            self.assertFalse(any("Gizli2026" in r for r in rep["reasons"]), sc["id"])  # never echoed back
+        self.assertGreaterEqual(len(seen), 15)  # every type, most of its traps
+        # the earlier families are untouched by the new types: their request texts carry no new key
+        for sc in sabgen.generate(2, 1, sabgen.FAMILIES[:-2]):
+            self.assertNotIn("baglanti:", sc["request"]["text"], sc["id"])
+            self.assertNotIn("connections", sc["env"], sc["id"])
 
     def test_second_look_can_only_turn_an_apply_into_a_return(self):
         # Experimental "review" step: after the coded checks, the model is asked an open question. To see

@@ -1,6 +1,6 @@
 [project]
 name = "vardiya"
-version = "0.2.0"
+version = "0.3.0"
 description = "Open, model-agnostic agent harness and benchmark for batch scheduler operations"
 requires-python = ">=3.10"
 dependencies = []

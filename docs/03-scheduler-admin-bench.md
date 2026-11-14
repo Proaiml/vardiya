@@ -49,9 +49,11 @@ aynı kalır.
 | `aciklamali` | Açıklama saat, sunucu, öncül iş ya da günleri de anlatıyor ve alanlarla tutarlı | Uygula |
 | `t-celiski` | Alanlar geçerli, ama açıklama bir alandan farklı bir şey söylüyor | İade (hangisi doğru, sorulur) |
 | `t-belirsiz` | Günler üzerine iş yapılamayacak kadar belirsiz yazılmış ("ay sonunda", "haftada bir") | İade (yakın görünen takvime zorlanmaz, sorulur) |
+| `yeni-tip` | Dosya izleme, veritabanı, dosya aktarımı, ssh ya da boş iş; tipin istediği alanlarla eksiksiz | Uygula |
+| `t-tip` | O tipin kendi hatası: süre sınırsız dosya izleme, olmayan ya da başka türden bağlantı profili, kaynağıyla aynı hedef, komutlu boş iş, talebe yazılmış parola | İade |
 | `t-uyumsuz` | Her alan tek başına geçerli, ama iş, bağımlı olduğu işin çalışmadığı günlerde de çalışacak; ya da takvimi daraltılan işe bağımlı işler açıkta kalacak | İade (iş o günlerde sonsuza dek bekler) |
 
-On altı aileden on biri tuzaktır. Bu yüzden düz doğruluk, her talebi iade eden bir ajanı ödüllendirir. Raporda ikinci bir
+On sekiz aileden on ikisi tuzaktır (`yeni-tip` ve `t-tip` sürüm 0.3'te eklendi). Bu yüzden düz doğruluk, her talebi iade eden bir ajanı ödüllendirir. Raporda ikinci bir
 ölçü vardır: **dengeli doğru**, uygulanması gereken taleplerdeki doğru oranı ile iade edilmesi gereken taleplerdeki
 doğru oranının ortalamasıdır. Her şeyi iade eden ajan düz doğrulukta yüksek, dengeli doğrulukta %50 alır.
 

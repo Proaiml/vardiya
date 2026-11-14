@@ -14,7 +14,8 @@ import time
 from .js7 import JS7Error
 from .repo import ACTION_VERBS, DEF_FIELDS, READ_VERBS, normalise, run_dates
 
-META = ("folder", "type", "run_as", "command", "calendar", "time", "notify", "description")
+META = ("folder", "type", "run_as", "command", "calendar", "time", "notify", "description", "connection", "target",
+        "timeout")
 
 
 def _quote(v):
@@ -48,7 +49,7 @@ class JS7Repo:
                           "noticeBoardNames": " && ".join(f"'B_{self.prefix}{x}'" for x in d["deps"])})
         steps += [{"TYPE": "Execute.Named", "jobName": name, "label": name},
                   {"TYPE": "PostNotices", "noticeBoardNames": ["B_" + name]}]
-        meta = {"vardiya_" + k: _quote(d[k]) for k in META}
+        meta = {"vardiya_" + k: _quote(d.get(k)) for k in META if k in d}
         meta["vardiya_deps"] = _quote(",".join(d["deps"]))
         return {"version": "1.7.2", "timeZone": "Europe/Istanbul", "title": str(d["description"] or "")[:255],
                 "instructions": steps,
@@ -171,7 +172,8 @@ class JS7Repo:
     def list_env(self):
         return {"today": self.today.isoformat(), "hosts": self.env["hosts"], "folders": self.env["folders"],
                 "calendars": {n: c["desc"] for n, c in sorted(self.env["calendars"].items())},
-                "standards": self.env["standards"], "holidays": self.env.get("holidays", [])}
+                "standards": self.env["standards"], "holidays": self.env.get("holidays", []),
+                **({"connections": self.env["connections"]} if self.env.get("connections") else {})}
 
     def forecast(self, calendar, days=60):
         c = self.env["calendars"].get(calendar)
