@@ -22,7 +22,7 @@ import time
 from . import __version__
 from .gateway import connect
 from .graph import mark_signals
-from .skills import fold, load_incident_classes, load_procedures, match_procedures
+from .skills import fold, load_incident_classes, load_procedures, match_procedures, soft_in
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CASES = ROOT / "bench" / "ops"
@@ -57,11 +57,13 @@ def match_class(classes, text):
     """The incident class whose signs occur most in the text; a class whose only hits are generic words
     (GENERIC) is not matched."""
     low = fold(mark_signals(text))
-    best, best_key = (0, 0), None
+    best, best_key = (0, 0, 0), None
     for k, c in classes.items():
-        hit = [s for s in c["signs"] if fold(s) in low]
+        # one-word signs must occur as written; multi-word ones may carry Turkish suffixes
+        hit = [s for s in c["signs"] if fold(s) in low or (" " in s and soft_in(s, low))]
         specific = [s for s in hit if s not in GENERIC]
-        rank = (len(specific), len(hit))
+        exact = [s for s in specific if fold(s) in low]  # a sign seen as written outranks a suffix match
+        rank = (len(exact), len(specific), len(hit))
         if (specific or len(hit) >= 2) and rank > best:
             best, best_key = rank, k
     return best_key

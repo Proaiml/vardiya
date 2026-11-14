@@ -200,7 +200,7 @@ classes:
     evidence: [shared_attr, host_change, precedent]
   ortam_farki:
     title: Elle calisiyor, zamanlayicidan calismiyor (ortam farki)
-    signs: [works manually, works from command line, works from the shell, elle calisiyor, komut satirindan calisiyor, not from cron, cron'dan calismiyor, environment variable, ortam degiskeni, $path, relative path, goreli yol, not a tty, the input device is not a tty, ctm5319, output does not exist, drive mapping, mapped drive, surucu esleme, cannot find the path specified]
+    signs: [works manually, works from command line, works from the shell, elle calisiyor, komut satirindan calisiyor, not from cron, cron'dan calismiyor, environment variable, ortam degiskeni, $path, relative path, goreli yol, not a tty, the input device is not a tty, ctm5319, output does not exist, drive mapping, mapped drive, surucu esleme, cannot find the path specified, command not found, sorunsuz calisiyor]
     cause: zamanlayici isi kullanicinin etkilesimli oturumundaki ortamla calistirmaz; PATH kisadir, profil (.bashrc, .profile) yuklenmez, calisma dizini farklidir, goreli yollar bozulur, ortam degiskenleri yoktur
     fix: komutlarda tam yol kullan; gereken degiskenleri betigin icinde ayarla ya da profili kaynak goster (. ~/.profile); betigin basinda calisma dizinine gec (cd); cikti ve hatayi gunluge yonlendir; betigi zamanlayicinin ortamina benzer bos bir ortamla (env -i) deneyerek dogrula
     fix_cron: crontab'in basinda PATH= ve SHELL= tanimlanabilir; komuttaki % karakteri crontab'da yeni satir anlamina gelir, \% ile kacir; cron TTY baglamaz: docker exec -it gibi etkilesimli bayraklari kaldir; /usr/sbin altindaki komutlar (service gibi) cron'un PATH'inde yoktur, tam yolunu ver (which service)
