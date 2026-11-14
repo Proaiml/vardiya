@@ -50,15 +50,22 @@ python -m vardiya web                                   # http://127.0.0.1:8765
 python -m vardiya web --model ollama:qwen3:8b --site benim-ortamim.json --licence 2
 ```
 
-Tarayıcıda açılan sayfanın beş sekmesi var:
+Sayfa bir operasyon konsoludur; sol menüde üç bölüm var:
 
-| Sekme | Ne gösterir |
+| Bölüm | Ne gösterir |
 | --- | --- |
-| Talep | Şablon düzenleyici, örnek talepler, sonuç kartı: kapandı / iade / öneri, iade gerekçesi, günlerin hangi takvime kim tarafından çevrildiği, uygulanan tanım ya da değişikliğin önce ve sonrası, sonraki çalışma günleri, denetim kaydı, ajanın adımları ve eylem izi |
-| Ortam | İşlerin bağımlılık çizgesi (değişen işler vurgulu), iş tablosu, takvimler ve sonraki günleri, hostlar, klasörler, standartlar, tatiller |
-| Geçmiş | Bu oturumda işlenen bütün talepler; "Ortamı başa döndür" |
-| Denetim defteri | Özet zincirli kayıtlar ve zincirin bütünlük denetimi |
-| Bench | `results/` altındaki sonuç dosyalarından kol ve aile bazında doğru ve zararlı oranları |
+| Genel bakış | Açık olay, son 30 gün başarı oranı, erken uyarı ve işlenen talep sayıları; günlük çalışma grafiği; açık olaylar; en sık hata imzaları |
+| Olaylar ve kök neden | Yerel hata çizgesindeki olaylar. Bir olay seçilince: hata satırı ve imzası, kodun sıraladığı kök neden adayları ve gerekçeleri, geçmişte aynı hata ve o zaman yapılanın tutup tutmadığı, aynı gün düşen işler, hatadan önceki değişiklikler, önerilen müdahale ve olayın çizgedeki parçası. Model bağlıysa "Model ile yorumla" |
+| Erken uyarılar | Yavaşlayan işler, haftanın aynı gününde tekrarlayan hatalar, kök nedeni giderilmeden kapatılmış olaylar |
+| Talep masası | Şablon düzenleyici, örnek talepler, sonuç: kapandı / iade / öneri, gerekçe, uygulanan tanım ya da değişikliğin önce ve sonrası, sonraki çalışma günleri, denetim kaydı, ajanın adımları |
+| Talep geçmişi, denetim defteri | Bu oturumda işlenen talepler; özet zincirli kayıtlar ve zincirin bütünlük denetimi |
+| Ortam ve işler | İş akışı çizgesi, iş tablosu (tip ve bağlantı profiliyle), takvimler, sunucular, bağlantı profilleri, standartlar |
+| Bench sonuçları | `results/` altındaki sonuç dosyalarından kol ve aile bazında doğru ve zararlı oranları |
+
+Varsayılan ortam `ornekler/ortam-banka.json`: örnek ortamın üzerine iki klasör daha ve her iş tipinden işler.
+Hata çizgesi bellekte başlar ve bu ortamın 90 günlük örnek geçmişiyle doldurulur (`vardiya/gecmis.py`); gerçek bir
+zamanlayıcı bağlanınca onun geçmişi yazılacak. Kapanan her talep çizgeye bir değişiklik olarak eklenir, böylece
+sonraki bir hata "son değişiklik" adayını görür.
 
 Sayfa tek bir bellek içi ortamla çalışır: uygulanan her talep, sonraki talebin gördüğü işleri değiştirir. Sunucu
 kapanınca ortam başa döner. Talep, komut satırındakiyle aynı masadan geçer; önyüzün masayı atlayan bir yolu yok.

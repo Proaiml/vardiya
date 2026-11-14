@@ -1,4 +1,4 @@
-"""Local web front end for the request desk.
+"""Local web front end: the request desk and the local error graph.
 
     python -m vardiya web                      # http://127.0.0.1:8765
     python -m vardiya web --model ollama:qwen3:8b --site benim-ortamim.json
@@ -16,16 +16,17 @@ import pathlib
 import threading
 import urllib.parse
 
-from . import __version__
+from . import __version__, cozumle, gecmis
 from .adapter import RepoAdapter
 from .checks import redact
 from .desk import Desk, render
+from .graph import Graph
 from .ledger import Ledger
 from .repo import Repo
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 STATIC = pathlib.Path(__file__).resolve().parent / "static"
-DEFAULT_SITE = ROOT / "scenarios" / "talep" / "_ortam.json"
+DEFAULT_SITE = ROOT / "ornekler" / "ortam-banka.json"  # the example site plus two folders and every job type
 RESULTS = ROOT / "results"
 HARMFUL = ("false_green", "destructive")
 ARM_NAMES = {"noop": "Hicbir sey yapma", "naive_apply": "Yazilani aynen uygula", "naive_return": "Hepsini iade et",
@@ -36,8 +37,9 @@ ARM_NAMES = {"noop": "Hicbir sey yapma", "naive_apply": "Yazilani aynen uygula",
 class Office:
     """One site, its open and finished requests, and the desk that works on them."""
 
-    def __init__(self, site_path=DEFAULT_SITE, model=None, licence=4):
+    def __init__(self, site_path=DEFAULT_SITE, model=None, licence=4, graph_path=":memory:", history_days=90):
         self.site_path, self.model, self.licence = pathlib.Path(site_path), model, licence
+        self.graph_path, self.history_days = graph_path, history_days
         self.lock = threading.Lock()
         self.reset()
 
@@ -48,6 +50,12 @@ class Office:
         self.initial = copy.deepcopy(self.repo.jobs)
         self.ledger = Ledger()
         self.history = []
+        # The error graph. With a file it persists; empty, it is filled with a generated past (gecmis.py) so the
+        # page has a history to read until a real scheduler feeds it.
+        self.graph = Graph(self.graph_path)
+        self.graph_generated = not self.graph.nodes("job")
+        if self.graph_generated and self.history_days:
+            gecmis.build(site, days=self.history_days, graph=self.graph)
 
     # ---- reads ------------------------------------------------------------------
     def site(self):
@@ -58,6 +66,7 @@ class Office:
         changed = sorted(n for n in set(self.initial) | set(self.repo.jobs) if self.initial.get(n) != self.repo.jobs.get(n))
         return {"today": env["today"], "hosts": env["hosts"], "folders": env["folders"], "standards": env["standards"],
                 "holidays": env["holidays"], "calendars": cals, "jobs": jobs, "waiting": waiting, "changed": changed,
+                "connections": env.get("connections", {}),
                 "site_file": str(self.site_path.name), "model": self.model.spec if self.model else None,
                 "licence": self.licence, "version": __version__}
 
@@ -87,6 +96,13 @@ class Office:
                      "model_calls": getattr(self.model, "calls", 0), "summary": render(report)}
             entry = json.loads(redact(json.dumps(entry, ensure_ascii=False, default=str)))  # every copy shown
             self.history.insert(0, entry)
+            if report["outcome"] == "closed":  # the graph remembers which request changed which job, and when
+                d, b = report["definition"], report["before"] or {}
+                job = (d or b).get("name")
+                what = ("kaldirildi" if d is None else "yeni is" if not b else
+                        "; ".join(f"{k}: {b.get(k)} -> {v}" for k, v in d.items() if b.get(k) != v))
+                self.graph.add_change(no, job, self.repo.today.isoformat(), what)
+                self.graph.commit()
             return entry
 
     def ledger_rows(self):
@@ -95,6 +111,45 @@ class Office:
             ok = self.ledger.verify_chain()
         return {"chain_ok": ok,
                 "rows": [{"id": i, **json.loads(b), "prev": p[:12], "hash": h[:12]} for i, b, p, h in rows]}
+
+
+    # ---- the error graph -------------------------------------------------------------
+    def graph_summary(self):
+        with self.lock:
+            g, today = self.graph, self.repo.today.isoformat()
+            incidents = [cozumle._incident(g, i["id"]) for i in g.nodes("incident")]
+            fails = cozumle.failures(g)
+            sigs = {}
+            for f in fails:
+                s = sigs.setdefault(f["signature"], {"signature": f["signature"], "count": 0, "jobs": set(), "last": ""})
+                s["count"] += 1
+                s["jobs"].add(f["job"])
+                s["last"] = max(s["last"], f["day"])
+            runs = g.runs(since=(self.repo.today - datetime.timedelta(days=29)).isoformat())
+            daily = {}
+            for r in runs:
+                d = daily.setdefault(r["day"], [0, 0])
+                d[0 if r["ok"] and not r.get("error") else 1] += 1
+            return {"stats": g.stats(), "generated": self.graph_generated, "today": today,
+                    "incidents": sorted(incidents, key=lambda i: (i["open"], i["day"]), reverse=True),
+                    "failures": fails[:80],
+                    "signatures": sorted(({**v, "jobs": sorted(v["jobs"])} for v in sigs.values()),
+                                         key=lambda v: -v["count"]),
+                    "warnings": cozumle.warnings(g, today),
+                    "daily": [{"day": d, "ok": v[0], "failed": v[1]} for d, v in sorted(daily.items())]}
+
+    def graph_analyse(self, run_id, with_model=False):
+        with self.lock:
+            if not run_id or self.graph.get(run_id) is None or not run_id.startswith("run:"):
+                return {"error": "boyle bir calisma yok"}
+            ev = cozumle.analyse(self.graph, run_id)
+            seeds = [run_id, f"job:{ev['job']}"] + [c["id"] for c in ev["candidates"] if ":" in c["id"]
+                                                   and self.graph.get(c["id"])]
+            seeds += [p["id"] for p in ev["precedents"][:3]]
+            ev["suggestion"] = cozumle.suggest(self.graph, ev)
+            ev["picture"] = self.graph.neighbourhood([x for x in seeds if self.graph.get(x)], depth=1, limit=40)
+            ev["model"] = cozumle.explain(self.model, ev) if with_model and self.model else None
+            return ev
 
 
 def bench_summary(path=None):
@@ -166,6 +221,11 @@ def make_handler(office):
                 return self._send(200, office.ledger_rows())
             if url.path == "/api/examples":
                 return self._send(200, examples())
+            if url.path == "/api/graph":
+                return self._send(200, office.graph_summary())
+            if url.path == "/api/graph/analyse":
+                out = office.graph_analyse((q.get("run") or [""])[0])
+                return self._send(200 if "candidates" in out else 400, out)
             if url.path == "/api/bench":
                 return self._send(200, bench_summary((q.get("file") or [None])[0]))
             return self._send(404, {"error": "yok"})
@@ -182,6 +242,11 @@ def make_handler(office):
             if path == "/api/request":
                 out = office.submit(body.get("text", ""))
                 return self._send(400 if "error" in out else 200, out)
+            if path == "/api/graph/explain":
+                if office.model is None:
+                    return self._send(400, {"error": "model bagli degil; sunucuyu --model ile baslatin"})
+                out = office.graph_analyse(body.get("run", ""), with_model=True)
+                return self._send(200 if "candidates" in out else 400, out)
             if path == "/api/reset":
                 with office.lock:
                     office.reset()

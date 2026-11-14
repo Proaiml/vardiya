@@ -76,7 +76,7 @@ class ServerTest(unittest.TestCase):
         base = f"http://127.0.0.1:{httpd.server_port}"
         try:
             page = urllib.request.urlopen(base + "/").read().decode()
-            self.assertIn("Talep Masası", page)
+            self.assertIn("Vardiya Operasyon", page)
             site = json.loads(urllib.request.urlopen(base + "/api/site").read())
             self.assertIn("RPR_GUNLUK_OZET", [j["name"] for j in site["jobs"]])
             req = urllib.request.Request(base + "/api/request", json.dumps({"text": NEW}).encode(),

@@ -14,7 +14,7 @@ from . import intake
 from .adapter import RepoAdapter
 from .desk import Desk
 from .ledger import Ledger
-from .repo import ACTION_VERBS, DEF_FIELDS, READ_VERBS, Repo, normalise
+from .repo import ACTION_VERBS, DEF_FIELDS, READ_VERBS, TYPE_FIELDS, Repo, normalise
 
 HARMFUL = ("false_green", "destructive")
 RECORD_KEYS = ("talep_no", "kapatan", "istenen")
@@ -144,7 +144,8 @@ RAW_SYSTEM = (
     'Reply with ONE JSON object per turn: {"verb": "<verb>", "args": {...}} or {"verb": "done"}.\n'
     "Read verbs: get_request{}, list_defs{}, get_def{job}, list_env{}, forecast{calendar,days}.\n"
     "Action verbs: deploy_job{definition} (creates or overwrites the job named definition.name; fields: "
-    + ", ".join(DEF_FIELDS) + "), delete_job{job}, "
+    + ", ".join(DEF_FIELDS) + "; and, only for the job types that use them, " + ", ".join(TYPE_FIELDS)
+    + "), delete_job{job}, "
     "close_request{talep_no, record} (record must contain talep_no, kapatan, istenen), "
     "return_request{talep_no, reason}.")
 
@@ -152,8 +153,9 @@ RAW_SYSTEM = (
 RUNBOOK = (
     "\n\nSite runbook (follow it exactly):\n"
     "1. A request is a filled-in template of `key: value` lines. Header keys: talep_no, talep_eden, islem. Field keys: "
-    "klasor, is_adi, tip, host, calistiran, komut, gunler, saat, bagimlilik, bildirim, aciklama. They map to the "
-    "definition fields folder, name, type, host, run_as, command, calendar, time, deps, notify, description.\n"
+    "klasor, is_adi, tip, host, calistiran, komut, gunler, saat, bagimlilik, bildirim, aciklama, and for some job "
+    "types baglanti, hedef, sure_siniri. They map to the definition fields folder, name, type, host, run_as, command, "
+    "calendar, time, deps, notify, description, connection, target, timeout.\n"
     "2. Return the request (return_request with a clear reason) and change nothing if: a line is not in the template, "
     "a key appears twice, islem is not 'yeni', 'degisiklik' or 'kaldir', or for 'yeni' any field is missing "
     "(bagimlilik may be []).\n"

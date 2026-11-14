@@ -1,0 +1,371 @@
+{
+ "today": "2026-11-13",
+ "env": {
+  "hosts": {
+   "app01": {
+    "users": [
+     "batchusr",
+     "odmusr"
+    ],
+    "desc": "odeme uygulama sunucusu"
+   },
+   "db01": {
+    "users": [
+     "dbbatch"
+    ],
+    "desc": "veritabani sunucusu"
+   },
+   "rpr01": {
+    "users": [
+     "rprusr"
+    ],
+    "desc": "raporlama sunucusu"
+   },
+   "app02": {
+    "users": [
+     "batchusr",
+     "mhsusr"
+    ],
+    "desc": "muhasebe uygulama sunucusu"
+   },
+   "etl01": {
+    "users": [
+     "etlusr",
+     "batchusr"
+    ],
+    "desc": "veri aktarim sunucusu"
+   }
+  },
+  "calendars": {
+   "HERGUN": {
+    "rule": {
+     "type": "daily"
+    },
+    "desc": "haftanin her gunu, tatiller dahil"
+   },
+   "IS_GUNU": {
+    "rule": {
+     "type": "workdays"
+    },
+    "desc": "pazartesiden cumaya, resmi tatiller haric"
+   },
+   "HAFTA_SONU": {
+    "rule": {
+     "type": "weekly",
+     "days": [
+      5,
+      6
+     ]
+    },
+    "desc": "cumartesi ve pazar"
+   },
+   "AY_SONU_IS_GUNU": {
+    "rule": {
+     "type": "month_end_workday"
+    },
+    "desc": "her ayin son is gunu"
+   },
+   "AYIN_15I": {
+    "rule": {
+     "type": "month_day",
+     "day": 15,
+     "shift": "next"
+    },
+    "desc": "her ayin 15. gunu; tatile ya da hafta sonuna gelirse sonraki is gunu"
+   },
+   "PAZARTESI": {
+    "rule": {
+     "type": "weekly",
+     "days": [
+      0
+     ]
+    },
+    "desc": "her pazartesi"
+   }
+  },
+  "folders": {
+   "ODEME_GUNLUK": {
+    "prefix": "ODM_"
+   },
+   "RAPOR": {
+    "prefix": "RPR_"
+   },
+   "MUHASEBE": {
+    "prefix": "MHS_"
+   },
+   "KREDI": {
+    "prefix": "KRD_"
+   }
+  },
+  "standards": {
+   "name_regex": "[A-Z][A-Z0-9_]{3,29}",
+   "notify_suffix": "@ornek.local"
+  },
+  "holidays": [
+   "2026-12-31",
+   "2027-01-01"
+  ],
+  "connections": {
+   "ORA_ODEME_PRD": {
+    "kind": "veritabani",
+    "desc": "Oracle, odeme uretim veritabani"
+   },
+   "PG_RAPOR_PRD": {
+    "kind": "veritabani",
+    "desc": "PostgreSQL, raporlama veritabani"
+   },
+   "SFTP_BANKA_GIDEN": {
+    "kind": "dosya_aktarimi",
+    "desc": "SFTP, bankalararasi giden dosyalar"
+   },
+   "SSH_ESKI_UNIX": {
+    "kind": "ssh",
+    "desc": "agent kurulamayan eski Unix sunucusu"
+   },
+   "ORA_MUHASEBE_PRD": {
+    "kind": "veritabani",
+    "desc": "Oracle, muhasebe uretim veritabani"
+   },
+   "SFTP_TEDARIKCI": {
+    "kind": "dosya_aktarimi",
+    "desc": "SFTP, tedarikci sunucusu"
+   },
+   "SSH_ETL_KUME": {
+    "kind": "ssh",
+    "desc": "ETL kumesinin giris dugumu"
+   }
+  }
+ },
+ "jobs": [
+  {
+   "name": "ODM_WATCH_DOSYA",
+   "folder": "ODEME_GUNLUK",
+   "type": "dosya_izleme",
+   "host": "app01",
+   "run_as": "batchusr",
+   "command": "/data/odeme/gelen/odeme.csv",
+   "calendar": "IS_GUNU",
+   "time": "01:00",
+   "deps": [],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Odeme dosyasinin gelmesini bekler",
+   "timeout": "240"
+  },
+  {
+   "name": "ODM_LOAD_ODEME",
+   "folder": "ODEME_GUNLUK",
+   "type": "komut",
+   "host": "app01",
+   "run_as": "odmusr",
+   "command": "/opt/odeme/bin/load_odeme.sh",
+   "calendar": "IS_GUNU",
+   "time": "02:00",
+   "deps": [
+    "ODM_WATCH_DOSYA"
+   ],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Odeme dosyasini staging tablosuna yukler"
+  },
+  {
+   "name": "ODM_POST_DEFTER",
+   "folder": "ODEME_GUNLUK",
+   "type": "komut",
+   "host": "db01",
+   "run_as": "dbbatch",
+   "command": "/opt/odeme/bin/post_defter.sh",
+   "calendar": "IS_GUNU",
+   "time": "03:00",
+   "deps": [
+    "ODM_LOAD_ODEME"
+   ],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Staging kayitlarini deftere isler"
+  },
+  {
+   "name": "RPR_GUNLUK_OZET",
+   "folder": "RAPOR",
+   "type": "komut",
+   "host": "rpr01",
+   "run_as": "rprusr",
+   "command": "/opt/rapor/bin/gunluk_ozet.sh",
+   "calendar": "IS_GUNU",
+   "time": "05:00",
+   "deps": [
+    "ODM_POST_DEFTER"
+   ],
+   "notify": "rapor-nobet@ornek.local",
+   "description": "Gunluk ozet raporunu uretir"
+  },
+  {
+   "name": "ODM_BANKA_GONDER",
+   "folder": "ODEME_GUNLUK",
+   "type": "dosya_aktarimi",
+   "host": "app01",
+   "run_as": "batchusr",
+   "command": "/data/odeme/giden/odeme.txt",
+   "calendar": "IS_GUNU",
+   "time": "04:00",
+   "deps": [
+    "ODM_POST_DEFTER"
+   ],
+   "notify": "odeme-nobet@ornek.local",
+   "description": "Gunluk odeme dosyasini bankaya gonderir",
+   "connection": "SFTP_BANKA_GIDEN",
+   "target": "/gelen/odeme/odeme.txt"
+  },
+  {
+   "name": "MHS_WATCH_KUR",
+   "folder": "MUHASEBE",
+   "type": "dosya_izleme",
+   "host": "app02",
+   "run_as": "batchusr",
+   "command": "/data/muhasebe/gelen/kur_*.csv",
+   "calendar": "IS_GUNU",
+   "time": "00:30",
+   "deps": [],
+   "notify": "muhasebe-nobet@ornek.local",
+   "description": "Merkez bankasi kur dosyasini bekler",
+   "timeout": "180"
+  },
+  {
+   "name": "MHS_LOAD_KUR",
+   "folder": "MUHASEBE",
+   "type": "komut",
+   "host": "app02",
+   "run_as": "mhsusr",
+   "command": "/opt/muhasebe/bin/load_kur.sh",
+   "calendar": "IS_GUNU",
+   "time": "01:30",
+   "deps": [
+    "MHS_WATCH_KUR"
+   ],
+   "notify": "muhasebe-nobet@ornek.local",
+   "description": "Kur dosyasini kur tablosuna yukler"
+  },
+  {
+   "name": "MHS_KUR_FARKI",
+   "folder": "MUHASEBE",
+   "type": "veritabani",
+   "host": "db01",
+   "run_as": "dbbatch",
+   "command": "/opt/muhasebe/sql/kur_farki.sql",
+   "calendar": "IS_GUNU",
+   "time": "02:30",
+   "deps": [
+    "MHS_LOAD_KUR",
+    "ODM_POST_DEFTER"
+   ],
+   "notify": "muhasebe-nobet@ornek.local",
+   "description": "Kur farki kayitlarini hesaplar",
+   "connection": "ORA_MUHASEBE_PRD"
+  },
+  {
+   "name": "MHS_MUTABAKAT",
+   "folder": "MUHASEBE",
+   "type": "veritabani",
+   "host": "db01",
+   "run_as": "dbbatch",
+   "command": "/opt/muhasebe/sql/mutabakat.sql",
+   "calendar": "IS_GUNU",
+   "time": "03:30",
+   "deps": [
+    "MHS_KUR_FARKI"
+   ],
+   "notify": "muhasebe-nobet@ornek.local",
+   "description": "Defter ile hesap mutabakatini yapar",
+   "connection": "ORA_MUHASEBE_PRD"
+  },
+  {
+   "name": "MHS_GUN_SONU",
+   "folder": "MUHASEBE",
+   "type": "bos",
+   "host": "app02",
+   "run_as": "mhsusr",
+   "command": null,
+   "calendar": "IS_GUNU",
+   "time": "04:30",
+   "deps": [
+    "MHS_MUTABAKAT",
+    "RPR_GUNLUK_OZET"
+   ],
+   "notify": "muhasebe-nobet@ornek.local",
+   "description": "Muhasebe gun sonu: zinciri birlestirir"
+  },
+  {
+   "name": "KRD_TEDARIK_AL",
+   "folder": "KREDI",
+   "type": "dosya_aktarimi",
+   "host": "etl01",
+   "run_as": "batchusr",
+   "command": "/out/kredi/skor.txt",
+   "calendar": "IS_GUNU",
+   "time": "00:45",
+   "deps": [],
+   "notify": "kredi-nobet@ornek.local",
+   "description": "Tedarikciden kredi skor dosyasini alir",
+   "connection": "SFTP_TEDARIKCI",
+   "target": "/data/kredi/gelen/skor.txt"
+  },
+  {
+   "name": "KRD_LOAD_SKOR",
+   "folder": "KREDI",
+   "type": "komut",
+   "host": "etl01",
+   "run_as": "etlusr",
+   "command": "/opt/kredi/bin/load_skor.sh",
+   "calendar": "IS_GUNU",
+   "time": "01:45",
+   "deps": [
+    "KRD_TEDARIK_AL"
+   ],
+   "notify": "kredi-nobet@ornek.local",
+   "description": "Skor dosyasini staging tablosuna yukler"
+  },
+  {
+   "name": "KRD_RISK_HESAP",
+   "folder": "KREDI",
+   "type": "ssh",
+   "host": "etl01",
+   "run_as": "etlusr",
+   "command": "/usr/local/bin/risk_hesap.sh",
+   "calendar": "IS_GUNU",
+   "time": "03:00",
+   "deps": [
+    "KRD_LOAD_SKOR"
+   ],
+   "notify": "kredi-nobet@ornek.local",
+   "description": "ETL kumesinde risk hesaplamasini calistirir",
+   "connection": "SSH_ETL_KUME"
+  },
+  {
+   "name": "KRD_RAPOR",
+   "folder": "KREDI",
+   "type": "komut",
+   "host": "rpr01",
+   "run_as": "rprusr",
+   "command": "/opt/kredi/bin/kredi_rapor.sh",
+   "calendar": "IS_GUNU",
+   "time": "05:30",
+   "deps": [
+    "KRD_RISK_HESAP"
+   ],
+   "notify": "kredi-nobet@ornek.local",
+   "description": "Gunluk kredi risk raporunu uretir"
+  },
+  {
+   "name": "RPR_HAFTALIK",
+   "folder": "RAPOR",
+   "type": "komut",
+   "host": "rpr01",
+   "run_as": "rprusr",
+   "command": "/opt/rapor/bin/haftalik.sh",
+   "calendar": "IS_GUNU",
+   "time": "06:00",
+   "deps": [
+    "RPR_GUNLUK_OZET"
+   ],
+   "notify": "rapor-nobet@ornek.local",
+   "description": "Gunluk yonetim ozeti (haftalik rapor icin)"
+  }
+ ]
+}

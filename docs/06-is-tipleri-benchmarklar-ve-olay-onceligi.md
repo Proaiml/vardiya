@@ -6,7 +6,7 @@ var mı; (3) geçmişi bir çizgeye yazıp modele bağlam olarak vermek ve olayd
 Vardiya'ya nasıl girer.
 
 Kaynaklar sonda. Ürün belgeleri resmî sayfalardan okundu; makale ve satıcı rakamları kaynağın kendi iddiasıdır,
-bağımsız doğrulanmadı. BMC topluluk forumu girişe kapalı olduğu için forum taraması yapılamadı (Bölüm 6).
+bağımsız doğrulanmadı. BMC topluluk forumu girişe kapalı; forum taraması Stack Overflow'un açık arşiviyle yapıldı (Bölüm 7).
 
 ## 1. Control-M iş tipleri
 
@@ -229,6 +229,87 @@ hangisi, neden" sorusuna iniyor. Bu henüz bir hipotez; ölçülmedi.
 - **JS7 eşlemesi.** "Tam" yazılanlar belgeye göre; laboratuvarda yalnızca kabuk işi ve duyuru panoları denendi.
   `SQLExecutorJob`, dosya aktarımı ve File Order Source laboratuvarda sınanmalı.
 - **Satıcı ve makale rakamları** kaynakların kendi iddiaları.
+
+## 7. Forumlarda ne olmuş: on üç yıllık soru arşivi
+
+BMC'nin kendi topluluk forumu girişsiz okunamıyor (sayfalar 403 ve 404 döndürüyor). Herkese açık en büyük arşiv
+Stack Overflow'daki `control-m` etiketi: 2011'den 2025'e **214 soru**, yıllara göre 2018'de en yoğun (27), 2023'ten
+sonra azalıyor. Sorular Stack Exchange'in açık API'siyle indirildi, konularına göre ayrıldı ve en çok okunanların
+cevapları okundu. Bir soru birden çok konuya girebilir.
+
+| Konu | Soru | En çok okunanlardan |
+| --- | --- | --- |
+| Betik, kabuk, Windows, Unix | 53 | PowerShell işi tanımlamak, betikte iş adını almak |
+| Hata durumu, çıkış kodu, Ended Not OK | 35 | OSCOMPSTAT değerleri, ilk iş hata verince devam etmek |
+| Takvim, sipariş, ODATE, New Day | 34 | ODATE ile RDATE farkı, döngüsel işin yeni güne taşması |
+| Bağımlılık ve koşul | 21 | Aylık ve günlük iş arasında koşul, bir koşulu kimin kullandığı |
+| Dosya izleme ve aktarım | 20 | Dosya adında boşluk, dosya izleme işini bulmak |
+| Komut satırı ve API | 19 | İşi elle çalıştırmak, Automation API |
+| Agent, host, bağlantı | 17 | Host grubu, Kubernetes'te agent |
+| Değişkenler | 12 | YYYYMM, auto-edit biçimleri |
+| Taşıma ve dışa aktarma | 11 | Bütün işleri dışa aktarmak, AWS'ye geçiş |
+| Uyarı ve bildirim | 10 | "Belli saate kadar başlamazsa e-posta", klasörde herhangi bir iş düşerse uyarı |
+| Veritabanı işleri | 10 | Saklı yordamın hatası Control-M'e gelmiyor |
+
+Sorulardan çıkan ve doğrudan Vardiya'ya taşınan arıza örüntüleri:
+
+| Örüntü | Forumda | Neden önemli | Vardiya'da |
+| --- | --- | --- | --- |
+| İş başarılı görünüyor ama veri eksik | Saklı yordamın hatası çıkış koduna yansımıyor; pyodbc ile çağrılan yordamda commit yok | Sahte yeşilin ders kitabı örneği: zincir yeşil, veri bozuk | Geçmiş üretecinde `sessiz` türü; kök neden yordama yapılan değişiklik |
+| Servis hesabının parolası değişti | Parolayı değiştiren kişi işlerin kırılacağını bilmiyor; agent parolayı kendi deposunda tutuyor | Aynı anda birçok iş düşer; tek tek bakan nöbetçi ortak nedeni geç görür | `parola` türü; çizge aynı kullanıcıyı paylaşan işleri bir arada gösterir |
+| Aynı tabloya aynı anda yazan işler | Dört iş aynı tabloya ekliyor, kilit hatası; doğru cevap kaynak (Resource) tanımlamak | Yeniden çalıştırmak o geceyi kurtarır, hata geri gelir | `kilit` türü; analiz "bu çözüm daha önce tutmadı" der |
+| İş bitmiyor | .bat bittiği halde iş kapanmıyor: başlattığı alt süreç hâlâ açık | Asılı mı yavaş mı ayrımı | `takili` türü |
+| Döngüsel iş yeni güne taşıyor | New Day'de önceki günün kopyası hâlâ çalışırken yenisi başlıyor | Mükerrer çalışma | Henüz yok (aday tuzak ailesi) |
+| Döngüsel iş hata verip durmuyor | Hata verdikçe yeniden çalışıyor | Hata sessizce büyür | Henüz yok |
+| Aylık iş ile günlük iş arasında koşul | Farklı takvimli iki işi bağlamak | Vardiya'nın 0.2'de eklediği takvim uyumu denetiminin sahadaki karşılığı | `E_CAL_DEP` ve `t-uyumsuz` |
+| Koşul adına sayı eklenmiş | Bağımsız akış olarak sipariş edilince koşul adına ek geliyor, ardıl iş sonsuza dek bekliyor | Tanımda her şey doğru görünür | Henüz yok |
+| İş planlamada var, izlemede yok | İş sipariş edilmemiş; takvimi o gün için seçmiyor | "Neden çalışmadı" sorusunun en sık cevabı | Talep tarafında sonraki çalışma günleri gösteriliyor |
+| Belli saate kadar başlamazsa haber ver | Öncül uzun sürünce iş geç başlıyor | Olaydan önce uyarı ihtiyacının kendisi | Erken uyarılar: yavaşlama eğilimi |
+
+Bu tablonun ilk dört satırı ve "dosya gelmedi", "agent yanıt vermiyor", "disk doldu", "değişiklik sonrası hata"
+yerel hata çizgesinin örnek geçmişinde birer olay türü olarak duruyor (`vardiya/gecmis.py`, `CATALOG`).
+
+Sınırlar: Stack Overflow soruları çoğunlukla geliştiricilerden geliyor, adminlerden değil; BMC topluluğu ve
+şirket içi deneyim farklı bir dağılım gösterebilir. Sorular sahadaki sıklığı değil, insanların takılıp sorduğu
+şeyi gösteriyor.
+
+Kaynaklar (bölüm 7):
+
+- [Stack Exchange API, control-m etiketi](https://api.stackexchange.com/docs/questions)
+- [Aynı tabloya yazan işler ve kilit](https://stackoverflow.com/questions/6910999/scheduling-issues-with-control-m)
+- [Saklı yordamın hatası Control-M'e gelmiyor](https://stackoverflow.com/questions/67971977/control-m-does-not-get-error-from-stored-procedure)
+- [Yordam çalıştı ama veri eksik](https://stackoverflow.com/questions/43537010/data-are-not-fully-written-to-database-when-run-control-m-python-job-executing-s)
+- [Servis hesabının parolası değişince](https://stackoverflow.com/questions/40583259/control-m-batch-job-started-throwing-an-error-after-service-account-password-get)
+- [.bat bittiği halde iş bitmiyor](https://stackoverflow.com/questions/15813159/control-m-job-not-ending-after-bat-finishes)
+- [Döngüsel işin yeni güne taşması](https://stackoverflow.com/questions/40853745/control-m-avoid-cyclic-job-from-run-before-prev-days-complete)
+- [Döngüsel iş hata verip durmuyor](https://stackoverflow.com/questions/46011693/control-m-cyclic-job-keeps-running-even-after-failure)
+- [Aylık ve günlük iş arasında koşul](https://stackoverflow.com/questions/18328457/control-m-add-condition-between-a-monthly-and-a-daily-job)
+- [Koşul adına eklenen sayı](https://stackoverflow.com/questions/66812246/control-m-out-condition-added-with-number-at-the-end)
+- [İş planlamada var, izlemede yok](https://stackoverflow.com/questions/29526867/control-m-job-appears-in-planning-but-not-in-monitoring)
+- [Ön koşul beklerken iş ne kadar planda kalır](https://stackoverflow.com/questions/63931524/how-long-does-a-control-m-job-stays-in-waiting-state-for-the-pre-requisites-to-b)
+- [Belli saate kadar başlamazsa uyarı](https://stackoverflow.com/questions/54533685/control-m-email-alert-for-when-the-job-is-not-triggered-by-spefic-time)
+
+## 8. Yerel hata çizgesi (sürüm 0.3)
+
+Bölüm 5'teki tasarımın ilk hali kodda: `vardiya/graph.py` (SQLite üzerinde küçük bir özellik çizgesi, yalnızca
+standart kütüphane), `vardiya/gecmis.py` (bir sitenin 90 günlük geçmişini üretir), `vardiya/cozumle.py` (çözümleme
+ve erken uyarı). Önyüzde "Olaylar ve kök neden" ile "Erken uyarılar" bölümleri bunları gösteriyor.
+
+- **Hepsi yerel.** Çizge bir SQLite dosyasında ya da bellekte durur; hiçbir şey makineden çıkmaz.
+- **Kod kanıt toplar ve sıralar.** Bir hata için: hata imzası (sayılar, yollar ve tırnaklı değerler çıkarılmış
+  şablon), aynı gün hata veren işlerin paylaştığı sunucu, kullanıcı, bağlantı ya da tablo, hatadan önceki üç gündeki
+  tanım değişiklikleri, hata veren öncüller, aynı imzanın geçmişteki olayları, kök nedenleri, yapılan müdahale ve
+  müdahalenin tutup tutmadığı. Bunlardan aday kök nedenler puanlanır.
+- **Model yalnızca okur ve seçer.** Model bağlıysa kanıtı okuyup adaylardan birini seçer ve gerekçe yazar; listede
+  olmayan bir aday reddedilir. Model bağlı değilken kodun sıralaması geçerlidir.
+- **Geçmişten ders.** Aynı kök nedenli bir hata daha önce iki kez "yeniden çalıştır" ile kapatılıp geri geldiyse
+  analiz bunu söyler ve doğrulanmış bir çözüm önerir.
+- **Erken uyarı.** Süre eğilimi (Theil-Sen), aynı hatanın haftanın aynı gününde tekrarı ve kök nedeni giderilmeden
+  kapatılmış olaylar.
+
+Ölçüm: örnek geçmişteki 16 olayın 16'sında kodun ilk adayı, olayın kurulduğu kök nedendir. Bu bir başarı ölçüsü
+değil, bağlantıların doğru kurulduğunun sınamasıdır: geçmişi ve hata kataloğunu aynı el yazdı. Gerçek bir ölçüm
+için bench'in ikinci hattı (bölüm 5) ve gerçek bir zamanlayıcının geçmişi gerekiyor.
 
 ## Kaynaklar
 
