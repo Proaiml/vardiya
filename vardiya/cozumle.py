@@ -80,9 +80,15 @@ def analyse(g, run_id, window=0):
     pred_setok = [r for p in preds for r in g.runs(p, since=day, until=day) if r.get("set_ok")]
     durations = [r["minutes"] for r in g.runs(job) if r["ok"] and r["day"] < day][-30:]
 
+    # the failure class (skills/olay-siniflari) decides which evidence probes count; with no known class, all do
+    known = catalog_match(sig)
+    from .gecmis import NEW_DAY, _C, _clock
+    probes = set(_C.get(known["kind"], {}).get("evidence") or []) if known else set()
+    allow = (lambda probe: not probes or probe in probes)
+
     # candidates, ranked by code
     cand = []
-    for a, js in sorted(shared.items(), key=lambda kv: -len(kv[1])):
+    for a, js in sorted(shared.items(), key=lambda kv: -len(kv[1])) if allow("shared_attr") else ():
         share = (len(js) + 1) / max(1, len(users_of[a]))
         cand.append({"id": a, "kind": a.split(":", 1)[0], "score": 2 + 3 * len(js) * share,
                      "why": f"ayni gun {len(js) + 1} is ayni {KIND_TR.get(a.split(':')[0], '')} uzerinde hata verdi "
@@ -107,7 +113,7 @@ def analyse(g, run_id, window=0):
                                 f"{p['root']} idi"})
     text = str(run["error"]).lower()
     have = {c["id"] for c in cand}
-    for a in sorted(mine - have):  # the error line itself names a table, host or user of this job
+    for a in sorted(mine - have) if allow("named_in_error") else ():  # the error line names a table, host or user
         if a.split(":", 1)[1].lower() in text:
             co = sorted(e["from"].split(":", 1)[1] for e in g.into(a) if e["from"].startswith("job:")
                         and e["from"] != f"job:{job}")
@@ -116,9 +122,6 @@ def analyse(g, run_id, window=0):
                                 + (f"; ayni {KIND_TR.get(a.split(':')[0], '')} su islerce de kullaniliyor: "
                                    f"{', '.join(co)}" if co else "")})
             have.add(a)
-    known = catalog_match(sig)
-    from .gecmis import NEW_DAY, _C, _clock
-    probes = set(_C.get(known["kind"], {}).get("evidence") or []) if known else set()
     if known and "crossed_new_day" in probes:  # a predecessor that finished after the plan day turned
         for p in preds:
             pj = g.get(f"job:{p}") or {}

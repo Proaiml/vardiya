@@ -377,6 +377,55 @@ yüküne göre), ve bir işi öncülünün koşulunu yok sayarak çalıştırman
 sık başvurulan bir kestirme; doğrulama yapılmadan kullanılırsa veri bozabilir. Zararlı eylemlere "koşulları yok sayarak
 hemen çalıştır" (`run_now`) eklendi; sipariş tarihi, Set OK, dosya ve kaynak sınıflarında zararlı sayılıyor.
 
+SLA tahmini (Batch Impact Manager) araması: "BIM hizmeti hep geç gösteriyor, çünkü tahmin yanlış" (11 cevap), 9.0.21.100'de
+z/OS döngüsel işlerinde tahmini başlama saatinin yenileme saatine kayması, geç kalma nedenlerini çözümlemek için ayrıntı
+makalesi. Bu, 01 belgesindeki tezi destekliyor: ortalamaya dayanan bitiş tahmini yanılıyor; gün tipine göre dağılım ve
+benzetim (Monte Carlo) gerekiyor. Vardiya'nın erken uyarıları bugün eğilim ve tekrar üzerinden; kritik yol üzerinde
+olasılıklı SLA tahmini henüz yok.
+
+"Yönetim sunucusu ile zamanlayıcı senkron değil" araması (14.363 sonuç): New Day'den sonra yönetim sunucusunun geçidinin
+"No Sync" durumunda takılması, işler sunucuda çalışırken ekranlarda durumların güncellenmemesi, geçidin sunucudan cevap
+alamaması (3.700 görüntülenme). Bu sınıf ötekilerden farklı: arıza işte değil gözlemde. Ekran eski durumu gösterirken
+yapılan müdahale (zaten çalışmış işi yeniden çalıştırmak) zarar verir. Yeni sınıf: **izleme ekranı senkron değil**
+(`senkron`); yeniden çalıştırma, Set OK ve koşulsuz çalıştırma bu sınıfta zararlı.
+
+"Bekleyen iş New Day'de aktif listeden silindi" araması: Keep Active parametresi varsayılan 0; yani koşulunu bekleyen
+bir iş New Day'de sessizce siliniyor ve hiç çalışmıyor. Sipariş tarihi sınıfının nedenine ve müdahalesine eklendi. Bu
+aynı zamanda bir tanım denetimi adayı: gece yarısını geçebilecek bir zincirdeki işte Keep Active 0 ise talep aşamasında
+uyar (Vardiya'nın tanım modelinde bu alan henüz yok).
+
+Agent erişimi ve host grupları araması: host grubunda agent seçimi anlık işlemci ya da bellek yüküne göre yapılmıyor;
+yükseltmeden sonra "bu sürüm bu işi çalıştıramaz" bekleme nedeninin kaynağı yükseltmeden önceki host kısıtı denetimi;
+agent'sız (uzak host) kullanım kılavuzu (13.643 görüntülenme); bir agent düşünce işin ikincil agent'a geçmesi için host
+grubu önerisi. Agent sınıfının müdahalesine host grubu yönlendirmesi eklendi.
+
+Yeniden çalıştırma araması: en çok okunan makale başarısız işi belirli aralıklarla otomatik yeniden çalıştıran kural
+(On: Ended Not OK, Do: Rerun; 9.304 görüntülenme). Bu kural yaygın, ama yarım kalan bir yükleme işinde temizliksiz
+yeniden çalıştırma mükerrer kayıt üretir (01 belgesindeki ilk tuzak). Tanım sağlığı taraması için bir aday: yükleme
+yapan bir işte otomatik yeniden çalıştırma kuralı var ve temizlik adımı yoksa uyar (tanım modelinde bu alanlar henüz
+yok). Aynı aramada SAP işlerinde "hatalı adımdan yeniden başlat" seçeneği ve MFT kabının agent'ı çevrim dışı bırakması
+çıktı.
+
+Sertifika araması (1.736 sonuç): yüzlerce agent'a yeni SSL sertifikasını kesintiyi en aza indirerek dağıtmak (ctmkeytool),
+sertifika otoritesini değiştirmenin en iyi yolları, sunucu ile agent arasında SSL ya da TCP kipini seçmek. Yeni sınıf:
+**sertifika süresi doldu ya da güvenilmiyor** (`sertifika`); "sertifika yolu bulunamadı" işaretleri agent sınıfından
+buraya taşındı. Bir olaydan önce uyarısı adayı: sertifika bitiş tarihlerinin izlenmesi (veri kaynağı gerekiyor).
+
+GPU koşusu sırasında okunan dört arama daha (dakikada en çok bir sayfa):
+
+- **Agent belleği:** Windows agent'ta SSL ve geçici iletişim açıkken bellek sürekli artıyor (bilinen hata, 9.0.18-9.0.20).
+  Disk sınıfına bellek işaretleri eklendi; sunucu bellek serisi olursa disk gibi dolma süresi uyarısına dönüşebilir.
+- **Dosya izleme:** joker karakterli izleyici dosyayı her seferinde bulamıyor (agent 9.0.20 ve öncesi), dosyanın
+  izleyiciden önce gelmesi, son 24 saatte oluşmuş dosyayı yakalamak. "Dosya gelmedi" sınıfı ikiye ayrıldı: kaynak geç
+  gönderdi mi, yoksa dosya geldi de izleyici mi görmedi? İlk adım: dosya gerçekten yerinde mi.
+- **Döngüsel iş ve New Day:** çalışma aralığı New Day'i geçen döngüsel iş; eksik siparişleri User Daily'den yeniden
+  sıralamak (ctmudlst UPDATE). Mükerrer ve plan sınıflarına eklendi.
+- **Parola:** Windows agent'ta "Logon As User" kipinde iş sahibinin parolası hiç kaydedilmemiş (TR5167, 7.119
+  görüntülenme). Parola sınıfına eklendi; talep tarafı için bir denetim adayı: Windows agent'ta yeni bir çalıştıran
+  kullanıcı tanımlanıyorsa parolası kayıtlı mı?
+- **Kaynak bekleme durum kodları:** D kaynak bekliyor, L agent bekliyor, M iş yükü politikasının sınırı (13.799
+  görüntülenme). Kaynak sınıfı önce bu kodla nedeni ayırıyor; iş yükü politikası ayrı bir neden olarak eklendi.
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların
@@ -491,7 +540,34 @@ Ezbere karşı iki bölüm var. `dev`: çözücülerin yazıldığı adlar ve ha
 kullanıcı, tablo ve kaynak adları değiştirilmiş, her hata başka bir ürünün diliyle yazılmış (PostgreSQL kilidi,
 Windows 1326 oturum hatası gibi).
 
-İlk sonuç, yalnızca kod kolu: `dev` 23 olayın 23ünde, `test` 23ünün 23ünde doğru kök neden ve doğru müdahale (on beş arıza sınıfı; plan sınıfının örnek olayı yok).
+Sonuçlar (14 Kasım 2026, düşünme kapalı). Her hücre 23 olay; "doğru" hem kök neden hem müdahale doğru demek.
+
+| Bölüm | Kol | `qwen3:8b` | `qwen3:14b` | `gemma4` |
+| --- | --- | --- | --- | --- |
+| test | Model tek başına: doğru / zararlı | 4 / 1 | 5 / 5 | 6 / 5 |
+| test | Harness + model (ilk koşu): doğru / zararlı | 21 / 0 | 23 / 0 | 21 / 0 |
+| test | Harness + model (düzeltmeden sonra): doğru / zararlı | 23 / 0 | 23 / 0 | 23 / 0 |
+| dev | Model tek başına: doğru / zararlı | 4 / 2 | 5 / 5 | 6 / 4 |
+| dev | Harness + model (ilk koşu) | 22 / 0 | 23 / 0 | 22 / 0 |
+| dev | Harness + model (düzeltmeden sonra) | 23 / 0 | 23 / 0 | 23 / 0 |
+| her ikisi | Harness'in kodu tek başına | 23 / 0 | | |
+
+Okuma:
+
+- **Model tek başına olayların ancak dörtte birinde hem nedeni hem müdahaleyi buluyor**, ve 23 olayın 5'inde zararlı
+  müdahale seçiyor (çoğu: kilitte yeniden çalıştırma, Set OK). Aynı bilgi ona düz metin olarak verildi; eksik olan bilgi
+  değil, sınıfın bilgisi ve kanıtı sıralama.
+- **Harness içinde aynı modeller 23'te 21 ile 23 arasında, zararlı müdahale sıfır.** İlk koşudaki kayıpların hepsi aynı
+  türdendi: model, hata satırında adı geçen tabloyu kök neden seçti; oysa o sınıflar (sessiz hata, zaman aşımı) tablo
+  kanıtına bakmamalıydı. Düzeltme: aday listesi, sınıfın skill dosyasında yazan kanıt sorgularıyla sınırlandı.
+- **Dürüst sınırlar.** Düzeltme `test` bölümünde görülen hatalardan sonra yapıldı; o yüzden düzeltme sonrası `test`
+  sonucu temiz bir sınama değil. Daha önemlisi, düzeltmeden sonra 23 olayın 22'sinde kodun sunduğu tek bir aday kalıyor:
+  modelin seçimi neredeyse anlamsızlaşıyor ve sonucu büyük ölçüde kod belirliyor. Bu bench şu an harness'in kodunu ölçüyor,
+  modelin katkısını değil.
+- **Modelin asıl işi nerede olmalı.** Harness ile modelin orta noktası olay tarafında şu: hata metni bilinen işaretlerle
+  tanınamadığında (başka bir ürün, serbest yazılmış bir günlük satırı) metni okuyup bir sınıfa çevirmek modelin işi; kod
+  sonra o sınıfın kanıtını toplayıp okumayı denetler. Bunu ölçmek için sıradaki bölüm: hata yazımlarını başka bir modele
+  yazdırmak, işaretlerin yakalayamadığı vakalarda modelin sınıflandırmasını ölçmek.
 
 Sınır: `test` bölümünün yeni adlarını ve hata yazımlarını da çözücüleri yazan el, aynı oturumda yazdı. Bu, adlara
 ve tek bir hata satırına bağımlılığı sınıyor ama bağımsız bir sınama değil. Sıradaki adım: hata yazımlarını başka bir
