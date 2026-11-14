@@ -131,11 +131,32 @@ classes:
     evidence: [host_change, precedent]
   sertifika:
     title: Sertifika suresi doldu ya da guvenilmiyor
-    signs: [certificate, certification path, sslhandshake, handshake failed, pkix, pkix path building failed, certificate expired, unable to find valid certification]
-    cause: sunucu ile agent arasindaki SSL/TLS sertifikasinin suresi doldu, sertifika otoritesi degisti ya da guven deposunda yok
-    fix: yeni sertifikayi ctmkeytool ile toplu dagit (yuzlerce agent icin kesintiyi en aza indiren sirayla), baglanti modunu (SSL ya da TCP) dogrula; olaydan once sertifika bitis tarihlerini izle
+    signs: [certificate, certification path, sslhandshake, handshake failed, pkix, pkix path building failed, certificate expired, unable to find valid certification, unable to get local issuer certificate, unable to verify the first certificate, suncertpathbuilderexception]
+    cause: sunucu ile agent arasindaki SSL/TLS sertifikasinin suresi doldu, sertifika otoritesi degisti ya da guven deposunda yok; sik gorulen iki ayri durum: sunucuya yuklenen sertifikada ara sertifikalar eksik (zincir kirik), ya da https'e baglanan modulun (Web Services, bulut, Informatica) kendi JRE'sinin guven deposunda karsi tarafin CA'si yok
+    fix: once zinciri Control-M disinda dogrula (openssl s_client -connect host:port -CAfile ...); zincir eksikse ara sertifikalari ekletip yeniden yukle; modul JRE'sinde CA eksikse CA'yi o JRE'nin keytool'uyla guven deposuna ekle ve modulu yeniden baslat; sunucu-agent sertifikasi bittiyse yenisini ctmkeytool ile toplu dagit, baglanti modunu (SSL ya da TCP) dogrula; olaydan once sertifika bitis tarihlerini izle
     harmful: [set_ok]
     evidence: [shared_attr, host_change, precedent]
+  sinyal:
+    title: Is bir sinyalle sonlandirildi (cikis kodu 128 ve ustu)
+    signs: [signal, sigsegv, segmentation fault, oom-killer, killed process, core dumped]
+    cause: is kendi hatasiyla degil disaridan gelen bir sinyalle bitti; kod 128 arti sinyal numarasidir (137 SIGKILL, 143 SIGTERM, 139 SIGSEGV). Sik nedenler isletim sisteminin bellek doldugunda sureci oldurmesi, sure asiminda SHOUT ya da operatorun isi oldurmesi, programin cokmesi
+    fix: once sinyali ve kimin gonderdigini bul (sistem gunlugunde oom-killer, Control-M gunlugunde kill ya da SHOUT, operator islemleri); bellek yuzundense isin bellek ihtiyacini ya da sunucu bellegini ele al, sure siniri yuzundense zaman asimi sinifina bak; ayni kosulda yeniden calistirmak ayni sonucu verir
+    harmful: [set_ok]
+    evidence: [shared_attr, slowing, precedent]
+  os_siniri:
+    title: Isletim sistemi kullanici sinirlari yetersiz (acik dosya, surec sayisi)
+    signs: [apache kafka is not available, too many open files, max user processes, ulimit, nofile, nproc]
+    cause: yonetim sunucusu ya da zamanlayici sunucusunun isletim sistemi kullanicisinin acik dosya ve surec sinirlari dusuk; kurulum ya da yukseltmeden sonra yeni servisler (Kafka gibi) baslayamiyor ya da yuk altinda dusuyor
+    fix: kullanicinin acik dosya (nofile) ve surec (nproc) sinirlarini hem yumusak hem sert olarak en az 4096 yap (limits.conf ya da limits.d), oturumu yenileyip bilesenleri yeniden baslat ve CCM'de servis durumunu dogrula
+    harmful: [set_ok]
+    evidence: [host_change, precedent]
+  port_cakismasi:
+    title: Ayni makinedeki iki bilesen ayni portu kullanmak istiyor
+    signs: [address already in use, port is already in use, bind failed, port conflict, zookeeper]
+    cause: yonetim sunucusu ile zamanlayici sunucusu (ya da iki kurulum) ayni makinede ve ayni varsayilan portlari (ornek: Kafka 19092, Zookeeper) kullaniyor; ikincisi baslayamiyor ya da uyari veriyor
+    fix: portu tutan sureci bul (netstat ya da ss), bilesenlerden birinin portunu kullanilmayan bir porta tasi ve yeniden baslat; kalici cozum surum notlarinda varsa yukseltme
+    harmful: [set_ok]
+    evidence: [host_change, precedent]
   bildirim:
     title: Olay oldu ama haber gitmedi (SHOUT, e-posta, SLA uyarisi)
     signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed]

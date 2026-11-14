@@ -22,6 +22,10 @@ def signature(text):
     t = re.sub(r"'[^']*'|\"[^\"]*\"", "<q>", t)
     t = re.sub(r"(?:[a-z]:)?[\\/][\w.\-*\\/]+", "<yol>", t)
     t = re.sub(r"\b0x[0-9a-f]+\b|\b[0-9a-f]{12,}\b", "<id>", t)
+    # A Unix exit status from 129 to 255 means the process was ended by a signal (128 + signal number). That fact
+    # is the whole diagnosis, so it survives templating as a word instead of becoming <n>.
+    t = re.sub(r"\b(oscompstat|exit code|exit status|return code|rc)\s*[=:]?\s*(129|1[3-9]\d|2[0-4]\d|25[0-5])\b",
+               r"\1 signal", t)
     t = re.sub(r"\d+([.,:]\d+)*", "<n>", t)
     return re.sub(r"\s+", " ", t)[:160]
 

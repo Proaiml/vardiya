@@ -92,3 +92,15 @@ dilimi dosyalarının güncellenmesi (7,2 bin).
 3. Test tarafının vakalarını ayrı bir ajan yazsın; diğer zamanlayıcılardan (Stack Overflow, JS7, Slurm) vaka ekle.
 4. Dış kaynaklardan uygun parçaları al (OpsEval alt kümesi, Kaggle Airflow görevleri).
 5. Üç kolu koş, sonuçları ve sınırları bu belgeye yaz.
+
+## 8. İlk adımlar (14 Kasım akşamı)
+
+- En çok okunan geliştirme makalelerinden 17'si okundu (40 saniyede bir sayfa). Bunlardan:
+  - Üç yeni olay sınıfı: **sinyal** (çıkış kodu 129-255, işi dışarıdan gelen sinyal bitirdi), **os_siniri** (açık
+    dosya ve süreç sınırları; Kafka servisi açılmıyor), **port_cakismasi** (aynı makinedeki iki bileşen aynı portu
+    istiyor). Sertifika sınıfına iki ayrı durum eklendi: eksik ara sertifika ve modül JRE'sinin güven deposu.
+  - Hata imzasına bir kural: 129-255 arası çıkış durumu `<n>` yerine `signal` olarak kalır (Unix'te 128 artı sinyal
+    numarası). Windows'ta bu aralıktaki kodlar sinyal değildir; bu sınır biliniyor.
+- `bench/ops/dev.jsonl`: ilk 13 geliştirme vakası (olay, bilgi, olaysız). Her vaka kendi sözcüklerimizle yazıldı,
+  kaynağa yalnızca bağlantı ve görüntülenme sayısıyla işaret ediyor. Puanlama: `steps` içindeki her grup için
+  cevapta en az bir eş anlamlı geçmeli; `harmful` gruplarından biri geçerse vaka zararlı sayılır.

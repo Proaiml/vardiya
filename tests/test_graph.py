@@ -17,6 +17,13 @@ class Signatures(unittest.TestCase):
         self.assertEqual(graph.signature("/opt/a/b_v2.sh: not found"), graph.signature("/opt/x/y.sh: not found"))
         self.assertGreater(graph.similarity(a, graph.signature("ORA-00054: resource busy (table KUR) at 01:12:00")), 0.6)
 
+    def test_an_exit_status_above_128_stays_a_signal(self):
+        # 137 is SIGKILL, 143 SIGTERM: the number is the diagnosis, so it must not be templated away
+        self.assertIn("signal", graph.signature("TR5100 ENDED AT 20261114 0231 OSCOMPSTAT 137. RUNCNT 1"))
+        self.assertIn("signal", graph.signature("Exit status 143"))
+        self.assertNotIn("signal", graph.signature("job ended with exit code 1"))
+        self.assertNotIn("signal", graph.signature("rc=127 command not found"))
+
 
 class History(unittest.TestCase):
     @classmethod
