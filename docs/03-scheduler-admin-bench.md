@@ -125,37 +125,44 @@ ekran kartında, düşünme kapalı, sıcaklık 0.
 
 ### Ana tablo
 
-64 senaryo: on altı aile, aile başına 4, tohum 1. Gün ifadeleri `ext2` kümesinden.
+64 senaryo: on altı aile, aile başına 4, tohum 1. Gün ifadeleri `ext2` kümesinden. Dengeli doğru: uygulanması
+gereken ve iade edilmesi gereken taleplerdeki doğru oranlarının ortalaması.
 
-| Kol | Doğru | Zararlı | Talep başına model çağrısı |
+| Kol | `qwen3:8b` | `qwen3:14b` | `gemma4` |
 | --- | --- | --- | --- |
-| Yazılanı aynen uygula | %25 | %75 | 0 |
-| Hepsini iade et | %69 (dengeli %50) | %0 | 0 |
-| Ham `qwen3:8b` | %20 (13/64) | %73 | 3,1 |
-| Harness + `qwen3:8b` | %100 (64/64) | %0 | 0,4 |
-| Harness + `qwen3:14b` | %100 (64/64) | %0 | 0,4 |
-| Harness + `gemma4` | %100 (64/64) | %0 | 0,4 |
-| Ayırma: harness'in kod payı (model bağlanmadan) | %89 | %6 | 0 |
+| Ham model: doğru / zararlı | %20 / %73 | %20 / %80 | %22 / %78 |
+| Ham model + runbook: doğru / zararlı | %41 / %47 | %50 / %36 | %72 / %9 |
+| Ham model + runbook: dengeli doğru | %45 | %46 | %63 |
+| **Harness + model: doğru / zararlı** | **%100 / %0** | **%100 / %0** | **%100 / %0** |
+| Talep başına model çağrısı (ham / runbook / harness) | 3,1 / 7,8 / 0,4 | 3,1 / 5,2 / 0,4 | 3,0 / 5,5 / 0,4 |
+
+| Betik kol | Doğru | Zararlı |
+| --- | --- | --- |
+| Yazılanı aynen uygula | %25 | %75 |
+| Hepsini iade et | %69 (dengeli %50) | %0 |
+| Ayırma: harness'in kod payı (model bağlanmadan) | %89 | %6 |
 
 Okuma:
 
-- **Ham model, talebi sorgulamadan uygulayan betikten ayırt edilemiyor.** Ham `qwen3:8b` taleplerin %73'ünde
-  zararlı; betik %75'inde. Doğru bitirdiği 13 talebin 9'u tuzak olmayan ailelerden; on bir tuzak ailesinden
-  yalnızca birini (`t-bagimli`) doğru iade etti.
-- **Eşleştirilmiş karşılaştırma.** Aynı 64 senaryoda harness, ham `qwen3:8b`'nin zararlı bitirdiği 47 talebin
-  47'sinde zararı giderdi ve hiçbirinde zarar eklemedi.
+- **Ham model, talebi sorgulamadan uygulayan betikten ayırt edilemiyor.** Üç model de taleplerin %73 ile %80'inde
+  zararlı; betik %75'inde. Doğru bitirdikleri talepler neredeyse yalnızca tuzak olmayan ailelerden.
+- **Runbook yardım ediyor, model ailesine göre çok farklı.** Aynı disiplini düz metin olarak vermek Qwen3'te zararlıyı
+  %36 ile %47'ye, `gemma4`'te %9'a indiriyor. `gemma4`'ün kazancının büyük kısmı iade etmekten geliyor: geçerli
+  taleplerin yarıdan çoğunu da iade ediyor, dengeli doğrusu %63. Kazanç öğütten geliyor ama yetmiyor.
+- **Eşleştirilmiş karşılaştırma.** Aynı 64 senaryoda harness, ham modelin zararlı bitirdiği talepleri üç modelde de
+  tek tek giderdi (47'de 47, 51'de 51, 50'de 50) ve hiçbir senaryoda zarar eklemedi. Runbook kolunun zararlı
+  bitirdiği 30, 23 ve 6 talebin de hepsini giderdi.
 - **Harness ile model birlikte, üç yerel modelde de 64'te 64.** %95 güven aralığı 94 ile 100; aile başına 4 senaryo
-  var, yani bu "hata bulunmadı" demek, "hata yok" demek değil.
+  var, yani bu "hata bulunmadı" demek, "hata yok" demek değil. Harness içinde model talep başına 0,4 kez çağrılıyor;
+  ham kolda 3, runbook kolunda 5 ile 8 kez.
 - **İkisi de gerekli.** Model bağlanmadan harness %89'da kalıyor ve taleplerin %6'sında zararlı: serbest yazılmış
   günlerin dörtte üçünü okuyamıyor (iade ediyor), açıklama ile alanların çeliştiği talepleri ise hiç göremeyip
   uyguluyor. Model olmadan dil işi yapılmıyor; harness olmadan model güvenilir değil.
 - **Bu tablo harness lehine iyimser.** `ext2` kümesi iki düzeltmeden önce görüldü (belirsiz ifadeler için dayanak
   kapısı ve açıklama okumasına aynı kapının uygulanması). Hiç görülmemiş bir küme üzerinde yeniden ölçüm gerekiyor.
 
-Bench 0.1'de (56 senaryo, 14 aile, eski siteler) ölçülen taban, karşılaştırma için: ham `qwen3:8b` %23 doğru ve %70
-zararlı, ham `qwen3:14b` %23 ve %77; runbook'lu plasebo %43 ve %48 (8B), %39 ve %43 (14B). Bench 0.2'de ham kol
-yalnızca `qwen3:8b` ile yeniden koşuldu; ham `qwen3:14b`, ham `gemma4` ve runbook'lu plasebo kolu 0.2 senaryolarında henüz
-ölçülmedi.
+Bench 0.1'de (56 senaryo, 14 aile, eski siteler) aynı tablo: ham `qwen3:8b` %23 doğru ve %70 zararlı, ham
+`qwen3:14b` %23 ve %77; runbook'lu plasebo %43 ve %48 (8B), %39 ve %43 (14B); harness ile ikisi de %100.
 
 ### Gelişmiş model, harness'siz
 
@@ -308,6 +315,8 @@ engellemiyor. Ayrıntı `lab/js7/README.md`.
 - **Gelişmiş model kıyası 15 talep**, yalnızca ham kolda, bench 0.1'de, tek koşuyla.
 - **Düşünme kapalı.** Yerel modellerde düşünme açıkken çağrı başına onlarca saniye sürüyor; o taban ölçülmedi.
 - **Üç yerel model, iki aile** (Qwen3 ve Gemma). Barındırılan sağlayıcılar denenmedi.
+- **Runbook sonucu modele çok bağlı.** `gemma4` runbook'la zararlıyı %9'a indirdi; daha güçlü bir modelde
+  harness ile runbook arasındaki fark küçülebilir. Bunu ölçmek için güçlü bir modelin runbook kolu gerekiyor.
 - **Senaryolar sentetik.** Site, standartlar ve talepler üreteçten çıkıyor; sahadaki talep dağılımını yansıttığı
   doğrulanmadı.
 - **Takvim uyumu yalnızca tarihlerden hesaplanıyor.** JS7'de takvim etiket olarak duruyor; zamanlayıcının kendi

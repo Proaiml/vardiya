@@ -9,7 +9,8 @@ import sqlite3
 
 class Ledger:
     def __init__(self, path=":memory:"):
-        self.db = sqlite3.connect(path)
+        # The web front end serves requests on several threads; it serialises every use behind one lock.
+        self.db = sqlite3.connect(path, check_same_thread=False)
         self.db.execute("CREATE TABLE IF NOT EXISTS episodes (id INTEGER PRIMARY KEY, signature TEXT,"
                         " verified INTEGER, body TEXT, prev TEXT, hash TEXT)")
 

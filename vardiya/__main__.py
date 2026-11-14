@@ -25,7 +25,7 @@ def main(argv=None):
         from . import sab
         return sab.main(argv[1:])
     p = argparse.ArgumentParser(prog="vardiya")
-    p.add_argument("cmd", choices=["bench", "fuzz", "run", "talep", "models"])
+    p.add_argument("cmd", choices=["bench", "fuzz", "run", "talep", "models", "web"])
     p.add_argument("scenario", nargs="?", help="senaryo kimligi (run ve talep icin)")
     p.add_argument("--model", help="ornek: ollama:qwen3:8b")
     p.add_argument("--base-url")
@@ -33,7 +33,10 @@ def main(argv=None):
     p.add_argument("--skills", default=str(ROOT / "skills"))
     p.add_argument("--ledger", default=":memory:")
     p.add_argument("--file", help="talep: senaryo yerine doldurulmus sablon dosyasi")
-    p.add_argument("--site", help="talep --file icin ortam dosyasi (varsayilan: scenarios/talep/_ortam.json)")
+    p.add_argument("--site", help="talep --file ve web icin ortam dosyasi (varsayilan: scenarios/talep/_ortam.json)")
+    p.add_argument("--host", default="127.0.0.1", help="web: dinlenecek adres")
+    p.add_argument("--port", type=int, default=8765, help="web: port")
+    p.add_argument("--licence", type=int, default=4, help="web: ajanin yetki seviyesi (2 = yalnizca oner)")
     p.add_argument("--only", choices=["ariza", "talep"], help="bench ve fuzz icin yalnizca bir taraf")
     p.add_argument("-n", type=int, default=300)
     p.add_argument("--seed", type=int, default=0)
@@ -41,6 +44,11 @@ def main(argv=None):
 
     if args.cmd == "models":
         print("\n".join(list_ollama()))
+        return 0
+    if args.cmd == "web":
+        from .web import DEFAULT_SITE, Office, serve
+        model = connect(args.model, base_url=args.base_url) if args.model else None
+        serve(Office(args.site or DEFAULT_SITE, model=model, licence=args.licence), args.host, args.port)
         return 0
     scenarios, skills = bench.load_scenarios(args.scenarios), load_skills(args.skills)
     requests = bench_req.load_scenarios(pathlib.Path(args.scenarios) / "talep")

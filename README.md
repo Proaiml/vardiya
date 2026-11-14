@@ -18,12 +18,13 @@ Durum: isler emulatorde ya da yerel JS7 laboratuvarinda durur; uretim ortami ici
 ## Calistirma
 
 ```
-python -m unittest discover -s tests        # 66 test
+python -m unittest discover -s tests        # 71 test
 python -m vardiya bench                     # iki is kolu icin senaryo x kol matrisi (betik kollar)
 python -m vardiya bench --only talep        # yalnizca talep karsilama
 python -m vardiya fuzz -n 3000              # guvenlik hatti: rastgele ajan ve bozuk talep, ham vs harness
 python -m vardiya talep t-yeni-001          # tek talep: sablon, sonuc, denetim kaydi
 python -m vardiya talep --file ornekler/talep-yeni.txt   # kendi talep dosyaniz (--site ile kendi ortaminiz)
+python -m vardiya web                       # tarayicida talep masasi: http://127.0.0.1:8765
 python -m vardiya run partial-load-001      # tek ariza vakasi, operator raporu
 ```
 
@@ -108,6 +109,7 @@ Yalnizca Ollama yolu hedeflendi; barindirilan saglayicilar henuz denenmedi.
 | `bench_req.py` | Talep bench'i | Kollar, hukum, bozuk talep fuzz'i; hakem denetimleri `checks.py`'den bagimsiz |
 | `gunler.py` | Gun ifadesi sozlugu | Kalip halindeki Turkce gun ifadelerini kodla takvim kuralina cevirir; gerisi modele kalir |
 | `sabgen.py`, `sab.py` | Scheduler Admin Bench | Tohumlu senaryo ureteci; kosucu, kayitli sonuclar, rapor |
+| `web.py`, `static/index.html` | Onyuz | Tarayicida talep masasi: talep, ortam, gecmis, denetim defteri, bench |
 | `js7.py`, `js7repo.py`, `js7bench.py` | JS7 bagdastiricisi | Ayni fiiller gercek zamanlayici uzerinde; dis gecerlilik kosusu |
 
 ## Iki degismez kural

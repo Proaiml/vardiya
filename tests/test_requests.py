@@ -339,7 +339,7 @@ class Parts(unittest.TestCase):
         self.assertIn(std + "ad_oneki", codes({**good, "name": "RPR_LOAD_IADE"}))
         self.assertIn(std + "ad_bicimi", codes({**good, "name": "odm_load_iade"}))
         self.assertIn(std + "komut_tam_yol", codes({**good, "command": "load.sh"}))
-        self.assertIn(std + "bildirim_adresi", codes({**good, "notify": "x@gmail.com"}))
+        self.assertIn(std + "bildirim_adresi", codes({**good, "notify": "x@example.com"}))
         self.assertIn("E_TIME", codes({**good, "time": "25:00"}))
         self.assertIn("E_DEP", codes({**good, "deps": ["YOK_IS"]}))
         self.assertIn("E_MISSING", codes(good, new=False))

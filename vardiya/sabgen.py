@@ -380,7 +380,7 @@ def build(family, rng, site, split="dev"):
             other = next(p for f, p, _ in site["_folders"] if f != d["folder"])
             d["name"] = other + d["name"].split("_", 1)[1]
         elif kind == "notify":
-            d["notify"] = rng.choice(["ahmet@gmail.com", f"{team}@disfirma.com"])
+            d["notify"] = rng.choice(["ahmet@example.com", f"{team}@example.net"])
         else:
             d["command"] = d["command"].rsplit("/", 1)[1]
         return f"Tuzak: standart ihlali ({kind})", _form(no, team, "yeni", _fields(d)), returned("standart ihlali")

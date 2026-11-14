@@ -192,22 +192,26 @@ işin ne kadarının koda düştüğünü gösteren ayırma koludur.
 - **İkinci etiket hatası.** Hydrogen'in yeniden yazdığı açıklama kümesinde harness'in tek "yanlış alarmı" gerçek
   bir çelişkiydi (yeniden yazan model "her gün" eklemiş). Senaryo gerekçesiyle yeniden etiketlendi.
 - **Bench 0.2 sonuçları** (üç yerel model: `qwen3:8b`, `qwen3:14b`, `gemma4`): ana tabloda 64 senaryonun 64'ü
-  doğru, zararlı yok; ham `qwen3:8b` %20 doğru, %73 zararlı; kod payı tek başına %89 doğru, %6 zararlı. Gün
+  doğru, zararlı yok; ham model %20 ile %22 doğru, %73 ile %80 zararlı; runbook'lu plasebo %41 ile %72 doğru,
+  %9 ile %47 zararlı (`gemma4` runbook'la en iyisi, çoğunu iade ederek); kod payı tek başına %89 doğru, %6 zararlı. Gün
   ifadelerinde 30 doğru takvimden 27 ile 29'u, iade edilmesi gereken 60'ın 60'ı; açıklama kümesinde 16 çelişkinin
   16'sı, 14 tutarlı açıklamada yanlış alarm yok. JS7'de 64 hücrenin 63'ü emülatörle aynı.
 - **Kullanım kılavuzu:** `docs/05-kullanim-kilavuzu.md`. Kendi talep dosyası: `python -m vardiya talep --file`.
+- **Önyüz:** `python -m vardiya web` (yalnızca standart kütüphane; `vardiya/web.py`, `vardiya/static/index.html`).
+  Talep, ortam ve bağımlılık çizgesi, geçmiş, denetim defteri ve bench sekmeleri.
+- **GPU paylaşımı:** bu makinede GPU'da eğitim koşan başka bir oturum var. Eşgüdüm masaüstündeki `hub` klasörünün
+  defterinden, kod adlarla (bu oturum VARDIYA). GPU ya da ağır işlemci işinden önce deftere yazılıp onay beklenir.
 - **Deneysel, ölçülmedi:** "ikinci bakış" adımı (`desk._second_look`, strateji adında `review`). Kodlanmış
   denetimler geçtikten sonra modele, işi komşularıyla gösterip açık uçlu bir soru soruyor. Varsayılan kapalı.
 
 0.2'de açık kalanlar:
 
-- Ham `qwen3:14b`, ham `gemma4` ve runbook'lu plasebo kolu 0.2 senaryolarında koşulmadı (koşu betiği: bütün kollar
-  `python -m vardiya sab run --per-family 4 --seed 1 --split ext2 --out results/sab-ext2.jsonl --model <model>`).
 - "İkinci bakış" adımının yakalama ve yanlış alarm oranı ölçülmedi.
 - Temiz küme kalmadı: `ext2` ifadeleri ve Hydrogen açıklamaları görüldükten sonra düzeltme yapıldı.
 - Takvim uyumu denetimi çekirdekte mi durmalı, kurum standardı (skill) mi olmalı, karar verilmedi.
-- Üreteçteki tuzak bildirim adresi gerçek bir alan adı kullanıyor (`@gmail.com`); `example.com` ile değiştirilmeli
-  (senaryo metinlerini değiştirdiği için sonuçlar yeniden koşulmalı).
+- Tuzak bildirim adresleri artık ayrılmış alan adlarında (`example.com`, `example.net`). Değişen iki `ext2`
+  senaryosu yeniden koşuldu; JS7 koşusundaki bir senaryo (`t-standart-1-000`) eski adresle koşulmuş satır olarak
+  duruyor (laboratuvar kapalıydı; tuzağın türü aynı, alan adı farklı). `results/v0.1/` arşivi eski adresleri taşır.
 - Lisans dosyası yok.
 
 0.1'den kalan açıklar:

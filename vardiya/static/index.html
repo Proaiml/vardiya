@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vardiya Talep Masası</title>
+<style>
+:root {
+  --bg: #f4f3ef; --surface: #fcfcfb; --surface-2: #efeee9; --border: #dcdad3;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #7a7974;
+  --accent: #2a78d6; --accent-ink: #ffffff;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --good-bg: #e6f4e6; --warn-bg: #fdf3dc; --crit-bg: #f9e3e3; --info-bg: #e5eefa;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #383835;
+    --text: #f0efec; --text-2: #c3c2b7; --text-3: #8f8e86;
+    --accent: #3987e5; --good-bg: #16291a; --warn-bg: #2e2612; --crit-bg: #331a1a; --info-bg: #17243a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #383835;
+  --text: #f0efec; --text-2: #c3c2b7; --text-3: #8f8e86;
+  --accent: #3987e5; --good-bg: #16291a; --warn-bg: #2e2612; --crit-bg: #331a1a; --info-bg: #17243a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, "Segoe UI", sans-serif; }
+header { display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--surface);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2; flex-wrap: wrap; }
+header h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
+header .meta { color: var(--text-2); font-size: 12.5px; display: flex; gap: 14px; flex-wrap: wrap; }
+header .meta b { color: var(--text); font-weight: 600; }
+nav { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+nav button, .btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 12px;
+  border-radius: 6px; cursor: pointer; font: inherit; }
+nav button[aria-selected="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn:disabled { opacity: .5; cursor: wait; }
+main { padding: 20px 24px 48px; max-width: 1400px; margin: 0 auto; }
+.grid { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.15fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } main, header { padding-left: 16px; padding-right: 16px; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.card h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--text-2); font-weight: 600; }
+.card h3 { font-size: 14px; margin: 16px 0 6px; }
+textarea { width: 100%; min-height: 380px; font: 13px/1.55 var(--mono); padding: 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface-2); color: var(--text); resize: vertical; }
+select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); max-width: 100%; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+.hint { color: var(--text-3); font-size: 12.5px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-weight: 600; font-size: 13px; }
+.badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.closed { background: var(--good-bg); color: var(--text); } .closed::before { background: var(--good); }
+.returned { background: var(--warn-bg); color: var(--text); } .returned::before { background: var(--warning); }
+.proposed { background: var(--info-bg); color: var(--text); } .proposed::before { background: var(--accent); }
+.none, .error { background: var(--crit-bg); color: var(--text); } .none::before, .error::before { background: var(--critical); }
+ul.reasons { margin: 8px 0; padding-left: 18px; } ul.reasons li { margin: 4px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--text-2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }
+td.mono, .mono { font-family: var(--mono); font-size: 12.5px; }
+tr.changed td { background: var(--info-bg); }
+.diff-old { color: var(--text-3); text-decoration: line-through; }
+.diff-new { font-weight: 600; }
+.pill { font-family: var(--mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: 4px; margin: 1px 2px 1px 0; display: inline-block; }
+.note { border-left: 3px solid var(--accent); padding: 6px 10px; background: var(--surface-2); border-radius: 0 6px 6px 0; margin: 6px 0; font-size: 13px; }
+.empty { color: var(--text-3); padding: 24px 0; text-align: center; }
+.hist-item { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: var(--surface); }
+.hist-item summary { cursor: pointer; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; list-style: none; }
+.hist-item summary::-webkit-details-marker { display: none; }
+pre { white-space: pre-wrap; word-break: break-word; font: 12.5px/1.5 var(--mono); background: var(--surface-2);
+  padding: 10px; border-radius: 6px; margin: 8px 0; }
+.bar { display: flex; height: 10px; border-radius: 3px; overflow: hidden; background: var(--surface-2); min-width: 140px; gap: 2px; }
+.bar span { display: block; height: 100%; }
+.bar .ok { background: var(--good); } .bar .harm { background: var(--critical); }
+.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-2); margin: 6px 0 12px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.fam { display: inline-block; min-width: 34px; text-align: center; font-family: var(--mono); font-size: 11.5px;
+  padding: 1px 3px; border-radius: 3px; }
+.fam.full { background: var(--good-bg); } .fam.part { background: var(--warn-bg); } .fam.zero { background: var(--crit-bg); }
+.scroll { overflow-x: auto; }
+.graph svg { width: 100%; height: auto; }
+.graph text { font: 11px var(--mono); fill: var(--text); }
+.graph .edge { stroke: var(--text-3); stroke-width: 1.5; fill: none; }
+.graph .node rect { fill: var(--surface-2); stroke: var(--border); stroke-width: 1; rx: 5; }
+.graph .node.changed rect { fill: var(--info-bg); stroke: var(--accent); }
+.graph .sub { fill: var(--text-2); font-size: 10px; }
+.tip { position: fixed; pointer-events: none; background: var(--text); color: var(--surface); padding: 6px 9px; border-radius: 6px;
+  font-size: 12px; max-width: 320px; z-index: 10; display: none; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: var(--surface); padding: 10px 14px; border-radius: 8px; display: none; }
+kbd { font-family: var(--mono); font-size: 11.5px; border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; background: var(--surface-2); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Vardiya · Talep Masası</h1>
+  <div class="meta" id="meta"></div>
+  <nav role="tablist">
+    <button role="tab" data-tab="talep" aria-selected="true">Talep</button>
+    <button role="tab" data-tab="ortam">Ortam</button>
+    <button role="tab" data-tab="gecmis">Geçmiş</button>
+    <button role="tab" data-tab="defter">Denetim defteri</button>
+    <button role="tab" data-tab="bench">Bench</button>
+  </nav>
+</header>
+<main>
+  <section id="tab-talep">
+    <div class="grid">
+      <div class="card">
+        <h2>Talep şablonu</h2>
+        <div class="row">
+          <label for="ex" class="hint">Örnek yükle:</label>
+          <select id="ex"></select>
+        </div>
+        <textarea id="text" spellcheck="false" aria-label="Talep metni"></textarea>
+        <div class="row">
+          <button class="btn primary" id="send">Talebi işle</button>
+          <span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> · Her satır <span class="mono">alan: değer</span>, <span class="mono">#</span> ile başlayan satır yorumdur.</span>
+        </div>
+      </div>
+      <div class="card" id="result"><h2>Sonuç</h2><div class="empty">Bir talep yazın ya da örnek seçin, sonra “Talebi işle”.</div></div>
+    </div>
+  </section>
+
+  <section id="tab-ortam" hidden>
+    <div class="card"><h2>İşler ve bağımlılıklar</h2><div class="graph scroll" id="graph"></div>
+      <div class="scroll"><table id="jobs"></table></div></div>
+    <div class="grid" style="margin-top:20px">
+      <div class="card"><h2>Takvimler</h2><div class="scroll"><table id="cals"></table></div></div>
+      <div class="card"><h2>Hostlar, klasörler, standartlar</h2><div id="env"></div></div>
+    </div>
+  </section>
+
+  <section id="tab-gecmis" hidden>
+    <div class="card"><h2>İşlenen talepler</h2>
+      <div class="row"><button class="btn" id="reset">Ortamı başa döndür</button>
+        <span class="hint">Uygulanan her talep ortamı değiştirir; başa döndürmek bütün geçmişi siler.</span></div>
+      <div id="history"></div></div>
+  </section>
+
+  <section id="tab-defter" hidden>
+    <div class="card"><h2>Denetim defteri</h2><div id="ledger"></div></div>
+  </section>
+
+  <section id="tab-bench" hidden>
+    <div class="card"><h2>Scheduler Admin Bench</h2>
+      <div class="row"><label for="bfile" class="hint">Sonuç dosyası:</label><select id="bfile"></select></div>
+      <div class="legend"><span><i style="background:var(--good)"></i>Doğru</span><span><i style="background:var(--critical)"></i>Zararlı (sahte yeşil + yıkıcı)</span><span><i style="background:var(--surface-2);border:1px solid var(--border)"></i>Güvenli başarısızlık</span></div>
+      <div class="scroll"><table id="bench"></table></div>
+      <p class="hint">Aile hücreleri: doğru / senaryo. Ayrıntı ve sınırlar: <span class="mono">docs/03-scheduler-admin-bench.md</span></p>
+    </div>
+  </section>
+</main>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const OUT = {closed: "Kapandı", returned: "İade edildi", proposed: "Öneri olarak kaldı", none: "İşlenemedi", applied_not_closed: "Yüklendi, kapanmadı"};
+const FIELD = {name:"is_adi", folder:"klasor", type:"tip", host:"host", run_as:"calistiran", command:"komut", calendar:"gunler", time:"saat", deps:"bagimlilik", notify:"bildirim", description:"aciklama"};
+const DAYS = ["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"];
+const day = iso => { const d = new Date(iso + "T00:00:00"); return `${iso.slice(5)} ${DAYS[d.getDay()]}`; };
+let site = null, examples = [];
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; setTimeout(() => t.style.display = "none", 2600); }
+
+// ---- tabs
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.tab));
+function show(tab) {
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+  document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== "tab-" + tab);
+  try { localStorage.setItem("vardiya-tab", tab); } catch (e) {}
+  ({ortam: loadSite, gecmis: loadHistory, defter: loadLedger, bench: loadBench})[tab]?.();
+}
+
+// ---- header
+async function loadSite() {
+  site = await api("/api/site");
+  $("#meta").innerHTML = `<span>Ortam <b>${esc(site.site_file)}</b></span><span>Bugün <b>${site.today}</b></span>
+    <span>Model <b>${esc(site.model || "bağlı değil")}</b></span><span>Yetki <b>L${site.licence}${site.licence < 3 ? " (yalnızca öneri)" : ""}</b></span>
+    <span>${site.jobs.length} iş${site.changed.length ? `, ${site.changed.length} değişti` : ""}</span><span class="hint">v${esc(site.version)}</span>`;
+  renderSite();
+}
+
+// ---- request
+async function loadExamples() {
+  examples = await api("/api/examples");
+  $("#ex").innerHTML = `<option value="" disabled>Taslak (son yazdığınız)</option>` + examples.map((e, i) => `<option value="${i}">${esc(e.name)}</option>`).join("");
+  let draft = null; try { draft = localStorage.getItem("vardiya-draft"); } catch (e) {}
+  const first = Math.min(1, examples.length - 1);
+  $("#text").value = draft || examples[first].text;
+  $("#ex").value = draft ? "" : String(first);
+}
+$("#ex").onchange = e => { $("#text").value = examples[e.target.value].text; saveDraft(); };
+const saveDraft = () => { try { localStorage.setItem("vardiya-draft", $("#text").value); } catch (e) {} };
+$("#text").oninput = saveDraft;
+$("#text").onkeydown = e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) send(); };
+$("#send").onclick = send;
+
+async function send() {
+  const btn = $("#send"); btn.disabled = true; btn.textContent = "İşleniyor…";
+  try {
+    const r = await api("/api/request", {text: $("#text").value});
+    $("#result").innerHTML = "<h2>Sonuç</h2>" + renderReport(r, true);
+    loadSite();
+  } catch (e) {
+    $("#result").innerHTML = `<h2>Sonuç</h2><span class="badge error">Gönderilemedi</span><p>${esc(e.message)}</p>`;
+  } finally { btn.disabled = false; btn.textContent = "Talebi işle"; }
+}
+
+function renderReport(r, full) {
+  let h = `<div class="row"><span class="badge ${esc(r.outcome)}">${esc(OUT[r.outcome] || r.outcome)}</span>
+    <span class="mono">${esc(r.talep_no)}</span><span class="hint">${r.seconds} sn · ${r.model_calls ? r.model_calls + " model çağrısı" : "model çağrılmadı"}</span></div>`;
+  if (r.reasons?.length) h += `<h3>${r.outcome === "proposed" ? "Neden yüklenmedi" : "Gerekçe (talep sahibine giden)"}</h3><ul class="reasons">${r.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  for (const n of r.notes || []) {
+    if (n.votes) h += `<div class="note">Günler: “${esc(n.given)}” → <b>${esc(n.chosen || "çevrilemedi")}</b>
+      <span class="hint">(${Object.entries(n.votes).map(([k, v]) => `${esc(k)}: ${esc(typeof v === "object" ? JSON.stringify(v) : v)}`).join(", ") || "model bağlı değil"})</span></div>`;
+    else h += `<div class="note">Model notu (${esc(n.field)}): ${esc(n.quote || n.review)}</div>`;
+  }
+  const warn = (r.findings || []).filter(f => f.severity === "warning");
+  if (warn.length) h += `<h3>Uyarılar</h3><ul class="reasons">${warn.map(f => `<li>${esc(f.msg)}</li>`).join("")}</ul>`;
+  if (r.definition) {
+    const b = r.before || {};
+    const applied = r.outcome === "closed" || r.outcome === "applied_not_closed";
+    h += `<h3>${applied ? (r.before ? "Uygulanan değişiklik" : "Uygulanan tanım") : (r.before ? "İstenen değişiklik (uygulanmadı)" : "İstenen tanım (uygulanmadı)")}</h3><table>` + Object.entries(r.definition).map(([k, v]) => {
+      const was = b[k], show = x => Array.isArray(x) ? (x.length ? x.map(y => `<span class="pill">${esc(y)}</span>`).join("") : "[]") : esc(x);
+      const changed = r.before && JSON.stringify(was) !== JSON.stringify(v);
+      return `<tr${changed ? ' class="changed"' : ""}><th>${FIELD[k] || k}</th><td class="mono">${changed ? `<span class="diff-old">${show(was)}</span> → <span class="diff-new">${show(v)}</span>` : show(v)}</td></tr>`;
+    }).join("") + "</table>";
+  } else if (r.outcome === "closed" && r.before) {
+    h += `<h3>Kaldırılan iş</h3><p class="mono">${esc(r.before.name)} (${esc(r.before.folder)})</p>`;
+  }
+  if (r.forecast?.length) h += `<h3>Sonraki çalışmalar</h3><div>${r.forecast.map(d => `<span class="pill">${day(d)}</span>`).join("")}</div>`;
+  if (r.record) h += `<h3>Denetim kaydı</h3><table>
+      <tr><th>Kapatan</th><td>${esc(r.record.kapatan)}</td></tr><tr><th>Talep no</th><td class="mono">${esc(r.record.talep_no)}</td></tr>
+      <tr><th>Talep eden</th><td>${esc(r.record.talep_eden)}</td></tr><tr><th>İşlem</th><td>${esc(r.record.islem)}</td></tr>
+      <tr><th>Geçerlilik</th><td>${esc(r.record.gecerlilik || "")}</td></tr></table>`;
+  if (full) h += `<details><summary class="hint" style="cursor:pointer;margin-top:12px">Ajanın adımları ve eylem izi</summary>
+      <table>${(r.steps || []).map(s => `<tr><td class="mono">${esc(s.action)}</td><td>L${s.level}</td><td>${esc(s.verdict)}</td><td>${s.executed ? "uygulandı" : "uygulanmadı"}</td></tr>`).join("")}</table>
+      <pre>${esc(JSON.stringify(r.trace, null, 1))}</pre></details>`;
+  return h;
+}
+
+// ---- site
+function renderSite() {
+  if (!site) return;
+  const changed = new Set(site.changed);
+  $("#jobs").innerHTML = `<tr><th>İş</th><th>Klasör</th><th>Tip</th><th>Host / kullanıcı</th><th>Takvim</th><th>Saat</th><th>Bekler</th><th>Bekleyenler</th></tr>` +
+    site.jobs.map(j => `<tr${changed.has(j.name) ? ' class="changed"' : ""}><td class="mono">${esc(j.name)}</td><td>${esc(j.folder)}</td><td>${esc(j.type)}</td>
+      <td class="mono">${esc(j.host)} / ${esc(j.run_as)}</td><td class="mono">${esc(j.calendar)}</td><td class="mono">${esc(j.time)}</td>
+      <td>${j.deps.map(d => `<span class="pill">${esc(d)}</span>`).join("") || "—"}</td><td>${(site.waiting[j.name] || []).map(d => `<span class="pill">${esc(d)}</span>`).join("") || "—"}</td></tr>`).join("");
+  $("#cals").innerHTML = `<tr><th>Takvim</th><th>Anlamı</th><th>Sonraki günler</th></tr>` + Object.entries(site.calendars).map(([n, c]) =>
+    `<tr><td class="mono">${esc(n)}</td><td>${esc(c.desc)}</td><td>${c.next.map(d => `<span class="pill">${day(d)}</span>`).join("")}</td></tr>`).join("");
+  $("#env").innerHTML = `<h3>Hostlar</h3><table>${Object.entries(site.hosts).map(([h, v]) => `<tr><td class="mono">${esc(h)}</td><td>${esc(v.desc)}</td><td>${v.users.map(u => `<span class="pill">${esc(u)}</span>`).join("")}</td></tr>`).join("")}</table>
+    <h3>Klasörler</h3><table>${Object.entries(site.folders).map(([f, v]) => `<tr><td class="mono">${esc(f)}</td><td>önek <span class="pill">${esc(v.prefix)}</span></td></tr>`).join("")}</table>
+    <h3>Standartlar</h3><table><tr><th>Ad biçimi</th><td class="mono">${esc(site.standards.name_regex)}</td></tr><tr><th>Bildirim</th><td class="mono">…${esc(site.standards.notify_suffix)}</td></tr></table>
+    <h3>Tatiller</h3><div>${site.holidays.map(d => `<span class="pill">${day(d)}</span>`).join("")}</div>`;
+  drawGraph(changed);
+}
+
+function drawGraph(changed) {
+  const jobs = site.jobs, by = Object.fromEntries(jobs.map(j => [j.name, j])), level = {};
+  const depth = n => level[n] ?? (level[n] = 0, level[n] = Math.max(0, ...by[n].deps.filter(d => by[d]).map(d => depth(d) + 1)));
+  jobs.forEach(j => depth(j.name));
+  const cols = {}; jobs.forEach(j => (cols[level[j.name]] ??= []).push(j));
+  const W = 190, H = 46, GX = 70, GY = 18, pos = {};
+  Object.entries(cols).forEach(([c, list]) => list.sort((a, b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name))
+    .forEach((j, i) => pos[j.name] = {x: 10 + c * (W + GX), y: 10 + i * (H + GY)}));
+  const width = 20 + Object.keys(cols).length * (W + GX) - GX, height = 20 + Math.max(...Object.values(cols).map(l => l.length)) * (H + GY) - GY;
+  let s = `<svg viewBox="0 0 ${width} ${height}" style="max-width:${width}px" role="img" aria-label="İş bağımlılık çizgesi">
+    <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor" style="color:var(--text-3)"/></marker></defs>`;
+  jobs.forEach(j => j.deps.filter(d => pos[d]).forEach(d => {
+    const a = pos[d], b = pos[j.name], x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x - 2, y2 = b.y + H / 2, mx = (x1 + x2) / 2;
+    s += `<path class="edge" marker-end="url(#arr)" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"/>`;
+  }));
+  jobs.forEach(j => { const p = pos[j.name];
+    s += `<g class="node${changed.has(j.name) ? " changed" : ""}" data-job="${esc(j.name)}" transform="translate(${p.x},${p.y})">
+      <rect width="${W}" height="${H}"/><text x="8" y="18">${esc(j.name)}</text>
+      <text class="sub" x="8" y="35">${esc(j.calendar)} · ${esc(j.time)} · ${esc(j.host)}</text></g>`; });
+  $("#graph").innerHTML = s + "</svg>";
+  $("#graph").querySelectorAll(".node").forEach(g => {
+    const j = by[g.dataset.job];
+    g.onmousemove = e => tip(e, `<b>${esc(j.name)}</b><br>${esc(j.description)}<br>komut: ${esc(j.command)}<br>bildirim: ${esc(j.notify)}`);
+    g.onmouseleave = () => $("#tip").style.display = "none";
+  });
+}
+function tip(e, html) { const t = $("#tip"); t.innerHTML = html; t.style.display = "block";
+  t.style.left = Math.min(e.clientX + 14, innerWidth - 330) + "px"; t.style.top = (e.clientY + 14) + "px"; }
+
+// ---- history and ledger
+async function loadHistory() {
+  const h = await api("/api/history");
+  $("#history").innerHTML = h.length ? h.map(r => `<details class="hist-item"><summary><span class="badge ${esc(r.outcome)}">${esc(OUT[r.outcome] || r.outcome)}</span>
+      <span class="mono">${esc(r.talep_no)}</span><span>${esc((r.definition || r.before || {}).name || "")}</span><span class="hint">${esc(r.at.replace("T", " "))}</span></summary>
+      <pre>${esc(r.text)}</pre>${renderReport(r, false)}</details>`).join("") : `<div class="empty">Henüz talep işlenmedi.</div>`;
+}
+$("#reset").onclick = async () => { if (!confirm("Ortam başa dönsün ve geçmiş silinsin mi?")) return; await api("/api/reset", {}); toast("Ortam başa döndü"); loadHistory(); loadSite(); };
+
+async function loadLedger() {
+  const l = await api("/api/ledger");
+  $("#ledger").innerHTML = `<p>${l.chain_ok ? "✓ Özet zinciri bütün: hiçbir kayıt sonradan değiştirilmemiş." : "✗ Özet zinciri bozuk!"}</p>` +
+    (l.rows.length ? `<div class="scroll"><table><tr><th>#</th><th>Talep</th><th>İşlem</th><th>İş</th><th>Sonuç</th><th>Ajan</th><th>Önceki özet</th><th>Özet</th></tr>` +
+      l.rows.map(r => `<tr><td>${r.id}</td><td class="mono">${esc(r.talep_no)}</td><td>${esc(r.diagnosis)}</td><td class="mono">${esc(r.job || "")}</td>
+        <td>${r.verified ? "uygulandı" : "iade: " + esc((r.returned_for || []).join("; ")).slice(0, 160)}</td><td class="hint">${esc(r.agent)}</td>
+        <td class="mono">${esc(r.prev)}</td><td class="mono">${esc(r.hash)}</td></tr>`).join("") + "</table></div>" : `<div class="empty">Defter boş.</div>`);
+}
+
+// ---- bench
+async function loadBench(file) {
+  const b = await api("/api/bench" + (file ? "?file=" + encodeURIComponent(file) : ""));
+  $("#bfile").innerHTML = b.files.map(f => `<option${f === b.file ? " selected" : ""}>${esc(f)}</option>`).join("");
+  if (!b.arms.length) { $("#bench").innerHTML = `<tr><td class="empty">Sonuç dosyası yok.</td></tr>`; return; }
+  $("#bench").innerHTML = `<tr><th>Kol</th><th>Model</th><th>n</th><th>Doğru</th><th>Zararlı</th><th></th><th>Çağrı</th>${b.families.map(f => `<th class="mono" style="text-transform:none">${esc(f)}</th>`).join("")}</tr>` +
+    b.arms.map(a => { const ok = 100 * a.correct / a.n, harm = 100 * a.harmful / a.n;
+      return `<tr><td>${esc(a.name)}${a.variant && a.arm.includes("harness") ? `<div class="hint mono">${esc(a.variant)}</div>` : ""}</td><td class="mono">${esc(a.model || "—")}</td><td>${a.n}</td>
+        <td><b>${ok.toFixed(0)}%</b></td><td>${harm.toFixed(0)}%</td>
+        <td><div class="bar" title="doğru ${a.correct}/${a.n}, zararlı ${a.harmful}/${a.n}"><span class="ok" style="width:${ok}%"></span><span style="flex:1"></span><span class="harm" style="width:${harm}%"></span></div></td>
+        <td>${a.calls}</td>${b.families.map(f => { const c = a.families[f]; if (!c) return "<td></td>";
+          return `<td><span class="fam ${c[0] === c[1] ? "full" : c[0] ? "part" : "zero"}">${c[0]}/${c[1]}</span></td>`; }).join("")}</tr>`; }).join("");
+}
+$("#bfile").onchange = e => loadBench(e.target.value);
+
+// ---- start
+(async () => {
+  await Promise.all([loadSite(), loadExamples()]);
+  let tab = "talep"; try { tab = localStorage.getItem("vardiya-tab") || "talep"; } catch (e) {}
+  show(tab);
+})();
+</script>
+</body>
+</html>

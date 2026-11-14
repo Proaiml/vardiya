@@ -43,6 +43,28 @@ python -m vardiya bench --only talep                    # dokuz sabit senaryo, b
 python -m vardiya fuzz -n 3000                          # güvenlik hattı
 ```
 
+### Önyüz
+
+```
+python -m vardiya web                                   # http://127.0.0.1:8765
+python -m vardiya web --model ollama:qwen3:8b --site benim-ortamim.json --licence 2
+```
+
+Tarayıcıda açılan sayfanın beş sekmesi var:
+
+| Sekme | Ne gösterir |
+| --- | --- |
+| Talep | Şablon düzenleyici, örnek talepler, sonuç kartı: kapandı / iade / öneri, iade gerekçesi, günlerin hangi takvime kim tarafından çevrildiği, uygulanan tanım ya da değişikliğin önce ve sonrası, sonraki çalışma günleri, denetim kaydı, ajanın adımları ve eylem izi |
+| Ortam | İşlerin bağımlılık çizgesi (değişen işler vurgulu), iş tablosu, takvimler ve sonraki günleri, hostlar, klasörler, standartlar, tatiller |
+| Geçmiş | Bu oturumda işlenen bütün talepler; "Ortamı başa döndür" |
+| Denetim defteri | Özet zincirli kayıtlar ve zincirin bütünlük denetimi |
+| Bench | `results/` altındaki sonuç dosyalarından kol ve aile bazında doğru ve zararlı oranları |
+
+Sayfa tek bir bellek içi ortamla çalışır: uygulanan her talep, sonraki talebin gördüğü işleri değiştirir. Sunucu
+kapanınca ortam başa döner. Talep, komut satırındakiyle aynı masadan geçer; önyüzün masayı atlayan bir yolu yok.
+Sunucu yalnızca 127.0.0.1'i dinler ve girişi yoktur; ağa açmayın. `--model` verilirse her talep o modeli çağırabilir
+(yerel modelde GPU kullanır).
+
 `talep` çıktısı nasıl okunur:
 
 | Satır | Anlamı |

@@ -521,6 +521,9 @@ def render(report):
     """Requester- and auditor-facing summary in Turkish."""
     out = [f"== Talep {report['talep_no']} ==", f"Sonuc: {report['outcome']}", f"Ajan: {report['agent']}"]
     for n in report["notes"]:
+        if "votes" not in n:  # what the model read in the description, or its second look
+            out.append(f"Model notu ({n.get('field')}): {n.get('quote') or n.get('review')}")
+            continue
         votes = ", ".join(f"{k}: {v}" for k, v in n["votes"].items()) or "model bagli degil"
         out.append(f"Gunler ifadesi: '{n['given']}' -> oylar ({n['strategy']}): {votes}; kabul edilen: {n['chosen']}")
     if report["outcome"] in ("returned", "proposed", "none"):

@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {"name": "vardiya-web", "runtimeExecutable": "python", "runtimeArgs": ["-m", "vardiya", "web", "--port", "8780"], "port": 8780}
+  ]
+}
