@@ -13,6 +13,7 @@ Bu surum dikey dilimdir: mimarinin butun katmanlarindan bir kez gecer.
 Bagimlilik yok; yalnizca Python 3.10+ standart kutuphanesi.
 
 **Nasil kullanilir:** `docs/05-kullanim-kilavuzu.md`. **Olcum ve sonuclar:** `docs/03-scheduler-admin-bench.md`.
+**Is tipleri, dunyadaki benchmarklar, olaydan once tahmin:** `docs/06-is-tipleri-benchmarklar-ve-olay-onceligi.md`.
 Durum: isler emulatorde ya da yerel JS7 laboratuvarinda durur; uretim ortami icin hazir bir bagdastirici yok.
 
 ## Calistirma
