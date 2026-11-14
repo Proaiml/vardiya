@@ -361,6 +361,11 @@ aktarımının 60 dakikada kopması, adında boşluk olan dosya) birlikte yeni b
 kurulamıyor** (`aktarim`). "Dosya gelmedi" sınıfından ayrı: orada sorun karşı tarafın geç göndermesi, burada bağlantının
 kendisi.
 
+Yaz saati araması (8.787 sonuç): geçişten sonra işlerin bir saat kayması, sunucunun yılın ikinci geçişinden sonra yeniden
+başlatılmamış olması, saat dilimi bilgisi değişince güncellenmesi gereken dosyalar (7.192 görüntülenme). Yeni sınıf:
+**yaz saati ya da saat dilimi kayması** (`saat_dilimi`). Örnek ortamda yaz saati olmadığı için örnek olayı yok; bir
+olaydan önce uyarısı adayı: geçiş tarihlerinden önce kontrol listesi.
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların

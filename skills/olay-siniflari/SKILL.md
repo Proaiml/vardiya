@@ -115,6 +115,13 @@ classes:
     fix: baglanti profilini karsi tarafla dogrula (anahtar, host key, algoritma) ve profilden baglanti testi yap; uzun aktarimlarda keepalive ve zaman asimi ayarini gozden gecir; dosya adinda bosluk varsa tirnakla; sonra yeniden calistir
     harmful: [set_ok]
     evidence: [named_in_error, shared_attr, recent_change, precedent]
+  saat_dilimi:
+    title: Yaz saati ya da saat dilimi kaymasi
+    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset]
+    cause: yaz saati gecisinden sonra sunucu yeniden baslatilmamis ya da saat dilimi bilgisi guncel degil; isler bir saat kayiyor
+    fix: saat dilimi dosyalarini guncelle, sunucuyu gecisten sonra yeniden baslat, etkilenen islerin baslama saatini ve SLA'sini dogrula; gecis tarihlerinden once kontrol listesi calistir
+    harmful: [set_ok]
+    evidence: [host_change, precedent]
 ---
 
 # Olay siniflari
