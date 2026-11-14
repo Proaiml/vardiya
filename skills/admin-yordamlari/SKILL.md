@@ -158,6 +158,11 @@ procedures:
     triggers: [cyclic, dongusel, missed, kacirdi, kacirilan, specific times, belirli saat, telafi, compensate, tolerance]
     steps: belirli saatlerde calisan dongusel is saati gecmis bir calismayi sonradan telafi etmez; telafi istiyorsan listeye sonraki saatlere kisa aralikli ek saatler ekle, Maximum Rerun ile toplam calisma sayisini sinirla ve Tolerance ile gec kalan saatin ne kadar sonra hala calisabilecegini ayarla
     caution: telafi calismalari ayni veriyi iki kez isleyebilir; is tekrar calismaya dayanikli degilse telafiyi elle ve kontrollu yap
+  uyari_eposta:
+    title: Yonetim sunucusundaki uyarilari (agent erisilemez gibi) e-postayla iletmek
+    triggers: [alert, uyari, alerts console, e-posta, email, unavailability, erisilemez, snmp, sendalarmtoscript]
+    steps: CCM'de EM sistem parametrelerinin gelismis sekmesinde SendSnmp=1 ve SendAlarmToScript=<betigin tam yolu> yap; betik gelen uyari alanlarini ayristirip e-posta gondersin; parametrelerden sonra ilgili EM bilesenlerini yeniden baslat ve deneme uyarisiyla dogrula
+    caution: her uyariyi e-postaya cevirmek gurultu yaratir; betikte yalnizca istenen uyari turlerini ilet
 ---
 
 # Adminlik yordamlari
