@@ -128,6 +128,21 @@ procedures:
     triggers: [backup, yedek, postgres, postgresql, database, veritabani, dbuhotbackup, dbucoldbackup, restore]
     steps: urunun kendi araclarini kullan: calisirken DBUHotBackup, durdurulmusken DBUColdBackup; geri yukleme icin DBUHotRestore ve DBUColdRestore; veritabani sahibi kullaniciyla calisan bir betik yazip zamanla ve yedeklerin geri yuklenebildigini duzenli dene
     caution: veritabani dosyalarini calisirken dosya kopyasiyla almak tutarsiz yedek verir
+  airflow_tetikleme_kurali:
+    title: Airflow'da bir gorev hata alsa da sonraki gorevin calismasi ya da DAG'in hatali sayilmasi
+    triggers: [airflow, trigger rule, trigger_rule, all_done, all_success, one_failed, cleanup, temizlik, mark dag failed, dag run failed]
+    steps: varsayilan all_success'tir, ust gorevlerden biri hata alirsa alttaki calismaz; hata olsa da calismasi gereken temizlik gorevine trigger_rule=all_done ver; temizlik gorevi basarili oldugu icin DAG calismasi basarili gorunuyorsa sona all_done ile calisan ve diger gorevlerin durumuna bakip hata yukselten bir kontrol gorevi ekle
+    caution: hatayi gizlemek icin gorevleri basarili isaretleme
+  autosys_tek_test:
+    title: AutoSys isini ardillari tetiklenmeden tek basina denemek
+    triggers: [autosys, dependents, ardil, without running, tek basina, in isolation, test the job, on_ice, force_startjob]
+    steps: once ardillari sendevent -E JOB_ON_ICE -J <ardil> ile buza al (ya da JOB_ON_HOLD); isi sendevent -E FORCE_STARTJOB -J <is> ile baslat (zaten calisan bir is FORCE_STARTJOB'u yok sayar); deneme bitince ardillari JOB_OFF_ICE ile geri al ve durumlari autorep ile dogrula
+    caution: ardillari SUCCESS yapmak onlarin ardillarini da tetikler ve kayitlari yaniltir; buz ya da beklet kullan
+  slurm_kesinti:
+    title: Slurm'de isin kesintiye ya da sure sinirina karsi korunmasi
+    triggers: [slurm, preemption, preempt, requeue, cancelled, iptal, time limit, signal, scavenge]
+    steps: oncelik nedeniyle kesilen isin yeniden kuyruga girmesi icin #SBATCH --requeue (kumede PreemptMode=requeue ya da JobRequeue=1 olmali, scontrol show config ile bak); sure sinirindan once temiz kapanma icin #SBATCH --signal=B:TERM@05:00 ve betikte sinyali yakalayip ara durumu kaydet
+    caution: yeniden kuyruga alinan is bastan baslar; is ara durumdan devam edecek bicimde yazilmadiysa ciktilari ezebilir
 ---
 
 # Adminlik yordamlari

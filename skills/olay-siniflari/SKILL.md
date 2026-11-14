@@ -19,11 +19,11 @@ classes:
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process, not authorized for this agent, found empty sysout file, drain, drained, slurmd, node down, worker lost, failed to attach be library, noroutetohostexception, no route to host, am_read_data_from_pipe]
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process, not authorized for this agent, found empty sysout file, drain, drained, slurmd, node down, worker lost, failed to attach be library, noroutetohostexception, no route to host, am_read_data_from_pipe, executor reports task instance, low realmemory]
     cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir ya da isin sahibi sysout'u agent dizinine yazamiyor (dizin izni); agent baska bir sunucu adini yetkili sunucu olarak tanidigi icin kesfedilemiyor; sik onceki olay Java ya da surum degisikligi (Linux'ta Java guncellemesi Control-M'in kullandigi eski Java yolunu kaldirabiliyor); Linux agent'ta 32 ve 64 bit libstdc++.so.5 kutuphanesi eksik olabilir; sunucu agent'a ag yolu bulamiyor olabilir (guvenlik duvari, yonlendirici); 9.0.21 agent'inda bilinen bir cokme hatasi var
     fix: 'Failed to Attach BE Library' ise root olarak compat-libstdc++-33 paketinin 32 ve 64 bit surumlerini kur; 'NoRouteToHostException' ise sunucudan agent'a ag yolunu ve guvenlik duvarini ag ekibiyle incele; 9.0.21'de 'am_read_data_from_pipe' cokmesi icin agent'i 9.0.21.201 ya da sonrasina yukselt; yeni agent'ta 'Found empty sysout' ve /bin/su hatasi varsa agent ana dizininin iznini 755 yap (is sahibi sysout yazabilsin); 'not authorized for this agent' ise ctmagcfg ile Authorized Control-M/Server Hosts listesine dogru sunucu adini yaz; agent durmussa yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
-    fix_slurm: sinfo -R ile dugumun durumuna ve nedenine bak; durumun yanindaki '*' dugumun yanit vermedigini gosterir, slurmd'yi kontrol et; drain/drained dugum bakim icin yeni is almaz, bakim bittiyse scontrol update nodename=<dugum> state=resume
-    fix_airflow: scheduler ve worker sureclerinin calistigini dogrula (airflow jobs check, Celery worker durumu); gorevler kuyrukta kaliyorsa executor ile worker arasindaki baglantiya bak
+    fix_slurm: sinfo -R ile dugumun durumuna ve nedenine bak; durumun yanindaki '*' dugumun yanit vermedigini gosterir, slurmd'yi kontrol et; drain/drained dugum bakim icin yeni is almaz, bakim bittiyse scontrol update nodename=<dugum> state=resume; dugum 'Low RealMemory' nedeniyle drain olduysa slurm.conf'taki RealMemory degerini dugumde slurmd -C'nin verdigi degere esit ya da kucuk yap, sonra scontrol reconfigure ve resume
+    fix_airflow: scheduler ve worker sureclerinin calistigini dogrula (airflow jobs check, Celery worker durumu); gorevler kuyrukta kaliyorsa executor ile worker arasindaki baglantiya bak; executor gorevi basarisiz bildiriyor ama gorev hic calismamissa hep ayni worker dugumune gidip gitmedigine bak (flower, worker gunlukleri); o dugumdeki eksik ya da yanlis paketi duzelt veya dugumu kuyruktan cikar
     fix_kubernetes: dugum ve pod durumunu kubectl get nodes, kubectl describe pod ve olaylarla kontrol et
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, host_change, precedent]
@@ -46,10 +46,10 @@ classes:
     evidence: [external_source, precedent]
   degisiklik:
     title: Tanim degisikliginden sonra kirilma
-    signs: [not found, no such file, exit 127, rc 127, command not found, templatenotfound]
+    signs: [not found, no such file, exit 127, rc 127, command not found, templatenotfound, broken dag, no module named, modulenotfounderror, importerror]
     cause: son tanim degisikligi var olmayan bir betigi gosteriyor
     fix: tanimi onceki surume geri al, sonra degisikligi dogru yolla yeniden iste
-    fix_airflow: BashOperator'da bash_command .sh ile bitiyorsa Jinja onu sablon dosyasi sanar (TemplateNotFound); komutun sonuna bosluk ekle
+    fix_airflow: BashOperator'da bash_command .sh ile bitiyorsa Jinja onu sablon dosyasi sanar (TemplateNotFound); komutun sonuna bosluk ekle; 'Broken DAG' hatasinin tam yigin izini airflow dags list-import-errors (eski surumde airflow list_dags) verir; DAG yerel bir modulu ice aktaramiyorsa modulu dags klasorune ya da plugins'e koy veya sys.path'e DAG dosyasinin dizinini ekle
     harmful: [set_ok]
     evidence: [recent_change, precedent]
   takili:
@@ -145,7 +145,7 @@ classes:
     cause: yaz saati gecisinden sonra sunucu yeniden baslatilmamis ya da saat dilimi bilgisi guncel degil; isler bir saat kayiyor; saat dilimi tanimli isler bugunun yerine yarinin ODATE'iyle siparis edilebiliyor
     fix: saat dilimi dosyalarini guncelle (TimeZone.dat zamanlayici sunucusu, yonetim sunucusu ve istemcilerde ayni olmali, yoksa tahmin ve SLA sonuclari yanlis cikar), sunucuyu gecisten sonra yeniden baslat, etkilenen islerin baslama saatini ve SLA'sini dogrula; gecis tarihlerinden once kontrol listesi calistir
     fix_kubernetes: CronJob varsayilan olarak UTC'dir; 1.25 ve sonrasinda spec.timeZone, 1.21-1.24 arasinda schedule icinde CRON_TZ= kullan
-    fix_cron: cron sunucunun yerel saatini kullanir; sistem saat dilimi degistiyse cron'u yeniden baslat, destekleniyorsa CRON_TZ kullan
+    fix_cron: cron sunucunun yerel saatini kullanir; sistem saat dilimi degistiyse cron'u yeniden baslat, destekleniyorsa CRON_TZ kullan; Vixie cron yaz saati gecisini telafi eder, baska cron surumlerinde 02:00-03:00 arasindaki isler atlanabilir ya da iki kez calisabilir; kritik isleri bu araliga koyma ya da sunucuyu UTC'de calistir
     fix_airflow: DAG'in saat dilimi start_date'teki tzinfo ve default_timezone ayariyla belirlenir; zamanlar varsayilan olarak UTC'dir
     harmful: [set_ok]
     evidence: [host_change, precedent]
@@ -165,10 +165,11 @@ classes:
     evidence: [shared_attr, host_change, precedent]
   sinyal:
     title: Is bir sinyalle sonlandirildi (cikis kodu 128 ve ustu)
-    signs: [signal, sigsegv, segmentation fault, oom-killer, killed process, core dumped, oomkilled, out_of_memory, exceeded memory limit, maxrss]
+    signs: [signal, sigsegv, segmentation fault, oom-killer, killed process, core dumped, oomkilled, out_of_memory, exceeded memory limit, maxrss, sigterm, received sigterm]
     cause: is kendi hatasiyla degil disaridan gelen bir sinyalle bitti; kod 128 arti sinyal numarasidir (137 SIGKILL, 143 SIGTERM, 139 SIGSEGV). Sik nedenler isletim sisteminin bellek doldugunda sureci oldurmesi, sure asiminda SHOUT ya da operatorun isi oldurmesi, programin cokmesi
     fix: once sinyali ve kimin gonderdigini bul (sistem gunlugunde oom-killer, Control-M gunlugunde kill ya da SHOUT, operator islemleri); bellek yuzundense isin bellek ihtiyacini ya da sunucu bellegini ele al, sure siniri yuzundense zaman asimi sinifina bak; ayni kosulda yeniden calistirmak ayni sonucu verir
-    fix_slurm: sacct -j <id> -o jobid,maxrss,reqmem,state ile bellek kullanimini gor (OUT_OF_MEMORY); --mem degerini artir
+    fix_airflow: gorev SIGTERM aldiysa once disaridan durdurulup durdurulmadigina bak (clear, mark failed, execution_timeout, kalp atisi kesilen zombie gorev); alt surecler erken olduruluyorsa killed_task_cleanup_time degerini artir
+    fix_slurm: sacct -j <id> -o jobid,maxrss,reqmem,state ile bellek kullanimini gor (OUT_OF_MEMORY); --mem degerini artir; is sure sinirina yaklasirken temiz kapanmak icin #SBATCH --signal=B:TERM@05:00 ile sinyali onceden iste ve betikte yakala
     fix_kubernetes: pod OOMKilled ise bellek sinirini (resources.limits.memory) artir
     harmful: [set_ok]
     evidence: [shared_attr, slowing, precedent]
@@ -195,10 +196,10 @@ classes:
     evidence: [shared_attr, host_change, precedent]
   ortam_farki:
     title: Elle calisiyor, zamanlayicidan calismiyor (ortam farki)
-    signs: [works manually, works from command line, works from the shell, elle calisiyor, komut satirindan calisiyor, not from cron, cron'dan calismiyor, environment variable, ortam degiskeni, $path, relative path, goreli yol]
+    signs: [works manually, works from command line, works from the shell, elle calisiyor, komut satirindan calisiyor, not from cron, cron'dan calismiyor, environment variable, ortam degiskeni, $path, relative path, goreli yol, not a tty, the input device is not a tty]
     cause: zamanlayici isi kullanicinin etkilesimli oturumundaki ortamla calistirmaz; PATH kisadir, profil (.bashrc, .profile) yuklenmez, calisma dizini farklidir, goreli yollar bozulur, ortam degiskenleri yoktur
     fix: komutlarda tam yol kullan; gereken degiskenleri betigin icinde ayarla ya da profili kaynak goster (. ~/.profile); betigin basinda calisma dizinine gec (cd); cikti ve hatayi gunluge yonlendir; betigi zamanlayicinin ortamina benzer bos bir ortamla (env -i) deneyerek dogrula
-    fix_cron: crontab'in basinda PATH= ve SHELL= tanimlanabilir; komuttaki % karakteri crontab'da yeni satir anlamina gelir, \% ile kacir
+    fix_cron: crontab'in basinda PATH= ve SHELL= tanimlanabilir; komuttaki % karakteri crontab'da yeni satir anlamina gelir, \% ile kacir; cron TTY baglamaz: docker exec -it gibi etkilesimli bayraklari kaldir; /usr/sbin altindaki komutlar (service gibi) cron'un PATH'inde yoktur, tam yolunu ver (which service)
     fix_controlm: calistiran kullanicinin profilinin yuklenip yuklenmedigine bak; gerekirse is tanimina ortami kuran bir on komut ekle
     harmful: [set_ok]
     evidence: [recent_change, precedent]
@@ -211,10 +212,10 @@ classes:
     evidence: [shared_attr, host_change, precedent]
   bildirim:
     title: Olay oldu ama haber gitmedi (SHOUT, e-posta, SLA uyarisi)
-    signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed, email to, ctmmail, mail_handler, e-posta, eposta, shout, email_on_failure, mailto, smtp_host]
+    signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed, email to, ctmmail, mail_handler, e-posta, eposta, shout, email_on_failure, mailto, smtp_host, on_failure_callback]
     cause: zamanlayici sunucusunun ya da SLA modulunun (BIM) posta sunucusu ayari bozuk ya da posta sunucusu degisti; isler dusuyor ama kimse haber almiyor
     fix: posta ayarini dogrula (config.dat'ta MAIL_HANDLER MAILX olmamali, ctm_menu ile SMTP sunucu parametreleri, BIM icin EmailSender); is gunlugunde 'EMAIL TO ... FAILED' yazip ileti yine de geldiyse ctmmail zaman asimina ya da 99 karakteri asan konu satirina bak; deneme iletisi gonder; bekleyen uyarilari elle bildir; olaydan once bildirim yolunu duzenli bir deneme iletisiyle sina
-    fix_airflow: airflow.cfg [smtp] bolumunu (smtp_host, smtp_port, smtp_user, smtp_password, smtp_mail_from) doldur, gorevlerde email ve email_on_failure ayarla
+    fix_airflow: airflow.cfg [smtp] bolumunu (smtp_host, smtp_port, smtp_user, smtp_password, smtp_mail_from) doldur, gorevlerde email ve email_on_failure ayarla; hata bildirimini her gorevde tekrar yazmamak icin on_failure_callback'i default_args icinde ver
     fix_cron: cron ciktiyi MAILTO adresine yollar; sunucuda posta aktarici (sendmail, postfix) yoksa ileti gitmez; ciktiyi dosyaya da yonlendirebilirsin
     harmful: []
     evidence: [shared_attr, precedent]
