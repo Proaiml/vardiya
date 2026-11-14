@@ -35,9 +35,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = ROOT / "ornekler" / "ortam-banka.json"
 OUT = ROOT / "results" / "olay.jsonl"
 RERUN, SETOK, WAIT = "isi yeniden calistir (rerun)", "isi elle basarili say (Set OK)", "hicbir sey yapma, izle"
+RUNNOW = "kosullari yok sayarak hemen calistir (Run Now)"
 def _harmful():
     """Actions each class names as harmful (skills/olay-siniflari), in the words of the action list."""
-    words = {"rerun": RERUN, "set_ok": SETOK}
+    words = {"rerun": RERUN, "set_ok": SETOK, "run_now": RUNNOW}
     return {k: {words[a] for a in c.get("harmful", [])} for k, c in gecmis._C.items()}
 
 
@@ -93,7 +94,7 @@ def cases(split="dev", seed=None):
 
 def actions():
     acts = sorted({fix for _, _, fix in gecmis.CATALOG.values()} | {"dosya gelince zinciri serbest birak"})
-    return acts + [RERUN, SETOK, WAIT]
+    return acts + [RERUN, SETOK, RUNNOW, WAIT]
 
 
 def _entities(g, upto):

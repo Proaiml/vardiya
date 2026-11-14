@@ -36,7 +36,7 @@ classes:
     signs: [did not arrive, not arrive, file watcher, no file matching, dosya gelmedi]
     cause: kaynak sistem dosyayi gec gonderiyor
     fix: kaynak sistemin sahibine haber ver; dosya gelince zinciri serbest birak, bos dosyayla devam etme
-    harmful: [set_ok]
+    harmful: [set_ok, run_now]
     evidence: [external_source, precedent]
   degisiklik:
     title: Tanim degisikliginden sonra kirilma
@@ -64,7 +64,7 @@ classes:
     signs: [quantitative, wait resource, available 0, 0 of 2 free, waiting for resource, code 5120, no free slots, pool slots]
     cause: kaynagi tutan isler bitmis ama kaynak serbest birakilmamis (asili kayit)
     fix: bekleme nedenini dogrula (ctmwhy, is gunlugunde Wait Resource kodu 5120); kaynaklar bossa isi bir kez hold edip free et ki yeniden degerlendirilsin; asili kayit varsa serbest birak; havuz sinirini yukseltme
-    harmful: [set_ok]
+    harmful: [set_ok, run_now]
     evidence: [named_in_error, shared_attr, precedent]
   yama:
     title: Yama ya da yukseltme sonrasi kirilma
@@ -78,14 +78,14 @@ classes:
     signs: [no data found, no rows, ora-01403, nothing to post, staging bos]
     cause: oncul is hata verdi ama elle basarili sayildi (Set OK); veri hic yuklenmedi
     fix: once oncul isi duzeltip calistir, sonra bu isi yeniden calistir; Set OK zinciri yesil gosterir ama veriyi getirmez
-    harmful: [rerun, set_ok]
+    harmful: [rerun, set_ok, run_now]
     evidence: [pred_setok, pred_failed, precedent]
   tarih:
     title: Siparis tarihi uyusmazligi (ODATE, execution_date)
     signs: [order date, odate, execution_date, logical date, wait condition, condition was added, data interval]
     cause: oncul is New Day'i gecti; kosulunu bir onceki siparis tarihiyle uretti, ardil kendi tarihini bekliyor
     fix: kosulu dogru tarihle elle ekle ve ardili serbest birak; kalici cozum: iki isi ayni siparis tarihiyle siparis et ya da kosula +1 gun kaydirma ver
-    harmful: [set_ok]
+    harmful: [run_now, set_ok]
     evidence: [crossed_new_day, pred_failed, precedent]
   mukerrer:
     title: Mukerrer ya da ust uste calisma
@@ -136,7 +136,7 @@ olsun ayni sinifi tanir.
 | `signs` | Hata satirinda sinifi ele veren sozcukler; buyuk-kucuk harf ayrilmaz. Control-M, AutoSys, Airflow, JS7 ve veritabani dilinden ornekler birlikte yazilir |
 | `cause` | Sinifin olagan kok nedeni, operatorun okuyacagi dille |
 | `fix` | Dogru mudahale. Gecmiste ayni kok nedende dogrulanmis bir cozum varsa o once gelir |
-| `harmful` | Bu sinifta zararli olan eylemler: `rerun`, `set_ok`. Harness bunlari onermez, bench bunlari zararli sayar |
+| `harmful` | Bu sinifta zararli olan eylemler: `rerun`, `set_ok`, `run_now` (kosullari, kaynaklari ve saati yok sayarak hemen calistirmak). Harness bunlari onermez, bench bunlari zararli sayar |
 | `evidence` | Bu sinifta hangi kanit sorgularina bakilacagi |
 
 ## Kanit sorgulari

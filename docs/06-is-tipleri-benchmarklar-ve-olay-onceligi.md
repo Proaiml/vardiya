@@ -366,6 +366,17 @@ başlatılmamış olması, saat dilimi bilgisi değişince güncellenmesi gereke
 **yaz saati ya da saat dilimi kayması** (`saat_dilimi`). Örnek ortamda yaz saati olmadığı için örnek olayı yok; bir
 olaydan önce uyarısı adayı: geçiş tarihlerinden önce kontrol listesi.
 
+Zamanlayıcının kendi veritabanı ve kapasitesi araması: doğrudan "veritabanı doldu" konusu çıkmadı; öne çıkanlar
+veritabanı şeması, yüksek erişilebilirlikte elle devretme (failover) komutu ve dakikada bir çalışan 500 döngüsel iş
+(günde 35.000 iş) yüzünden yönetim arayüzünün yavaşlaması. Bu sonuncusu bir iş arızası değil platform kapasitesi
+sorunu; harness'te "platform sağlığı" ailesinin (01 belgesi, Bölüm 2) ilk ölçüsü olarak not edildi: döngüsel iş sayısı
+ve sıklığının izlenmesi.
+
+"Koşul var ama iş başlamıyor" araması: yükseltmeden sonra hiçbir işin başlamaması, iş yükü kısıtları (agent'ta işlemci
+yüküne göre), ve bir işi öncülünün koşulunu yok sayarak çalıştırmanın yolları (5.158 görüntülenme). Bu sonuncusu sahada
+sık başvurulan bir kestirme; doğrulama yapılmadan kullanılırsa veri bozabilir. Zararlı eylemlere "koşulları yok sayarak
+hemen çalıştır" (`run_now`) eklendi; sipariş tarihi, Set OK, dosya ve kaynak sınıflarında zararlı sayılıyor.
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların

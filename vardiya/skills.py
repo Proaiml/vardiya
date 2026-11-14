@@ -169,7 +169,7 @@ def load_rule_skill(path):
 # The evidence queries a class may ask for. The queries themselves live in cozumle.py; a class only names them.
 EVIDENCE = {"shared_attr", "named_in_error", "recent_change", "host_change", "pred_failed", "pred_setok",
             "crossed_new_day", "slowing", "precedent", "external_source"}
-HARMFUL_ACTIONS = {"rerun", "set_ok"}
+HARMFUL_ACTIONS = {"rerun", "set_ok", "run_now"}  # run_now: start ignoring conditions, resources and time
 
 
 def load_incident_classes(directory):
