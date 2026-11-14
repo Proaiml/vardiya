@@ -58,6 +58,9 @@ WORDING = {
     "kaynak": "Job waiting for quantitative resource {resource}: requested 1, available 0 for {minutes} min",
     "yama": "The system cannot execute the specified program after reboot on {host} (CScript)",
     "setok": "No rows selected from {table}: nothing to post",
+    "tarih": "Task {job} waiting: upstream {pred} has no run for logical date {odate} (it ran for {prev})",
+    "mukerrer": "Duplicate run detected: {job} started while a previous instance was still active, overlap on {path}",
+    "zaman": "AutoSys term_run_time reached for {job}: job TERMINATED after {limit} minutes",
 }
 
 

@@ -313,6 +313,44 @@ to AM data pipe" (hata 232), sertifika yolu bulunamadı (SunCertPathBuilderExcep
 silinmemesi ve gereken güvenlik duvarı portları. Bunların ilk ikisi hata çizgesinde "agent iletişimi" işaretlerine
 eklendi; üçüncüsü disk dolma uyarısının bir başka nedeni.
 
+### 7.2 Başka zamanlayıcılarda aynı sınıflar
+
+Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların
+sorularında da sayıldı: Stack Overflow'da `autosys` etiketinin en çok oy alan 300 sorusu ve `airflow` etiketinde
+takılma, hata, zaman aşımı ve kuyruk sözcükleriyle aranmış 857 soru. Sayılar anahtar sözcükle yapıldı, kaba
+ölçüdür; bir soru birden çok sınıfa girebilir.
+
+| Arıza sınıfı | Control-M (214) | AutoSys (300) | Airflow (857) | Vardiya'da |
+| --- | --- | --- | --- | --- |
+| Bağımlılık ya da koşul bekliyor | %16 | %43 | %44 | Kısmen (takvim uyumu, öncül hatası) |
+| Takılı, bitmeyen iş | %8 | %10 | %38 | Var |
+| Kaynak ya da kuyruk bekleme | %2 | %2 | %35 | Var |
+| Yeniden deneme ve yeniden çalıştırma | %2 | %3 | %33 | Kısmen |
+| Zaman aşımı | %0 | %2 | %30 | **0.3'te eklendi** |
+| Takvim, tatil, zaman dilimi | %6 | %13 | %30 | Kısmen |
+| Sipariş tarihi, mantıksal tarih (ODATE, execution_date) | %3 | %0 | %28 | **0.3'te eklendi** |
+| Parola ve kimlik | %6 | %2 | %18 | Var |
+| Kilit, eşzamanlı yazma | %0 | %1 | %10 | Var |
+| Mükerrer ya da üst üste çalışma | %2 | %2 | %10 | **0.3'te eklendi** |
+| Dosya gelmedi, dosya izleme | %4 | %8 | %3 | Var |
+| Plan yüklenmedi (New Day, günlük plan) | %1 | %0 | %1 | Bilgi olarak eklendi |
+
+Çıkan sonuç: ürünlerin dili farklı ama arıza sınıfları aynı. Control-M'deki ODATE ile Airflow'daki `execution_date`,
+Control-M'deki kaynak havuzu ile Airflow'daki `pool` ve `max_active_tasks`, AutoSys'teki `term_run_time` ile Airflow'daki
+`execution_timeout` aynı sınıfın farklı adları. Bu yüzden her sınıfın tanınması ürün bağımsız işaretlerle yapılıyor
+(`gecmis.SIGNS`) ve olay bench'inin `test` bölümünde hatalar AutoSys ve Airflow diliyle de yazıldı.
+
+JS7'nin herkese açık hata kayıtları (GitHub, 14 kayıt) aynı sınıfları gösteriyor: agent'ın başlamaması, güncelleme
+sonrası Controller'ın düşmesi, iptal edilen siparişlerin "iptal ediliyor" durumunda takılı kalması, SMB aktarımının
+60 dakikada kopması, adında boşluk olan dosyanın aktarılamaması (aynı sorun Control-M sorularında dosya izlemede de var).
+
+BMC topluluğunda en çok cevaplanan kaynak bekleme sorusunun (27 cevap) açıklaması: bekleme bilgisi boş görünüyor, iş
+günlüğünde "Wait Resource (code 5120)" var; iş bir kez bekletilip serbest bırakılınca (hold, free) yürümüş. Aynı aramada
+çıkan bilgi makaleleri: iş durum kodlarının anlamları, kaynak kilit tablosunda eksik satır yüzünden sunucunun
+başlamaması, bekleme bilgisinin izleme ekranında görünmemesi. Kaynak bekleme çözücüsünün önerisi buna göre güncellendi:
+önce bekleme nedenini doğrula, kaynaklar boşsa işi bir kez bekletip serbest bırak, asılı kayıt varsa onu serbest
+bırak, havuz sınırını büyütme.
+
 Kaynaklar (bölüm 7):
 
 - [BMC Community: Control-M konusu (giriş gerekir)](https://community.bmc.com/s/topic/0TO3n000000WJUCGA4/controlm)
@@ -389,7 +427,7 @@ Ezbere karşı iki bölüm var. `dev`: çözücülerin yazıldığı adlar ve ha
 kullanıcı, tablo ve kaynak adları değiştirilmiş, her hata başka bir ürünün diliyle yazılmış (PostgreSQL kilidi,
 Windows 1326 oturum hatası gibi).
 
-İlk sonuç, yalnızca kod kolu: `dev` 19 olayın 19'unda, `test` 19'unun 19'unda doğru kök neden ve doğru müdahale.
+İlk sonuç, yalnızca kod kolu: `dev` 22 olayın 22sinde, `test` 22sinin 22sinde doğru kök neden ve doğru müdahale (on dört arıza sınıfı).
 
 Sınır: `test` bölümünün yeni adlarını ve hata yazımlarını da çözücüleri yazan el, aynı oturumda yazdı. Bu, adlara
 ve tek bir hata satırına bağımlılığı sınıyor ama bağımsız bir sınama değil. Sıradaki adım: hata yazımlarını başka bir

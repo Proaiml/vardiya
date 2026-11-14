@@ -117,6 +117,21 @@ def analyse(g, run_id, window=0):
                                    f"{', '.join(co)}" if co else "")})
             have.add(a)
     known = catalog_match(sig)
+    from .gecmis import NEW_DAY, _clock
+    if known and known["kind"] == "tarih":  # a predecessor that finished after the plan day turned
+        for p in preds:
+            pj = g.get(f"job:{p}") or {}
+            for r in g.runs(p, since=day, until=day):
+                if pj.get("time") and r["ok"] and _clock(pj["time"]) + r["minutes"] > NEW_DAY:
+                    cand.append({"id": r["id"], "kind": "run", "score": 6.0,
+                                 "why": f"oncul {p} {pj['time']}'de basladi, {r['minutes']:.0f} dk surdu ve New Day'i "
+                                        f"(07:00) gecti: kosulunu onceki siparis tarihiyle uretti"})
+    if known and known["kind"] == "zaman" and len(durations) >= 10:  # slow, not stuck: the limit fell behind
+        slope = theil_sen(durations)
+        if slope > 0:
+            cand.append({"id": f"job:{job}", "kind": "job", "score": 4.5,
+                         "why": f"{job} son {len(durations)} calismada uzuyor (her calismada +{slope:.2f} dk, son "
+                                f"{durations[-1]:.1f} dk): takilma degil, sure siniri artan hacme yetismedi"})
     if not cand and known:  # nothing on the graph points elsewhere: the known kind of this error says where
         where = "dis:kaynak-sistem" if known["kind"] == "dosya" else f"job:{job}"
         cand.append({"id": where, "kind": where.split(":", 1)[0], "score": 2.0,
@@ -169,7 +184,8 @@ def catalog_match(sig):
     """The known failure kind (docs/06, section 7) of a signature: by its signs (SIGNS, any product's wording),
     then by likeness to the catalog's own line."""
     from .gecmis import CATALOG, SIGNS
-    fill = dict(table="T", user="U", host="H", rows=0, expected=1, path="/p", minutes=1, proc="p", resource="R")
+    fill = dict(table="T", user="U", host="H", rows=0, expected=1, path="/p", minutes=1, proc="p", resource="R",
+                job="J", pred="P", odate="0101", prev="0101", limit=1, day="2026-01-01")
     scored = []
     for kind, (line, cause, fix) in CATALOG.items():
         hits = sum(1 for w in SIGNS.get(kind, ()) if w in sig)

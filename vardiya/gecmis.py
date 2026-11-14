@@ -39,7 +39,8 @@ CATALOG = {
     # from the BMC Community Control-M topic (docs/06, section 7.1)
     "kaynak": ("Wait resource: {resource} has 0 of 2 free for {minutes} min; holders ended hours ago",
                "kaynagi tutan isler bitmis ama kaynak serbest birakilmamis (asili kayit)",
-               "kaynagi tutan asili kaydi bul ve serbest birak (ctmipc, ctmloadset); havuz sinirini yukseltme"),
+               "bekleme nedenini dogrula (ctmwhy, is gunlugunde Wait Resource kodu 5120); kaynaklar bossa isi bir kez "
+               "hold edip free et ki yeniden degerlendirilsin; asili kayit varsa serbest birak; havuz sinirini yukseltme"),
     "yama": ("Error: CScript.exe version 5.6 or higher is required (host {host})",
              "sunucuya isletim sistemi yamasi yuklendi, betik calistiricisi bozuldu",
              "yamanin etkisini dogrula, betik calistiricisini onar ya da yamayi geri al; agent'i yeniden baslat"),
@@ -47,6 +48,24 @@ CATALOG = {
               "oncul is hata verdi ama elle basarili sayildi (Set OK); veri hic yuklenmedi",
               "once oncul isi duzeltip calistir, sonra bu isi yeniden calistir; Set OK zinciri yesil gosterir ama "
               "veriyi getirmez"),
+    # classes that are frequent in other schedulers' questions (AutoSys, Airflow; docs/06, section 7.2)
+    "tarih": ("Wait condition: {pred}-ENDED-OK for order date {odate} not found; the condition was added with order "
+              "date {prev}",
+              "oncul is New Day'i gecti; kosulunu bir onceki siparis tarihiyle uretti, ardil kendi tarihini bekliyor",
+              "kosulu dogru tarihle elle ekle ve ardili serbest birak; kalici cozum: iki isi ayni siparis tarihiyle "
+              "siparis et ya da kosula +1 gun kaydirma ver"),
+    "mukerrer": ("{job} is already running (2 instances); duplicate transfer of {path}",
+                 "ayni is ikinci kez siparis edildi, iki kopya ayni anda calisti",
+                 "ikinci kopyayi durdur, hedefteki mukerrer veriyi temizle; ise 'ayni anda tek kopya' kurali koy ve "
+                 "elle siparisten once aktif kopyayi kontrol et"),
+    "zaman": ("{job} terminated: exceeded max run time of {limit} min (killed)",
+              "isin suresi haftalardir uzuyor, sure siniri artan hacme yetismedi",
+              "yeniden calistirmadan once sureyi uzatan nedeni (hacim, plan) incele; siniri son 30 calismanin %90'i "
+              "arti pay olarak guncelle"),
+    "plan": ("{job} was not ordered on {day}: daily plan load did not complete",
+             "gunluk plan yuklemesi (New Day) yarida kaldi",
+             "plan yuklemesinin gunlugunu incele, eksik isleri takvimlerine gore toplu yeniden sirala; tek tek elle "
+             "siparis etme"),
 }
 # How each kind shows itself across products and wordings: the generalised part of each solver. A signature
 # matches a kind by these signs, not by looking like one particular error line.
@@ -60,10 +79,18 @@ SIGNS = {
     "degisiklik": ("not found", "no such file", "exit 127", "rc 127", "command not found"),
     "takili": ("still running", "exceeded", "child process", "process tree", "hang", "keeps the job open"),
     "disk": ("no space", "not enough space", "disk full", "enospc", "disk dolu"),
-    "kaynak": ("quantitative", "wait resource", "available 0", "0 of 2 free", "waiting for resource"),
+    "kaynak": ("quantitative", "wait resource", "available 0", "0 of 2 free", "waiting for resource", "code 5120",
+               "no free slots", "pool slots"),
     "yama": ("cscript", "after reboot", "patch", "yama", "cannot execute the specified program"),
     "setok": ("no data found", "no rows", "ora-01403", "nothing to post", "staging bos"),
+    "tarih": ("order date", "odate", "execution_date", "logical date", "wait condition", "condition was added",
+              "data interval"),
+    "mukerrer": ("already running", "2 instances", "duplicate", "two instances", "max_active_runs", "overlap",
+                 "previous instance"),
+    "zaman": ("max run time", "timed out", "execution_timeout", "term_run_time", "killed", "sigkill", "terminated"),
+    "plan": ("not ordered", "daily plan", "new day", "not scheduled", "was not triggered", "plan load"),
 }
+NEW_DAY = 7 * 60  # the plan day turns at 07:00 (Control-M New Day default)
 # Quantitative resources the demo site's jobs need (Control-M: Resource, JS7: Resource Lock).
 RESOURCES = {"MHS_KUR_FARKI": ["DB_YAZMA"], "MHS_MUTABAKAT": ["DB_YAZMA"], "ODM_POST_DEFTER": ["DB_YAZMA"]}
 # Tables the demo site's jobs write; a site file may carry its own `tables` per job.
@@ -116,11 +143,13 @@ def build(site, days=90, seed=7, graph=None, names=None, wording=None):
             (-37, "sessiz", "MHS_MUTABAKAT"), (-35, "dosya", "MHS_WATCH_KUR"), (-29, "degisiklik", "ODM_LOAD_ODEME"),
             (-31, "setok", "ODM_POST_DEFTER"), (-21, "yama", "app01"), (-16, "kaynak", "MHS_MUTABAKAT"),
             (-23, "kilit", "MHS_KUR_FARKI"), (-18, "takili", "KRD_RISK_HESAP"), (-14, "dosya", "MHS_WATCH_KUR"),
+            (-4, "mukerrer", "ODM_BANKA_GONDER"), (-3, "tarih", "KRD_RAPOR"), (-2, "zaman", "MHS_MUTABAKAT"),
             (-9, "disk", "rpr01"), (-7, "dosya", "MHS_WATCH_KUR"), (-1, "kilit", "MHS_KUR_FARKI"),
             (0, "parola", "batchusr")]
     plan = [(o, k, rn(w)) for o, k, w in plan]
     plan = [p for p in plan if p[2] in by or p[1] in ("parola", "host", "disk", "yama")]
     set_ok = {}  # (job, day): the predecessor's failed run an operator marked OK
+    long_run = {}  # (job, day): minutes of a predecessor run that crossed New Day
     failures = {}  # (job, day) -> (kind, error, root node)
     truth = []
     for off, kind, where in plan:
@@ -142,13 +171,25 @@ def build(site, days=90, seed=7, graph=None, names=None, wording=None):
             j = by[n]
             err = line.format(table=(j["tables"] or ["?"])[0], user=j["run_as"], host=j["host"], rows=0,
                               expected=48000, path=j.get("command") or "/data/?", minutes=j.get("timeout") or 180,
-                              proc="java", resource=(j["resources"] or ["?"])[0])
+                              proc="java", resource=(j["resources"] or ["?"])[0], job=n,
+                              pred=(j["deps"] or ["?"])[0], odate=day[5:7] + day[8:], limit=8,
+                              prev=_day(datetime.date.fromisoformat(day), -1)[5:7] + _day(datetime.date.fromisoformat(day), -1)[8:])
             if kind == "kilit":
                 root = f"table:{j['tables'][0]}"
             if kind == "degisiklik":
                 new = (j["command"] or "/opt/x.sh").replace(".sh", "_v2.sh")
                 err = line.format(path=new)
                 root = g.add_change(f"CHG-{1800 + abs(off)}", n, _day(today, off - 1), f"komut: {j['command']} -> {new}")
+            if kind == "tarih":
+                pred = j["deps"][0]
+                long_run[(pred, day)] = NEW_DAY + 40 - _clock(by[pred]["time"])
+                root = f"run:{pred}@{day}#1"
+            if kind == "mukerrer":
+                root = g.add_change(f"ELLE-{day[5:7]}{day[8:]}", n, day,
+                                    "is elle, bagimsiz akis olarak yeniden siparis edildi (calisan kopya varken)",
+                                    by="operator")
+            if kind == "zaman":
+                root = f"job:{n}"
             if kind == "kaynak":
                 root = f"resource:{j['resources'][0]}"
                 err = line.format(resource=j["resources"][0], minutes=95)
@@ -183,6 +224,8 @@ def build(site, days=90, seed=7, graph=None, names=None, wording=None):
                 minutes *= 1.6  # month-end volume
             if n == slowing and age < 35:
                 minutes *= 1 + 0.018 * (35 - age)  # a job that has been slowing down for five weeks
+            if (n, day) in long_run:
+                minutes = long_run[(n, day)]
             f = failures.get((n, day))
             if set_ok.get((n, day)):  # failed, then marked OK by hand: green downstream, empty underneath
                 run_ids[(n, day)] = g.add_run(n, day, True, minutes * 0.4, set_ok=True, rc=2,
@@ -225,6 +268,10 @@ def build(site, days=90, seed=7, graph=None, names=None, wording=None):
     _disk(g, env, today, days, rng, names)
     g.commit()
     return g, truth
+
+
+def _clock(hhmm):
+    return int(hhmm[:2]) * 60 + int(hhmm[3:])
 
 
 def _disk(g, env, today, days, rng, names=None):
