@@ -19,9 +19,12 @@ classes:
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process, not authorized for this agent, found empty sysout file]
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process, not authorized for this agent, found empty sysout file, drain, drained, slurmd, node down, worker lost]
     cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir ya da isin sahibi sysout'u agent dizinine yazamiyor (dizin izni); agent baska bir sunucu adini yetkili sunucu olarak tanidigi icin kesfedilemiyor; sik onceki olay Java ya da surum degisikligi (Linux'ta Java guncellemesi Control-M'in kullandigi eski Java yolunu kaldirabiliyor)
     fix: yeni agent'ta 'Found empty sysout' ve /bin/su hatasi varsa agent ana dizininin iznini 755 yap (is sahibi sysout yazabilsin); 'not authorized for this agent' ise ctmagcfg ile Authorized Control-M/Server Hosts listesine dogru sunucu adini yaz; agent durmussa yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
+    fix_slurm: sinfo -R ile dugumun durumuna ve nedenine bak; durumun yanindaki '*' dugumun yanit vermedigini gosterir, slurmd'yi kontrol et; drain/drained dugum bakim icin yeni is almaz, bakim bittiyse scontrol update nodename=<dugum> state=resume
+    fix_airflow: scheduler ve worker sureclerinin calistigini dogrula (airflow jobs check, Celery worker durumu); gorevler kuyrukta kaliyorsa executor ile worker arasindaki baglantiya bak
+    fix_kubernetes: dugum ve pod durumunu kubectl get nodes, kubectl describe pod ve olaylarla kontrol et
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, host_change, precedent]
   sessiz:
@@ -29,6 +32,9 @@ classes:
     signs: [rc=0, return code 0, row count, rows (expected, expected about, beklenen, ended ok although, errorlevel, exit code 0 but]
     cause: is hatayi cikis koduna yansitmiyor - sakli yordam hatayi yutuyor, commit yok ya da Windows .bat hata kodunu exit ile dondurmuyor
     fix: yordamin ya da betigin hatayi yukseltmesini sagla (THROW/RAISE, commit, exit %ERRORLEVEL%); isin ciktisinda hata sozcuklerini ya da donus kodlarini arayan kural (On/Do) tanimla; veriyi temizleyip yeniden yukle
+    fix_autosys: AutoSys sifirdan farkli cikis kodunda isi FAILURE yapar; betik hatayi cikis koduna yansitmali (exit 1)
+    fix_airflow: gorev hatada istisna firlatmali; BashOperator sifir olmayan cikis kodunda basarisiz olur
+    fix_cron: cron cikis kodunu izlemez; betik cikti ve kodunu gunluge yazmali (>> log 2>&1) ve hatada bildirim gondermeli
     harmful: [rerun, set_ok]
     evidence: [recent_change, precedent]
   dosya:
@@ -40,16 +46,19 @@ classes:
     evidence: [external_source, precedent]
   degisiklik:
     title: Tanim degisikliginden sonra kirilma
-    signs: [not found, no such file, exit 127, rc 127, command not found]
+    signs: [not found, no such file, exit 127, rc 127, command not found, templatenotfound]
     cause: son tanim degisikligi var olmayan bir betigi gosteriyor
     fix: tanimi onceki surume geri al, sonra degisikligi dogru yolla yeniden iste
+    fix_airflow: BashOperator'da bash_command .sh ile bitiyorsa Jinja onu sablon dosyasi sanar (TemplateNotFound); komutun sonuna bosluk ekle
     harmful: [set_ok]
     evidence: [recent_change, precedent]
   takili:
     title: Takili, bitmeyen ya da hayalet calisan is
-    signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow, unknown state]
+    signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow, unknown state, istio, sidecar, never completes, hic bitmiyor]
     cause: betik bir alt sureci beklemeden cikiyor ya da is ekranda calisiyor gorunuyor ama sureci artik yok (hayalet)
     fix: once surecin gercekten var olup olmadigina bak; varsa betigi alt sureci bekleyecek bicimde duzelt (start /wait, wait) ve takili isi sonlandir; yoksa (hayalet) agent'taki takili durum dosyasini kontrol et ve isi ctm_setnotok ile kapat, force-end degil
+    fix_kubernetes: is podunda istio gibi bir yan konteyner varsa ana konteyner bitince yan konteyner surer ve is tamamlanmaz; is bitince yan konteynere cikis istegi gonder (curl -X POST localhost:15000/quitquitquit) ya da bu podda enjeksiyonu kapat
+    fix_quartz: uzun isi InterruptableJob olarak yaz ve scheduler.interrupt(jobKey) ile durdur
     harmful: [set_ok]
     evidence: [precedent]
   disk:
@@ -61,9 +70,11 @@ classes:
     evidence: [shared_attr, named_in_error, precedent]
   kaynak:
     title: Kaynak ya da kuyruk bekleme
-    signs: [quantitative, wait resource, available 0, 0 of 2 free, waiting for resource, code 5120, no free slots, pool slots, wait workload, workload policy]
+    signs: [quantitative, wait resource, available 0, 0 of 2 free, waiting for resource, code 5120, no free slots, pool slots, wait workload, workload policy, (resources), (priority), qos, parallelism, max_active_tasks, dag_concurrency, queued, kuyrukta]
     cause: kaynagi tutan isler bitmis ama kaynak serbest birakilmamis (asili kayit)
     fix: bekleme nedenini dogrula (ctmwhy; durum kodu D kaynak, L agent, M is yuku politikasi); kaynaklar bossa isi bir kez hold edip free et ki yeniden degerlendirilsin; asili kayit varsa serbest birak; is yuku politikasiysa politikanin sinirini ve kapsamini kontrol et; havuz sinirini yukseltme
+    fix_slurm: squeue'da bekleme nedenini oku (Resources, Priority, QOS sinirlari); is dizilerinde %N ile eszamanliligi sinirla, gerekirse scontrol hold
+    fix_airflow: parallelism (tum kurulum), max_active_tasks/dag_concurrency (DAG basina), max_active_runs ve pool slotlari gorevleri kuyrukta tutar; hangisinin dolu oldugunu bul; SequentialExecutor paralel calistirmaz
     harmful: [set_ok, run_now]
     evidence: [named_in_error, shared_attr, precedent]
   yama:
@@ -82,30 +93,43 @@ classes:
     evidence: [pred_setok, pred_failed, precedent]
   tarih:
     title: Siparis tarihi uyusmazligi (ODATE, execution_date)
-    signs: [order date, odate, execution_date, logical date, wait condition, condition was added, data interval, keep active, removed by new day]
+    signs: [order date, odate, execution_date, logical date, wait condition, condition was added, data interval, keep active, removed by new day, logical_date, catchup, backfill, data_interval, ds_nodash]
     cause: oncul is New Day'i gecti ve kosulunu bir onceki siparis tarihiyle uretti, ardil kendi tarihini bekliyor; ya da IN kosulundaki PREV onceki siparis tarihini degil ODAT-1'i veriyor (hafta sonu calismayan zincir pazartesi pazar tarihini bekler); Keep Active 0 ise bekleyen ardil New Day'de sessizce siliniyor
     fix: kosulu dogru tarihle elle ekle ve ardili serbest birak; kalici cozum: iki isi ayni siparis tarihiyle siparis et ya da kosula +1 gun kaydirma ver; gece yarisini gecebilecek zincirlerde Keep Active'i 0'dan buyuk yap
+    fix_airflow: execution_date (logical_date) aralik baslangicidir, calisma ani degil; sablonda {{ ds }} ya da data_interval_start kullan; istenmeyen gecmis calismalari catchup=False onler
+    fix_autosys: kosul turunu kontrol et: success(is) basarida, done(is) her bitiste, notrunning(is) calismiyor oldugu her durumda dogrudur
     harmful: [run_now, set_ok]
     evidence: [crossed_new_day, pred_failed, precedent]
   mukerrer:
     title: Mukerrer ya da ust uste calisma
-    signs: [already running, 2 instances, duplicate, two instances, max_active_runs, overlap, previous instance]
+    signs: [already running, 2 instances, duplicate, two instances, max_active_runs, overlap, previous instance, overlap, overlapping, concurrent, concurrently, disallowconcurrentexecution, concurrencypolicy, flock, max_active_runs, ayni anda iki]
     cause: ayni is ikinci kez siparis edildi ya da dongusel isin calisma araligi New Day'i gecti, iki kopya ayni anda calisti
     fix: ikinci kopyayi durdur, hedefteki mukerrer veriyi temizle; ise 'ayni anda tek kopya' kurali koy, dongusel islerde calisma araligini New Day'den once bitir, elle siparisten once aktif kopyayi kontrol et
+    fix_cron: isi flock ile tek kopyaya bagla (flock -n /tmp/<is>.lock <komut>)
+    fix_airflow: DAG'da max_active_runs=1, gerekiyorsa depends_on_past=True; beklenmedik coklu calisma geriye donuk doldurmadan geliyorsa catchup=False
+    fix_kubernetes: concurrencyPolicy: Forbid (elle olusturulan isler bu kurala tabi degildir)
+    fix_quartz: is sinifina @DisallowConcurrentExecution ekle; birden cok sunucuda tek calisma icin JDBC JobStore ile kumelemeyi ac
     harmful: [rerun]
     evidence: [recent_change, precedent]
   zaman:
     title: Zaman asimi: is siniri asti
-    signs: [max run time, timed out, execution_timeout, term_run_time, killed, sigkill, terminated]
+    signs: [max run time, timed out, execution_timeout, term_run_time, killed, sigkill, terminated, due to time limit, deadline exceeded, term_run_time, activedeadlineseconds]
     cause: isin suresi haftalardir uzuyor, sure siniri artan hacme yetismedi
     fix: yeniden calistirmadan once sureyi uzatan nedeni (hacim, plan) incele; siniri son 30 calismanin %90'i arti pay olarak guncelle; asili kalan isler icin sure asiminda haber veren ya da sonlandiran kurali (SHOUT) bu yeni sinirla kur
+    fix_slurm: is 'DUE TO TIME LIMIT' ile bittiyse --time degerini artir ya da isi parcala; sacct -j <id> -o jobid,elapsed,timelimit,state ile dogrula
+    fix_autosys: term_run_time ve n_retrys ayarlarini incele
+    fix_kubernetes: activeDeadlineSeconds ve backoffLimit degerlerini incele
     harmful: [set_ok]
     evidence: [slowing, precedent]
   plan:
     title: Gunluk plan yuklenmedi (New Day, User Daily)
-    signs: [not ordered, daily plan, new day, not scheduled, was not triggered, plan load, user daily, ctmudly, formatting ajf, no sync]
+    signs: [not ordered, daily plan, new day, not scheduled, was not triggered, plan load, user daily, ctmudly, formatting ajf, no sync, dag not visible, not showing, paused, missed schedule, startingdeadlineseconds, anacron, never ran, hic calismadi]
     cause: New Day ya da bir User Daily yarida kaldi; surum yukseltmesinden sonra gateway senkronu takilabiliyor (Formatting AJF, No Sync) ya da dongusel isler siparis edilip gonderilmiyor
     fix: hangi User Daily'nin eksik siparis ettigini bul, eksikleri o User Daily'den toplu siparis et (ctmudlst UPDATE, tek tek elle degil); once ctmudly'nin cikis kodunu oku, nedeni o soyler (1 yetki yok, 10 veritabani ya da askiya alma zaman asimi, 11 hatali ya da eksik arguman: komut satirini duzelt, 13 son calisma damgasi yazilamadi); butun gunun planini bastan almak yalnizca New Day hic tamamlanmadiysa ve aktif ortam bossa dusunulur, cunku zaten siparis edilmis isleri ikinci kez siparis eder; yakinda yukseltme yapildiysa gateway ve EM senkronunu kontrol et
+    fix_airflow: DAG dosyasi dags_folder altinda mi, ice aktarma hatasi var mi (airflow dags list-import-errors), DAG duraklatilmis mi (unpause), scheduler calisiyor mu; start_date ve schedule degerine bak
+    fix_cron: cron surecinin calistigini dogrula (systemctl status cron), syslog'da CRON satirlarina bak; makine o saatte kapaliysa cron isi sonradan calistirmaz, anacron kullan
+    fix_kubernetes: startingDeadlineSeconds cok kucukse ya da 100'den fazla zaman kacirildiysa CronJob isi baslatmaz; startingDeadlineSeconds'i ayarla, concurrencyPolicy'ye bak
+    fix_autosys: isin durumuna ve kosullarina bak (autorep -j <is> -q); gerekiyorsa sendevent -E FORCE_STARTJOB -J <is>
     harmful: [set_ok]
     evidence: [host_change, precedent]
   aktarim:
@@ -117,9 +141,12 @@ classes:
     evidence: [named_in_error, shared_attr, recent_change, precedent]
   saat_dilimi:
     title: Yaz saati ya da saat dilimi kaymasi
-    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset, tomorrow's odate, yaz saati, saat dilimi, kis saati]
+    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset, tomorrow's odate, yaz saati, saat dilimi, kis saati, utc, cron_tz]
     cause: yaz saati gecisinden sonra sunucu yeniden baslatilmamis ya da saat dilimi bilgisi guncel degil; isler bir saat kayiyor; saat dilimi tanimli isler bugunun yerine yarinin ODATE'iyle siparis edilebiliyor
     fix: saat dilimi dosyalarini guncelle (TimeZone.dat zamanlayici sunucusu, yonetim sunucusu ve istemcilerde ayni olmali, yoksa tahmin ve SLA sonuclari yanlis cikar), sunucuyu gecisten sonra yeniden baslat, etkilenen islerin baslama saatini ve SLA'sini dogrula; gecis tarihlerinden once kontrol listesi calistir
+    fix_kubernetes: CronJob varsayilan olarak UTC'dir; 1.25 ve sonrasinda spec.timeZone, 1.21-1.24 arasinda schedule icinde CRON_TZ= kullan
+    fix_cron: cron sunucunun yerel saatini kullanir; sistem saat dilimi degistiyse cron'u yeniden baslat, destekleniyorsa CRON_TZ kullan
+    fix_airflow: DAG'in saat dilimi start_date'teki tzinfo ve default_timezone ayariyla belirlenir; zamanlar varsayilan olarak UTC'dir
     harmful: [set_ok]
     evidence: [host_change, precedent]
   senkron:
@@ -138,9 +165,11 @@ classes:
     evidence: [shared_attr, host_change, precedent]
   sinyal:
     title: Is bir sinyalle sonlandirildi (cikis kodu 128 ve ustu)
-    signs: [signal, sigsegv, segmentation fault, oom-killer, killed process, core dumped]
+    signs: [signal, sigsegv, segmentation fault, oom-killer, killed process, core dumped, oomkilled, out_of_memory, exceeded memory limit, maxrss]
     cause: is kendi hatasiyla degil disaridan gelen bir sinyalle bitti; kod 128 arti sinyal numarasidir (137 SIGKILL, 143 SIGTERM, 139 SIGSEGV). Sik nedenler isletim sisteminin bellek doldugunda sureci oldurmesi, sure asiminda SHOUT ya da operatorun isi oldurmesi, programin cokmesi
     fix: once sinyali ve kimin gonderdigini bul (sistem gunlugunde oom-killer, Control-M gunlugunde kill ya da SHOUT, operator islemleri); bellek yuzundense isin bellek ihtiyacini ya da sunucu bellegini ele al, sure siniri yuzundense zaman asimi sinifina bak; ayni kosulda yeniden calistirmak ayni sonucu verir
+    fix_slurm: sacct -j <id> -o jobid,maxrss,reqmem,state ile bellek kullanimini gor (OUT_OF_MEMORY); --mem degerini artir
+    fix_kubernetes: pod OOMKilled ise bellek sinirini (resources.limits.memory) artir
     harmful: [set_ok]
     evidence: [shared_attr, slowing, precedent]
   os_siniri:
@@ -164,11 +193,22 @@ classes:
     fix: isin kayboldugu zamandaki isletim sistemi ve antivirus gunluklerini incele; agent dizinlerini ve is sureclerini antivirus taramasindan haric tut; isin yarim kalan isini temizleyip sonra yeniden calistir
     harmful: [set_ok]
     evidence: [shared_attr, host_change, precedent]
+  ortam_farki:
+    title: Elle calisiyor, zamanlayicidan calismiyor (ortam farki)
+    signs: [works manually, works from command line, works from the shell, elle calisiyor, komut satirindan calisiyor, not from cron, cron'dan calismiyor, environment variable, ortam degiskeni, $path, relative path, goreli yol]
+    cause: zamanlayici isi kullanicinin etkilesimli oturumundaki ortamla calistirmaz; PATH kisadir, profil (.bashrc, .profile) yuklenmez, calisma dizini farklidir, goreli yollar bozulur, ortam degiskenleri yoktur
+    fix: komutlarda tam yol kullan; gereken degiskenleri betigin icinde ayarla ya da profili kaynak goster (. ~/.profile); betigin basinda calisma dizinine gec (cd); cikti ve hatayi gunluge yonlendir; betigi zamanlayicinin ortamina benzer bos bir ortamla (env -i) deneyerek dogrula
+    fix_cron: crontab'in basinda PATH= ve SHELL= tanimlanabilir; komuttaki % karakteri crontab'da yeni satir anlamina gelir, \% ile kacir
+    fix_controlm: calistiran kullanicinin profilinin yuklenip yuklenmedigine bak; gerekirse is tanimina ortami kuran bir on komut ekle
+    harmful: [set_ok]
+    evidence: [recent_change, precedent]
   bildirim:
     title: Olay oldu ama haber gitmedi (SHOUT, e-posta, SLA uyarisi)
-    signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed, email to, ctmmail, mail_handler, e-posta, eposta, shout]
+    signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed, email to, ctmmail, mail_handler, e-posta, eposta, shout, email_on_failure, mailto, smtp_host]
     cause: zamanlayici sunucusunun ya da SLA modulunun (BIM) posta sunucusu ayari bozuk ya da posta sunucusu degisti; isler dusuyor ama kimse haber almiyor
     fix: posta ayarini dogrula (config.dat'ta MAIL_HANDLER MAILX olmamali, ctm_menu ile SMTP sunucu parametreleri, BIM icin EmailSender); is gunlugunde 'EMAIL TO ... FAILED' yazip ileti yine de geldiyse ctmmail zaman asimina ya da 99 karakteri asan konu satirina bak; deneme iletisi gonder; bekleyen uyarilari elle bildir; olaydan once bildirim yolunu duzenli bir deneme iletisiyle sina
+    fix_airflow: airflow.cfg [smtp] bolumunu (smtp_host, smtp_port, smtp_user, smtp_password, smtp_mail_from) doldur, gorevlerde email ve email_on_failure ayarla
+    fix_cron: cron ciktiyi MAILTO adresine yollar; sunucuda posta aktarici (sendmail, postfix) yoksa ileti gitmez; ciktiyi dosyaya da yonlendirebilirsin
     harmful: []
     evidence: [shared_attr, precedent]
 ---

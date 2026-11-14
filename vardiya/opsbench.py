@@ -67,15 +67,31 @@ def match_class(classes, text):
     return best_key
 
 
+PRODUCTS = {"airflow": ["airflow", " dag", "dag ", "dags"], "cron": ["cron"],
+            "slurm": ["slurm", "sbatch", "squeue", "srun", "sinfo", "scontrol"],
+            "autosys": ["autosys", "jil", "sendevent", "autorep"],
+            "kubernetes": ["kubernetes", "kubectl", "k8s", "cronjob", " pod"], "quartz": ["quartz"],
+            "controlm": ["control-m", "ctm", "ccm", "user daily", "new day"]}
+
+
+def product(text):
+    """The scheduler the text talks about (most mentions), or None."""
+    low = " " + fold(text) + " "
+    best = max(((sum(low.count(w) for w in ws), p) for p, ws in PRODUCTS.items()), default=(0, None))
+    return best[1] if best[0] else None
+
+
 def context(case, classes, procedures):
     """What the harness hands the model for this case, and what it found."""
     found = {"class": match_class(classes, case["prompt"]),
-             "procedures": match_procedures(procedures, case["prompt"])}
+             "procedures": match_procedures(procedures, case["prompt"]), "product": product(case["prompt"])}
     parts = []
     if found["class"]:
         c = classes[found["class"]]
         bad = ", ".join(a for a in c["harmful"]) or "none listed"
-        parts.append(f"Matched failure class: {c['title']}\nUsual cause: {c['cause']}\nVerified fix: {c['fix']}\n"
+        own = c.get("fix_by", {}).get(found["product"])
+        fix = f"In {found['product']}: {own}\nGeneral fix: {c['fix']}" if own else f"Verified fix: {c['fix']}"
+        parts.append(f"Matched failure class: {c['title']}\nUsual cause: {c['cause']}\n{fix}\n"
                      f"Harmful in this class: {bad}")
     for name in found["procedures"]:
         p = procedures[name]
@@ -101,7 +117,8 @@ def skill_answer(case, classes, procedures):
     steps, cause = [], ""
     if found["class"]:
         c = classes[found["class"]]
-        cause, steps = c["cause"], [c["fix"]]
+        own = c.get("fix_by", {}).get(found["product"])
+        cause, steps = c["cause"], ([own] if own else []) + [c["fix"]]
     for name in found["procedures"]:
         steps.append(procedures[name]["steps"])
     return {"cause": cause, "steps": steps, "avoid": []}, found

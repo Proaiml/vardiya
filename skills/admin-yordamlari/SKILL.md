@@ -58,6 +58,61 @@ procedures:
     triggers: [cyclic, dongusel, number of failures, kac kez, fails for, stop cyclic, hata sayisi, ust uste, times in a row, consecutive]
     steps: isin On-Do kosullarina 'Job's Number of Failures' = N ekle ve eylem olarak Stop Cyclic Run (ya da Rerun) sec; eski surumlerde %%FailCount degiskenini cikiya yazip ona gore On-Do tanimla; tanimi dagitip sonraki dongude dogrula
     caution: dongusel is hata alsa da bir sonraki donguye planlanir; hata sinirini koymadan donguyu elle durdurup birakmak ertesi gun sorunu tekrarlar
+  cron_sorun_giderme:
+    title: Cron isi calismiyor, nereden baslanir
+    triggers: [cron, crontab, calismiyor, not running, not working, troubleshoot, syslog]
+    steps: cron sureci calisiyor mu bak (systemctl status cron ya da ps aux | grep cron); syslog'da CRON satirlarina bak (grep CRON /var/log/syslog ya da /var/log/cron); crontab -e ile kaydedince yeniden baslatma gerekmez; ciktiyi ve hatayi yakala (>> /tmp/is.log 2>&1); ortam farki icin tam yollar ve gereken degiskenler; komuttaki % karakterini \% ile kacir; betik calistirilabilir mi (chmod +x)
+    caution: /var/spool altindaki crontab dosyalarini elle duzenleme, crontab -e kullan
+  cron_kacirilan:
+    title: Makine kapaliyken kacirilan cron isleri
+    triggers: [cron, shutdown, kapali, missed, kacirdi, anacron, reboot, kapatildi]
+    steps: cron kapali makinede kacirilan isi sonradan calistirmaz; gunluk ve haftalik isler icin anacron kullan (/etc/anacrontab, /etc/cron.daily)
+    caution: kacirilan isi elle calistirmadan once yarim kalan bir calisma var mi bak
+  airflow_gorev_yeniden:
+    title: Airflow'da hata alan gorevi yeniden calistirmak
+    triggers: [airflow, clear, failed task, yeniden calistir, rerun, restart a failed task, gorev]
+    steps: arayuzde DAG calismasinda gorevi secip Clear de (gerekiyorsa asagi akisla birlikte) ya da airflow tasks clear <dag> -t <gorev> -s <baslangic> -e <bitis>; scheduler temizlenen gorevi hic calismamis gibi yeniden calistirir
+    caution: DAG'i silip yeniden eklemek calisma gecmisini kaybettirir
+  airflow_backfill:
+    title: Airflow'un gecmis tarihleri doldurmasini (backfill) onlemek ya da yonetmek
+    triggers: [airflow, backfill, catchup, gecmis tarih, start_date, old dates, eski tarihler]
+    steps: DAG'da catchup=False (ya da airflow.cfg'de catchup_by_default=False); start_date sabit ve gecmiste olmali, datetime.now() gibi degisken olmamali; yalniz disaridan tetiklenecek DAG icin schedule=None, bir kez icin @once
+    caution: istenmeyen calismalari silmeden once hangi tarihlerin calistigina bak; veri yazan gorevler cift yazmis olabilir
+  airflow_dag_gorunmuyor:
+    title: Airflow DAG'i arayuzde gorunmuyor ya da calismiyor
+    triggers: [airflow, dag, not visible, gorunmuyor, not showing, missing, import error, list-import-errors]
+    steps: dosya airflow.cfg'deki dags_folder altinda mi; airflow dags list-import-errors ile ice aktarma hatasi var mi; scheduler calisiyor ve klasoru taradi mi (dag_dir_list_interval); DAG duraklatilmissa unpause
+    caution: veritabanini sifirlamak (airflow db reset) gecmisi siler, gerekmez
+  airflow_paralellik:
+    title: Airflow gorevleri paralel calismiyor ya da kuyrukta bekliyor
+    triggers: [airflow, parallel, paralel, parallelism, concurrency, queued, max_active, pool]
+    steps: parallelism kurulum genelini, max_active_tasks (eski dag_concurrency) DAG basini, max_active_runs DAG calismasi sayisini sinirlar; pool slotlarina bak; SequentialExecutor paralel calistirmaz, LocalExecutor ya da CeleryExecutor gerekir
+    caution: sinirlari kaynaklari olcmeden buyutmek veritabani ve worker'lari bogar
+  slurm_dugum:
+    title: Slurm dugumu drain, down ya da yanit vermiyor
+    triggers: [slurm, sinfo, drain, drained, node, dugum, idle*, not responding, scontrol]
+    steps: sinfo -R ile nedeni gor; drain bakim icindir, calisan isler surer ama yeni is gelmez, bakim bitince scontrol update nodename=<dugum> state=resume; durumun yanindaki '*' dugumun yanit vermedigini gosterir, slurmd'yi kontrol et
+    caution: down durumu dugumdeki calisan isleri oldurur; bakim icin drain kullan
+  slurm_is_bilgisi:
+    title: Slurm isinin durumu, bellek ve sure kullanimi
+    triggers: [slurm, sacct, sstat, seff, memory, bellek, finished job, bitmis is, cpu time, maxrss]
+    steps: bitmis is icin sacct -j <id> -o jobid,state,elapsed,maxrss,reqmem,exitcode; calisan is icin sstat; ozet icin seff <id>; calisan isin ciktisi icin sattach ya da --output dosyasi
+    caution: bellek siniri asildiysa yeniden gondermeden once --mem degerini olculen MaxRSS'e gore ayarla
+  autosys_durum:
+    title: AutoSys isinin durumunu degistirmek, zorla baslatmak, tanimini guncellemek
+    triggers: [autosys, sendevent, change_status, inactive, force_startjob, jil, box, terminated, autorep]
+    steps: durumu degistirmek icin sendevent -E CHANGE_STATUS -s <DURUM> -J <is>; zorla baslatmak icin sendevent -E FORCE_STARTJOB -J <is>; tanimi JIL'de update_job ile degistir (box_name bos birakilirsa is kutudan cikar); sonucu autorep -j <is> ile dogrula
+    caution: FORCE_STARTJOB kosullari yok sayar; once ardillarin neyi bekledigine bak
+  k8s_cronjob:
+    title: Kubernetes CronJob ayarlari (yeniden deneme, ust uste binme, kacirma, saat dilimi)
+    triggers: [kubernetes, cronjob, kubectl, startingdeadlineseconds, concurrencypolicy, backofflimit, restartpolicy, batch/v1]
+    steps: yeniden denemeyi kapatmak icin backoffLimit: 0 ve restartPolicy: Never; ust uste binmeyi onlemek icin concurrencyPolicy: Forbid; kacirilan zamanlar icin startingDeadlineSeconds; saat dilimi icin spec.timeZone (1.25 ve sonrasi); apiVersion batch/v1 1.21 ve sonrasinda, oncesinde batch/v1beta1
+    caution: elle olusturulan isler (kubectl create job --from=cronjob/...) concurrencyPolicy'ye tabi degildir
+  quartz_is:
+    title: Quartz isleri (ust uste binme, kumeleme, yeniden deneme, durdurma)
+    triggers: [quartz, disallowconcurrentexecution, jobexecutionexception, interruptablejob, jobstore, trigger, already exists, scheduler]
+    steps: ayni isin ust uste calismamasi icin @DisallowConcurrentExecution; birden cok sunucuda tek calisma icin JDBC JobStore ile kumeleme; hatada yeniden denemek icin JobExecutionException ile refireImmediately (sinirli sayida); calisan isi durdurmak icin InterruptableJob ve scheduler.interrupt(jobKey); 'already exists' hatasinda once checkExists ve deleteJob ya da replace
+    caution: sinirsiz refireImmediately hatali isi sonsuz donguye sokar
 ---
 
 # Adminlik yordamlari

@@ -189,8 +189,11 @@ def load_incident_classes(directory):
             harmful = c.get("harmful") if isinstance(c.get("harmful"), list) else ([c["harmful"]] if c.get("harmful") else [])
             if not signs or not c.get("fix") or not set(evidence) <= EVIDENCE or not set(harmful) <= HARMFUL_ACTIONS:
                 continue
+            # fix_airflow, fix_cron, ...: the same class, fixed in that product's own words
+            fix_by = {key[4:]: str(v) for key, v in c.items() if key.startswith("fix_") and v}
             out[name] = {"title": c.get("title", name), "signs": signs, "cause": str(c.get("cause", "")),
-                         "fix": str(c["fix"]), "harmful": harmful, "evidence": evidence, "skill": m.get("name")}
+                         "fix": str(c["fix"]), "fix_by": fix_by, "harmful": harmful, "evidence": evidence,
+                         "skill": m.get("name")}
     return out
 
 
