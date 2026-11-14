@@ -120,8 +120,8 @@ procedures:
     caution: gecit ya da GUI sunucusu dusuk diye tum yonetim sunucusunu yeniden baslatma; once hangi bilesen oldugunu bul
   ha_elle_gecis:
     title: Yuksek erisilebilirlikte zamanlayici sunucusunu elle ikinciye gecirmek ve geri almak
-    triggers: [high availability, failover, fallback, yuksek erisilebilirlik, ikinci, birincil, secondary, primary, gecis, geceriz, ctmipc]
-    steps: zamanlayici sunucusunda gecis ve geri donus ayni komutla yapilir (ctmipc -msgid MFO -dest CA); yonetim sunucusu (EM) HA'sinda iki dugum arasinda guvenlik duvari varsa gecis duser: duzeltme paketini uygula ve bilesen portlarini HostPort ile sabitleyip yalnizca onlari ac; birincil calisiyorsa birincilde, birincil kapaliysa ikincilde calistirilir; birincil kapaliysa ikincilde komutu calistirmadan once yaklasik 20 dakika bekle; sonra durumu ve aktif tarafi dogrula
+    triggers: [high availability, failover, fallback, yuksek erisilebilirlik, ikinci, birincil, secondary, primary, gecis, geceriz, ctmipc, emcha, hangs, askida]
+    steps: zamanlayici sunucusunda gecis ve geri donus ayni komutla yapilir (ctmipc -msgid MFO -dest CA); yonetim sunucusu (EM) HA'sinda iki dugum arasinda guvenlik duvari varsa gecis duser: duzeltme paketini uygula ve bilesen portlarini HostPort ile sabitleyip yalnizca onlari ac; birincil calisiyorsa birincilde, birincil kapaliysa ikincilde calistirilir; birincil kapaliysa ikincilde komutu calistirmadan once yaklasik 20 dakika bekle; sonra durumu ve aktif tarafi dogrula; EM gecisi CCM'de askida kalirsa birincil dugumde em emcha -restore primary (yalniz ikincil erisilebilirse orada em emcha -restore secondary) ile dugumu geri yukle
     caution: iki tarafin ayni anda aktif olmasi veritabanini bozar; birincilin gercekten kapali oldugundan emin ol
   pg_yedek:
     title: Zamanlayici ya da yonetim sunucusunun PostgreSQL veritabanini yedeklemek
@@ -233,6 +233,16 @@ procedures:
     triggers: [proxy, application integrator, ai job, rest job, web service, vekil sunucu, aicm.properties]
     steps: tasarim arayuzu icin AI web arayuzunde Settings > Proxy ayarlarini doldur; islerin calismasi icin agent'ta CM/AP/data/AI altinda (surume gore yol degisir) aicm.properties dosyasina proxy host ve port degerlerini yaz ve modulu yeniden baslat
     caution: proxy kimlik bilgilerini dosyaya acik metin olarak yazma; kurumun gizli bilgi kasasi ya da baglanti profili kullan
+  agent_windows_yonetici:
+    title: Windows agent'ini baska servisleri baslatabilecek bir yonetici hesabiyla calistirmak
+    triggers: [local system, yerel sistem, windows service, servis baslat, start other services, administrator, yonetici hesabi, this account]
+    steps: varsayilan LOCAL SYSTEM hesabi baska Windows servislerini baslatamaz; bir yonetici hesabi ac ya da mevcut birini sec, Yerel Guvenlik Ilkesi'nde (secpol.msc) gereken haklari ver (Log on as a service, Replace a process level token, Adjust memory quotas); agent servisinin Log On sekmesinde This Account olarak bu hesabi yaz; hesabin agent surucusunde List Folder Contents izni oldugunu dogrula; servisi yeniden baslat
+    caution: hesabin parolasi degisirse servis de guncellenmeli; parola donusu olan hesaplarda bunu unutma
+  gecit_debug:
+    title: Calisan bir yonetim sunucusu gecidinde yeniden baslatmadan hata ayiklama kaydini acmak
+    triggers: [gateway, gecit, debug, hata ayiklama, control shell, without cycling, yeniden baslatmadan]
+    steps: CCM'de sorunlu gecide sag tikla, Control-M/EM Control Shell'i ac ve debug seviyesini ayarlayan komutlari sirayla gonder; sorunu yeniden uretip gunlugu topla; isin sonunda debug seviyesini geri al
+    caution: yuksek debug seviyesi diski hizla doldurur; uzun sure acik birakma
 ---
 
 # Adminlik yordamlari
