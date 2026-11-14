@@ -156,3 +156,16 @@ Quartz) ve BMC'nin en çok okunan 45 geliştirme makalesinden şu değişiklikle
 Skill kolu modeli olmayan bir taban çizgisi: yalnızca skill metninin kendisini puanlıyor. Bir vaka için gereken
 2-4 belirleyici adımın hepsini tek bir metnin taşıması zor; asıl ölçü, modelin bu bağlamla ne yaptığı (ham ve
 harness kolları).
+
+## 11. Kapsam (14 Kasım gecesi)
+
+| | Sayı |
+| --- | --- |
+| BMC envanteri (tekil kayıt) | 4.578, bunların 3.993'ü Control-M: 2.269 bilgi makalesi, 1.688 tartışma |
+| İçeriği okunan (geliştirme tarafı) | 100 makale ve tartışma, görüntülenmeye göre en çok okunandan başlayarak |
+| Olay sınıfı / adminlik yordamı | 27 / 37 |
+| Geliştirme vakası | 89 (13'ü başka zamanlayıcılardan) |
+| Test vakası | 59 (ayrı ajan, Stack Overflow ve Server Fault) |
+
+Sıradaki: kalan geliştirme makalelerini okumaya devam (yaklaşık 1.470, 40 saniyede bir sayfayla yaklaşık 16 saat);
+BMC'nin test tarafından da vaka yazdırmak (ayrı ajan, tarayıcı boşken); GPU boşalınca ham ve harness kollarını koşmak.

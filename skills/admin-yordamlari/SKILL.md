@@ -183,6 +183,11 @@ procedures:
     triggers: [automation api, ctm session login, aapi, 8443, api access, zaman asimi, timeout, rest api]
     steps: Automation API yonetim sunucusuna guvenli portla (varsayilan 8443) baglanir, arayuz ise 18080'i kullanir; arayuz calisip API calismiyorsa istemciden telnet <em sunucusu> 8443 ile portu dene; kapaliysa guvenlik duvarini actir; web sunucusunda SSL'in acik ve sertifikanin istemcide guvenilir oldugunu dogrula
     caution: API icin sertifika dogrulamasini kapatmak gecici bir deneme olabilir, kalici cozum degildir
+  klasor_kilidi:
+    title: Baska bir kullanicinin calisma alaninda kilitli (checked out) klasoru acmak
+    triggers: [checked out, kilitli klasor, locked by another user, exclusive, workspace, calisma alani, folder is currently locked, take ownership]
+    steps: Planning > Folders'ta klasoru sec, Used By ile kilidi tutan calisma alanini gor; o calisma alanini Take Ownership ile al ya da kilidi tutan kisiden klasoru check-in etmesini iste; calisma alani artik gerekmiyorsa silmek de kilidi kaldirir
+    caution: baskasinin calisma alanini almak ya da silmek onun kaydedilmemis degisikliklerini kaybettirebilir; once sahibine sor
 ---
 
 # Adminlik yordamlari
