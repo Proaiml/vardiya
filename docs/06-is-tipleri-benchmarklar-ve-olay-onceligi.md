@@ -432,6 +432,27 @@ sipariş ettiğini bulma ihtiyacı ve agent kapatılırken çalışan işin "unk
 sınıflarının işaretleri ve nedenleri genişletildi. Talep tarafı için bir denetim adayı daha: iş başka bir host'a
 taşınıyorsa yeni host'un agent'ı o kullanıcıyla iş çalıştırabiliyor mu (bugün yalnızca kullanıcı listesine bakılıyor).
 
+14 Kasım öğleden sonra okunan aramalar (hız ölçümüyle birlikte; ölçülen sınır 10 dakikada 18-20 sayfa, güvenli hız
+40 saniyede bir sayfa):
+
+- **Bildirim gitmedi (yeni sınıf `bildirim`):** sunucunun SHOUT e-postası ya da SLA modülünün (BIM) uyarısı posta sunucusu
+  ayarı yüzünden gitmiyor ("Unknown SMTP host", 6.179 görüntülenme). İşler düşüyor ama kimse haber almıyor. Olaydan önce
+  uyarı adayı: bildirim yolunu düzenli deneme iletisiyle sınamak.
+- **Tarih:** IN koşulundaki PREV, önceki sipariş tarihini değil ODAT-1'i veriyor (2.832); hafta sonu çalışmayan zincir
+  pazartesi pazarın tarihini bekler. Saat dilimli işler bugünün yerine yarının ODATE'iyle siparişlenebiliyor.
+- **Sessiz hata:** iş ENDED OK ama çıktıda hata var; kalıcı düzeltme çıktıda sözcük ya da dönüş kodu arayan On/Do kuralı.
+- **Yeniden çalıştırma her zaman aynı işi yapmıyor:** Integrations REST işinde rerun değişkenleri ilk çalışmadaki değerle
+  bırakıyor; yeniden sipariş gerekir. "Maximum Reruns" ve On NOTOK Do Rerun, temizlik adımı olmayan yükleme işlerinde
+  mükerrer veri üretir (talep tarafı denetim adayı, daha önce not edildi).
+- **Agent:** Linux'ta Java güncellemesi Control-M'in kullandığı Java yolunu kaldırıyor, agent açılmıyor ("No file found
+  for Agent Java Process"). Agent sınıfına işaret ve neden olarak eklendi.
+- **Aktarım:** SFTP bağlantı profilinde "Algorithm negotiation fail: server_host_key" (karşı sunucu anahtar algoritmasını
+  değiştirdi).
+- **Dağıtım ve talep masası:** klasörü kaydederken "Folder is currently locked by another user/Gateway"; kilitli
+  klasörde talep iade edilmemeli, beklemeye alınmalı ve kilidi tutan kişi bildirilmeli. Annotation açıkken
+  Integrations iş tipi "Job could not be deployed" diyor ama tanım dağıtılmış: dağıtım sonrası geri okuma bunu ayırır.
+  Farklı sürümlü ortamlar arasında taşıma: hedef ortam eskiyse yeni alanlı tanım reddedilmeli.
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların

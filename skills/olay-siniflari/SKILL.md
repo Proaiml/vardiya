@@ -19,8 +19,8 @@ classes:
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su]
-    cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir; sik onceki olay Java ya da surum degisikligi
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su, no file found for agent java process]
+    cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir; sik onceki olay Java ya da surum degisikligi (Linux'ta Java guncellemesi Control-M'in kullandigi eski Java yolunu kaldirabiliyor)
     fix: agent'i yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, host_change, precedent]
@@ -136,6 +136,13 @@ classes:
     fix: yeni sertifikayi ctmkeytool ile toplu dagit (yuzlerce agent icin kesintiyi en aza indiren sirayla), baglanti modunu (SSL ya da TCP) dogrula; olaydan once sertifika bitis tarihlerini izle
     harmful: [set_ok]
     evidence: [shared_attr, host_change, precedent]
+  bildirim:
+    title: Olay oldu ama haber gitmedi (SHOUT, e-posta, SLA uyarisi)
+    signs: [smtp, unknown smtp host, cannot connect to the specified mail server, failed to send e-mail, sendalertmail, shout failed]
+    cause: zamanlayici sunucusunun ya da SLA modulunun (BIM) posta sunucusu ayari bozuk ya da posta sunucusu degisti; isler dusuyor ama kimse haber almiyor
+    fix: posta ayarini dogrula (Control-M/Server SMTP parametreleri, BIM icin EmailSender), deneme iletisi gonder; bekleyen uyarilari elle bildir; olaydan once bildirim yolunu duzenli bir deneme iletisiyle sina
+    harmful: []
+    evidence: [shared_attr, precedent]
 ---
 
 # Olay siniflari
