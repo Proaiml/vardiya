@@ -75,7 +75,7 @@ procedures:
     caution: DAG'i silip yeniden eklemek calisma gecmisini kaybettirir
   airflow_backfill:
     title: Airflow'un gecmis tarihleri doldurmasini (backfill) onlemek ya da yonetmek
-    triggers: [airflow, backfill, catchup, gecmis tarih, start_date, old dates, eski tarihler]
+    triggers: [airflow, backfill, catchup, gecmis, start_date, old dates, eski tarihler, past runs, yuzlerce calisma, many runs]
     steps: DAG'da catchup=False (ya da airflow.cfg'de catchup_by_default=False); start_date sabit ve gecmiste olmali, datetime.now() gibi degisken olmamali; yalniz disaridan tetiklenecek DAG icin schedule=None, bir kez icin @once
     caution: istenmeyen calismalari silmeden once hangi tarihlerin calistigina bak; veri yazan gorevler cift yazmis olabilir
   airflow_dag_gorunmuyor:
@@ -91,7 +91,7 @@ procedures:
   slurm_dugum:
     title: Slurm dugumu drain, down ya da yanit vermiyor
     triggers: [slurm, sinfo, drain, drained, node, dugum, idle*, not responding, scontrol]
-    steps: sinfo -R ile nedeni gor; drain bakim icindir, calisan isler surer ama yeni is gelmez, bakim bitince scontrol update nodename=<dugum> state=resume; durumun yanindaki '*' dugumun yanit vermedigini gosterir, slurmd'yi kontrol et
+    steps: sinfo -R ile nedeni gor; drain bakim icindir, calisan isler surer ama yeni is gelmez, bakim bitince scontrol update nodename=<dugum> state=resume; durumun yanindaki '*' dugumun yanit vermiyor (not responding) oldugunu gosterir, dugumdeki slurmd surecini ve ag baglantisini kontrol et
     caution: down durumu dugumdeki calisan isleri oldurur; bakim icin drain kullan
   slurm_is_bilgisi:
     title: Slurm isinin durumu, bellek ve sure kullanimi
@@ -101,7 +101,7 @@ procedures:
   autosys_durum:
     title: AutoSys isinin durumunu degistirmek, zorla baslatmak, tanimini guncellemek
     triggers: [autosys, sendevent, change_status, inactive, force_startjob, jil, box, terminated, autorep]
-    steps: durumu degistirmek icin sendevent -E CHANGE_STATUS -s <DURUM> -J <is>; zorla baslatmak icin sendevent -E FORCE_STARTJOB -J <is>; tanimi JIL'de update_job ile degistir (box_name bos birakilirsa is kutudan cikar); sonucu autorep -j <is> ile dogrula
+    steps: durumu degistirmek icin sendevent -E CHANGE_STATUS -s <DURUM> -J <is> (ornek: -s INACTIVE, -s SUCCESS, -s FAILURE); zorla baslatmak icin sendevent -E FORCE_STARTJOB -J <is>; tanimi JIL'de update_job ile degistir (box_name bos birakilirsa is kutudan cikar); sonucu autorep -j <is> ile dogrula
     caution: FORCE_STARTJOB kosullari yok sayar; once ardillarin neyi bekledigine bak
   k8s_cronjob:
     title: Kubernetes CronJob ayarlari (yeniden deneme, ust uste binme, kacirma, saat dilimi)

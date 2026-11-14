@@ -102,7 +102,7 @@ classes:
     evidence: [crossed_new_day, pred_failed, precedent]
   mukerrer:
     title: Mukerrer ya da ust uste calisma
-    signs: [already running, 2 instances, duplicate, two instances, max_active_runs, overlap, previous instance, overlap, overlapping, concurrent, concurrently, disallowconcurrentexecution, concurrencypolicy, flock, max_active_runs, ayni anda iki]
+    signs: [already running, 2 instances, duplicate, two instances, max_active_runs, overlap, previous instance, overlap, overlapping, concurrent, concurrently, disallowconcurrentexecution, concurrencypolicy, flock, max_active_runs, ayni anda iki, iki kopya, two copies, at the same time]
     cause: ayni is ikinci kez siparis edildi ya da dongusel isin calisma araligi New Day'i gecti, iki kopya ayni anda calisti
     fix: ikinci kopyayi durdur, hedefteki mukerrer veriyi temizle; ise 'ayni anda tek kopya' kurali koy, dongusel islerde calisma araligini New Day'den once bitir, elle siparisten once aktif kopyayi kontrol et
     fix_cron: isi flock ile tek kopyaya bagla (flock -n /tmp/<is>.lock <komut>)
@@ -141,7 +141,7 @@ classes:
     evidence: [named_in_error, shared_attr, recent_change, precedent]
   saat_dilimi:
     title: Yaz saati ya da saat dilimi kaymasi
-    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset, tomorrow's odate, yaz saati, saat dilimi, kis saati, utc, cron_tz]
+    signs: [daylight, dst, time zone, timezone, 1 hour off, one hour late, one hour early, gmt offset, tomorrow's odate, yaz saati, saat dilimi, kis saati, utc, cron_tz, yerel saat, local time, hours early, hours late, saat once, saat sonra]
     cause: yaz saati gecisinden sonra sunucu yeniden baslatilmamis ya da saat dilimi bilgisi guncel degil; isler bir saat kayiyor; saat dilimi tanimli isler bugunun yerine yarinin ODATE'iyle siparis edilebiliyor
     fix: saat dilimi dosyalarini guncelle (TimeZone.dat zamanlayici sunucusu, yonetim sunucusu ve istemcilerde ayni olmali, yoksa tahmin ve SLA sonuclari yanlis cikar), sunucuyu gecisten sonra yeniden baslat, etkilenen islerin baslama saatini ve SLA'sini dogrula; gecis tarihlerinden once kontrol listesi calistir
     fix_kubernetes: CronJob varsayilan olarak UTC'dir; 1.25 ve sonrasinda spec.timeZone, 1.21-1.24 arasinda schedule icinde CRON_TZ= kullan

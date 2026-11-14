@@ -67,7 +67,7 @@ def match_class(classes, text):
     return best_key
 
 
-PRODUCTS = {"airflow": ["airflow", " dag", "dag ", "dags"], "cron": ["cron"],
+PRODUCTS = {"airflow": ["airflow", " dag", "dag ", "dags", "operator", "xcom"], "cron": ["cron"],
             "slurm": ["slurm", "sbatch", "squeue", "srun", "sinfo", "scontrol"],
             "autosys": ["autosys", "jil", "sendevent", "autorep"],
             "kubernetes": ["kubernetes", "kubectl", "k8s", "cronjob", " pod"], "quartz": ["quartz"],
