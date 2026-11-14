@@ -178,6 +178,11 @@ procedures:
     triggers: [run now, simdi calistir, smart folder, smart klasor, cyclic folder, container, kosullari atladi ama]
     steps: Run Now isin kosullarini ve zaman penceresini atlar ama is bir SMART klasorun icindeyse klasor de calisir durumda (zaman penceresi icinde) olmalidir; klasor penceresi disindaysa klasoru de serbest birak ya da isi klasorden bagimsiz olarak siparis et
     caution: Run Now kosullari atladigi icin oncul tamamlanmadan veri eksik calisabilir; once onculun durumuna bak
+  aapi_baglanti:
+    title: Automation API'ye baglanilamiyor (zaman asimi)
+    triggers: [automation api, ctm session login, aapi, 8443, api access, zaman asimi, timeout, rest api]
+    steps: Automation API yonetim sunucusuna guvenli portla (varsayilan 8443) baglanir, arayuz ise 18080'i kullanir; arayuz calisip API calismiyorsa istemciden telnet <em sunucusu> 8443 ile portu dene; kapaliysa guvenlik duvarini actir; web sunucusunda SSL'in acik ve sertifikanin istemcide guvenilir oldugunu dogrula
+    caution: API icin sertifika dogrulamasini kapatmak gecici bir deneme olabilir, kalici cozum degildir
 ---
 
 # Adminlik yordamlari
