@@ -19,8 +19,8 @@ classes:
     evidence: [shared_attr, named_in_error, precedent]
   host:
     title: Agent ya da sunucu erisilemiyor
-    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node]
-    cause: agent sureci durmus ya da agent'in ic iletisimi (AM data pipe) kopmus; sik onceki olay agent'ta Java ya da surum degisikligi
+    signs: [agent, unavailable, not responding, wait host, communication, unreachable, data pipe, error 232, am_submit, failed to submit, pid file, wait node, will not start, selinux, job submission aborted, error in executing /bin/su]
+    cause: agent sureci durmus, sunucu yeniden baslatildiktan sonra acilmamis (acilis betigi, SELinux) ya da agent'in ic iletisimi (AM data pipe) kopmus; yeni kurulan agent'in calistiran kullaniciya gecme (su) yetkisi olmayabilir; sik onceki olay Java ya da surum degisikligi
     fix: agent'i yeniden baslat (start-ag, Windows'ta p_ctmag ve p_ctmam surecleri dahil), ctmping ile dogrula; yakin zamanda Java ya da agent guncellemesi yapildiysa bilinen hata icin surum notlarina bak; is bir host grubundaysa ve grupta saglikli agent varsa isi oraya yonlendir (host grubu secimi anlik yuke bakmaz)
     harmful: [set_ok]
     evidence: [shared_attr, named_in_error, host_change, precedent]
@@ -47,7 +47,7 @@ classes:
     evidence: [recent_change, precedent]
   takili:
     title: Takili, bitmeyen ya da hayalet calisan is
-    signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow]
+    signs: [still running, exceeded, child process, process tree, hang, keeps the job open, still executing, no longer executing, yellow, unknown state]
     cause: betik bir alt sureci beklemeden cikiyor ya da is ekranda calisiyor gorunuyor ama sureci artik yok (hayalet)
     fix: once surecin gercekten var olup olmadigina bak; varsa betigi alt sureci bekleyecek bicimde duzelt (start /wait, wait) ve takili isi sonlandir; yoksa (hayalet) agent'taki takili durum dosyasini kontrol et ve isi ctm_setnotok ile kapat, force-end degil
     harmful: [set_ok]

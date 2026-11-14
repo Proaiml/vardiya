@@ -426,6 +426,12 @@ GPU koşusu sırasında okunan dört arama daha (dakikada en çok bir sayfa):
 - **Kaynak bekleme durum kodları:** D kaynak bekliyor, L agent bekliyor, M iş yükü politikasının sınırı (13.799
   görüntülenme). Kaynak sınıfı önce bu kodla nedeni ayırıyor; iş yükü politikası ayrı bir neden olarak eklendi.
 
+Son üç arama: sunucu yeniden başlatıldıktan sonra agent'ın açılmaması (açılış betiği, 9.0.22.100'de SELinux), yeni
+kurulan Unix agent'ında işlerin "/bin/su çalıştırılamadı" hatasıyla gönderilememesi, bir işi Active Job File'a kimin elle
+sipariş ettiğini bulma ihtiyacı ve agent kapatılırken çalışan işin "unknown" durumda kalması. Agent ve takılı iş
+sınıflarının işaretleri ve nedenleri genişletildi. Talep tarafı için bir denetim adayı daha: iş başka bir host'a
+taşınıyorsa yeni host'un agent'ı o kullanıcıyla iş çalıştırabiliyor mu (bugün yalnızca kullanıcı listesine bakılıyor).
+
 ### 7.2 Başka zamanlayıcılarda aynı sınıflar
 
 Çözücülerin bir ürüne değil bir arıza sınıfına yazıldığını sınamak için aynı sınıflar başka zamanlayıcıların
