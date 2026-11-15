@@ -3,6 +3,10 @@
 Batch zamanlayici operasyonlari (Control-M ve benzerleri) icin acik, modelden bagimsiz ajan harness'i
 ve ona bagli benchmark. Calisma adi; degisebilir.
 
+Harness'in icinde calisan admin ajaninin adi **Usta**: kriz aninda cagrilan urun admini gibi sorunu
+teshis eder, guvenli bicimde duzeltir ve isi yeniden baslatir. "Vardiya" harness'in (yetenekler, kurallar, erisim
+katmani), "Usta" onu kullanan ajanin adidir.
+
 Iki is kolu var:
 
 - **Talep karsilama (cekirdek).** Ekiplerden zorunlu sablonla gelen is tanimlama ve degisiklik taleplerini alir,

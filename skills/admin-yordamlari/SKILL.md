@@ -243,6 +243,71 @@ procedures:
     triggers: [gateway, gecit, debug, hata ayiklama, control shell, without cycling, yeniden baslatmadan]
     steps: CCM'de sorunlu gecide sag tikla, Control-M/EM Control Shell'i ac ve debug seviyesini ayarlayan komutlari sirayla gonder; sorunu yeniden uretip gunlugu topla; isin sonunda debug seviyesini geri al
     caution: yuksek debug seviyesi diski hizla doldurur; uzun sure acik birakma
+  destek_verisi_toplama:
+    title: Destek vakasi icin sistem ve gunluk verisini toplamak
+    triggers: [support case, destek vakasi, destek, collect, topla, em_data_collector, diagnostic, tani verisi, logs]
+    steps: her bilesende urunun kendi toplama aracini calistir (yonetim sunucusunda em_data_collector, zamanlayici sunucusunda ve agent'ta karsiliklari); ciktiyi hcu_package altinda bul; sorunun yasandigi zaman araligini ve is adini vakaya ekle
+    caution: veritabani parolalarini vaka metnine yazma; araci sorun tazeyken calistir, gunlukler donmeden once
+  rapor_komut_satiri:
+    title: Raporu komut satirindan (Automation API) calistirmak
+    triggers: [report, rapor, command line, komut satiri, automation api, ctm reporting, cli]
+    steps: CLI'nin kurulu oldugunu dogrula (agent kurulu hostta hazir gelir, degilse Automation API CLI'yi ayrica kur); ortami tanimla (ctm env add); rapor komutunu rapor adi ve cikti bicimiyle calistir; gerekiyorsa bunu bir Control-M isine koy
+    caution: kullanici parolasini betige acik yazma; ortam tanimini ya da anahtarli girisi kullan
+  agent_elle_kaldirma:
+    title: Yarim kalan ya da bozuk agent kurulumunu elle temizlemek
+    triggers: [uninstall, kaldir, failed installation, yarim kalan kurulum, yarida kaldi, kurulum, installation, manually, elle, rollback, geri alinamadi, temizle]
+    steps: agent'i durdur ve hic agent sureci kalmadigini dogrula; Unix'te sistem yoneticisiyle agent kullanicisini ve ev dizinini silip yeniden yarat; Windows'ta servis adlarini not et (ctmag, ctmfw_service; sunucuda ControlM_Server ve ControlM_Configuration_Agent), kayit defterini yedekle, sc delete ile servisleri kaldir, kayit anahtarlarini ve kurulum dizinini temizle; sonra agent'i yeniden kur
+    caution: kayit defterini yedeksiz duzenleme; ayni makinedeki baska bir agent'in servisini silme
+  takvim_aktarma:
+    title: Takvimleri disa aktarmak ve ice almak
+    triggers: [calendar, takvim, exportdefcal, defcal, export, disa aktar, import, ice al]
+    steps: arguman XML'ini veri merkezi ve takvim adlariyla hazirla; exportdefcal ile disa aktar; dosyayi duzenle; defcal ile hedefe ice al; hedefte takvimi acip gunleri dogrula
+    caution: kaynak ve hedef ayni surum ve fix pack olmali; farkli surumler arasi tasimada bu araclari kullanma, takvim tanimlari bozulabilir
+  s3_iam_rolu:
+    title: Dosya aktariminda S3'e anahtar yerine IAM rolu ile baglanmak
+    triggers: [s3, iam, role, rol, aws, access key, managed file transfer, mft]
+    steps: MFT surumunun 9.0.20.100 ya da ustu oldugunu dogrula; IAM kullanicisi ve ustlenilecek rol icin gerekli politikalari tanimlat; S3 baglanti profiline ek parametre olarak s3.role.arn (ve oturum adi) ekle; profili dogrula
+    caution: kalici erisim anahtarlarini betiklere ya da is tanimlarina yazma
+  onay_takvimi:
+    title: Isi belirli gunlerde ama tatiller haric calistirmak
+    triggers: [holiday, tatil, except, haric, confirmation calendar, onay takvimi, weekday, hafta ici]
+    steps: tatiller disindaki gunleri secen normal bir takvim olustur ve kaydet; is tanimina hafta gunlerini ve diger temel zamanlamayi ver; More bolumunde bu takvimi Confirmation Calendar olarak sec; is planini (ya da forecast) acip tatil gunlerinde siparis olmadigini dogrula
+    caution: tatil gunlerini elle tutarak ya da isi o gun silerek cozmeye calisma; ertesi yil unutulur
+  em_veritabani_disa_aktarma:
+    title: Yonetim sunucusu (EM) verisini disa aktarmak, is gecmisi dahil
+    triggers: [em util, export, disa aktar, backup, yedek, history, gecmis, statistics, istatistik]
+    steps: em util ile -export -type all calistir (tanimlar ve ayarlar); is calisma gecmisi ve istatistikleri bu tipe dahil degildir, ayrica -type history ile disa aktar; iki dosyayi da hedefte ice alip dogrula
+    caution: yalniz -type all ile alinan yedek gecmisi icermez; canli veritabani dosyalarini dosya kopyasiyla yedekleme
+  veritabani_yedekleme:
+    title: Zamanlayici veritabanlarini dogru yedeklemek
+    triggers: [backup, yedek, database, veritabani, cold, hot, soguk, sicak, recover, geri yukle]
+    steps: urunun yedekleme araclarini kullan; soguk yedek icin uygulamayi durdurup al, kesintisiz gerekiyorsa urunun desteklenen cevrimici yedegini (arsiv gunlukleriyle) kullan; geri yuklemeyi test ortaminda duzenli dene
+    caution: veritabani calisirken dosyalarini kopyalayarak yedek alma, tutarlilik bozulur ve geri yukleme calismaz
+  rjx_parametreleri:
+    title: Uzak host (agentsiz) baglanti davranisini ayarlamak
+    triggers: [rjx, remote host, uzak host, agentless, agentsiz, ssh, wmi, reconnect, timeout]
+    steps: CCM'de uzak hostu yoneten agent'i sec, System Parameters'i ac ve RJX ile filtrele; baglanti kipi, yeniden deneme sayisi, zaman asimi ve SFTP ile ilgili RJX_* degerlerini degistir; bir test isiyle dogrula
+    caution: yeniden deneme ve zaman asimini cok buyutmek kopan baglantiyi gizler; once neden koptuguna bak
+  windows_coklu_agent:
+    title: Ayni Windows hostuna ikinci agent kurmak
+    triggers: [multiple agents, birden fazla agent, second agent, ikinci agent, windows, upgrade, ayni host]
+    steps: ikinci agent'in ilkiyle ayni surumde oldugunu dogrula (9.0.21.100 oncesinde farkli surum desteklenmez); kurulumda yeni ornek secenegini ve farkli port ile ad ver; iki agent'i da CCM'de ayri ayri dogrula
+    caution: farkli surumden ikinci agent kurmaya calisma, kurulum ilkini yukseltmeye kalkar ve DLL cakismasi olur
+  windows_bat_degiskenleri:
+    title: Windows .bat betiginde Control-M degiskenlerini kullanmak
+    triggers: [.bat, batch, betik, script, degisken, variable, autoedit, odate, bos, empty, windows]
+    steps: agent'ta ctmagcfg ile AutoEdit Inline=Y yap ki is tanimindaki kullanici degiskenleri betige ortam degiskeni olarak gelsin; ODATE ve JOBNAME gibi sistem degiskenleri de gerekiyorsa sunucuda config.dat'ta AUTOEDIT_INC_SEC=SYSTEM ayarla; betikte %DEGISKEN% bicimiyle oku ve bir test isiyle dogrula
+    caution: degerleri betige sabit yazarak gecistirme
+  mft_coklu_ornek:
+    title: Ayni hostta ikinci dosya aktarim (MFT) ornegi calistirmak
+    triggers: [mft, managed file transfer, ikinci, second, ornek, instance, ayni host, same host, port, karisik]
+    steps: ikinci ornegin hub_config.properties dosyasinda server.port, management.port ve hub.http-port degerlerini ve konteyner portlarini ilk ornekten farkli, bos portlara al; ornegi yeniden baslat; CCM'de iki ornegin bilgisinin ayrildigini dogrula
+    caution: iki ornegi ayni portlarla birakma; CCM yanlis bilgi gosterir
+  zos_executing_temizlik:
+    title: z/OS'ta bitmis ama Executing gorunen isi AJF'ten temizlemek
+    triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
+    steps: once JES2'de isin sysout'u HELD mi bak, oyleyse serbest birak ve durumun guncellenmesini bekle; degilse CTMCAJF CLEANUP ile isi DELETED durumuna al (monitor acik kalabilir), New Day fiziksel olarak siler; COMPRESS yalniz monitor kapaliyken
+    caution: monitor calisirken COMPRESS calistirma
 ---
 
 # Adminlik yordamlari

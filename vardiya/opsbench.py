@@ -205,9 +205,14 @@ def run(split, arms, model_spec=None, out=OUT, limit=None):
     model = connect(model_spec) if model_spec else None
     done = set()
     if out.exists():
+        keep = []
         for line in out.read_text(encoding="utf-8").splitlines():
             r = json.loads(line)
+            if r["arm"] == "skill" and r["split"] == split and "skill" in arms:
+                continue  # the skill arm has no model and takes no time: always score it against the current skills
+            keep.append(line)
             done.add((r["id"], r["arm"], r.get("model")))
+        out.write_text("".join(x + "\n" for x in keep), encoding="utf-8")
     out.parent.mkdir(parents=True, exist_ok=True)
     for case in load(split)[:limit]:
         for arm in arms:
