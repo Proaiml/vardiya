@@ -1,0 +1,80 @@
+{
+ "agent_down": [
+  "AUTOSYS job ETL_LOAD_01 (box BX_DAILY): machine etl01 status=OFFLINE, agent not responding to heartbeat for 300 seconds",
+  "[2026-11-14 02:31:07] ERROR - Celery worker etl01@worker-3 has not sent a heartbeat in 30s; task instance marked as zombie",
+  "slurmd[etl01]: error: Unable to register: Unable to contact slurm controller; node etl01 set to DOWN, reason=Not responding",
+  "systemd[1]: jobagent.service: Watchdog timeout (limit 30s)! systemd[1]: jobagent.service: Failed with result 'watchdog'."
+ ],
+ "cert_expired": [
+  "event: agent etl01 SSL handshake failed: certificate has expired (CERT_HAS_EXPIRED, notAfter=2026-11-10T00:00:00Z)",
+  "requests.exceptions.SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1006)",
+  "ERROR order KUR_EXTRACT agent=etl01: javax.net.ssl.SSLHandshakeException: PKIX path validation failed: validity check failed",
+  "Invoke-WebRequest : The underlying connection was closed: Could not establish trust relationship for the SSL/TLS secure channel. Certificate has expired."
+ ],
+ "password_rotated": [
+  "Event 4625: An account failed to log on. Account Name: svc_etl  Logon Type: 4 (Batch)  Status: 0xC000006D  Sub Status: 0xC000006A",
+  "AUTOSYS job KUR_LOAD: unable to start as user svc_etl, logon failed, status 0xC000006D (STATUS_LOGON_FAILURE)",
+  "airflow.exceptions.AirflowException: (pyodbc.Error) 28000 [Microsoft][ODBC SQL Server Driver] Login failed for user 'svc_etl'. (18456)",
+  "order ETL_NIGHTLY agent=etl01: ssh: unable to authenticate, attempted methods [password], no supported methods remain"
+ ],
+ "disk_full": [
+  "journalctl: jobagent[2214]: write /data/out/kur_20261114.csv: no space left on device (errno 28, ENOSPC)",
+  "OSError: [Errno 28] No space left on device: '/data/staging/load_20261114.parquet'",
+  "Out-File : There is not enough space on the disk. Win32 error 112 (ERROR_DISK_FULL) while writing D:\\data\\stg\\batch.log",
+  "slurmstepd: error: write_file: No space left on device; JOB 48213 terminated on etl01 (step 48213.batch)"
+ ],
+ "oom_kill": [
+  "slurmstepd: error: Detected 1 oom_kill event in StepId=48213.batch. Some of the step tasks have been OOM Killed.",
+  "kernel: Out of memory: Killed process 18842 (java) total-vm:9437184kB, anon-rss:8201216kB, oom_score_adj:0",
+  "AUTOSYS event: job TR5100 terminated abnormally on etl01, exit status 137 (SIGKILL), termination reason: killed by OOM",
+  "Task exited with return code Negsignal.SIGKILL; process 18842 terminated by signal 9 on worker etl01"
+ ],
+ "resource_stuck": [
+  "AUTOSYS resource ETL_SLOT: capacity 2 exhausted, owners BX_LOAD_0115 (status SUCCESS, not released); job waiting",
+  "Not scheduling since there are 0 open slots in pool etl_db_pool (2 total, 2 queued/running); task waiting for slot",
+  "order DB_LOAD: lock db_load_lock limit 2 reached; holder order ETL_NIGHTLY#2026111401 has state COMPLETED, lock not freed",
+  "srun: job 48215 queued and waiting for resources: licenses=sas_etl:2 requested, 0 available (held by finished job 48190)"
+ ],
+ "env_path": [
+  "bash: line 1: krd_risk_hesap.sh: command not found; Command exited with return code 127",
+  "jobagent[3301]: /bin/sh: 1: krd_risk_hesap.sh: not found; job RISK_HESAP exit status 127",
+  "AUTOSYS job RISK_HESAP failed: exit status 127 (command not found) in /opt/jobs/risk with PATH=/usr/bin:/bin",
+  "krd_risk_hesap.ps1 : The term 'krd_risk_hesap' is not recognized as the name of a cmdlet, function, script file, or operable program."
+ ],
+ "ghost_pred": [
+  "AUTOSYS job MHS_GUN_SONU status RUNNING on etl01, no matching process found (pid 21877 does not exist); waiting for completion",
+  "Task instance state is 'running' but heartbeat is stale for 300s; process 21877 not found on worker; marking as zombie",
+  "slurmd[etl01]: error: _rpc_terminate_job: no process found for step 48219.0; job state still RUNNING",
+  "order MHS_GUN_SONU: state EXECUTING, process 21877 is not alive on agent etl01; no completion report received"
+ ],
+ "pred_setok": [
+  "ValueError: no rows in stg_kur_rates to load; upstream task was marked success manually",
+  "event: job KUR_LOAD received 0 input records from STG_KUR_RATES; no data to process",
+  "order KUR_LOAD step load: input table empty (0 rows), nothing to load; predecessor KUR_EXTRACT overridden as SUCCESS",
+  "load_kur.py: error: input dataset /data/stg/kur.parquet contains 0 rows; aborting with exit 65"
+ ],
+ "file_late": [
+  "File watcher FW_KUR: timeout waiting for file /data/in/kur_*.csv, no match after 3600 seconds",
+  "airflow.sensors.filesystem.FileSensor: Poke timed out after 3600.0s; no file matching /data/in/kur_*.csv found (sensor timeout)",
+  "order KUR_WAIT: FileWatch timeout reached, no files matching pattern kur_*.csv in directory /data/in",
+  "inotifywait: timeout 3600 expired waiting for CLOSE_WRITE on /data/in/kur_*.csv; exit status 2"
+ ],
+ "run_as_right": [
+  "Logon type 4 (Batch) rejected for user svc_etl: Win32 error 1385 (ERROR_LOGON_TYPE_NOT_GRANTED), user lacks 'Log on as a batch job'",
+  "AUTOSYS job KUR_LOAD: unable to start as user svc_etl; the account lacks the 'Log on as a batch job' user right",
+  "Event 4673: A privileged service was called. Subject: svc_etl  Privilege: SeAssignPrimaryTokenPrivilege  Status: failed",
+  "order KUR_LOAD on etl01: impersonation failed, user svc_etl has no SeIncreaseQuotaPrivilege (process token adjust denied)"
+ ],
+ "db_corrupt": [
+  "EVENT_SERVER: database AUTOSDB unreachable (error 1105), job submission rejected; scheduler not running",
+  "sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) could not connect to server: Connection refused. Is the server running on host 'metadb' port 5432?",
+  "ERROR JobScheduler database is not available: SQLException 08S01 communication link failure; cluster node switch in progress",
+  "js7-controller.service: Main process exited, code=exited, status=1/FAILURE; FATAL: db-cluster-02 not reachable after failover"
+ ],
+ "lock_table": [
+  "ORA-00060: deadlock detected while waiting for resource; trace file generated for session 412 (table DEFTER)",
+  "psycopg2.errors.LockNotAvailable: could not obtain lock on relation 'defter' (SQLSTATE 55P03)",
+  "job DEFTER_YUKLE failed: Transaction (Process ID 58) was deadlocked on lock resources with another process and has been chosen as the deadlock victim",
+  "order DEFTER_LOAD: ERROR 1213 (40001): Deadlock found when trying to get lock; try restarting transaction"
+ ]
+}

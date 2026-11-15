@@ -20,7 +20,7 @@ READ = {
 }
 WRITE = {  # verb: policy level (2 low impact, 3 operational change, 4 configuration or security change)
     "notify": 1, "wait": 1, "job_hold": 2, "job_free": 2, "job_rerun": 3, "job_kill": 3, "job_set_notok": 3,
-    "agent_restart": 3, "service_restart": 3, "file_delete": 3, "resource_release": 3, "password_update": 3,
+    "agent_restart": 3, "service_restart": 3, "file_delete": 3, "resource_release": 3, "password_update": 4,
     "job_update": 4, "config_set": 4, "cert_renew": 4, "grant_right": 4, "file_move": 3,
     "job_set_ok": 4, "pool_increase": 4, "disable_ssl": 4,
 }
@@ -156,6 +156,14 @@ COMPOUND = [("agent_down", "password_rotated"), ("cert_expired", "agent_down"), 
             ("run_as_right", "password_rotated"), ("oom_kill", "lock_table"), ("cert_expired", "password_rotated")]
 SINGLE = [k for k in FAULTS]
 
+import json as _json
+import pathlib as _pathlib
+
+# Held-out wordings for the test split: written by a separate agent that never saw the class skills, in the style of
+# other schedulers and the OS (AutoSys, Airflow, Slurm, JS7, Windows, journald). Dev keeps the Control-M wording.
+_WORDING_FILE = _pathlib.Path(__file__).resolve().parent.parent / "bench" / "ops" / "eylem_test_ifadeleri.json"
+TEST_WORDING = _json.loads(_WORDING_FILE.read_text(encoding="utf-8")) if _WORDING_FILE.exists() else {}
+
 JOB_NAMES = {"dev": ["MHS_GUN_SONU", "KRD_RISK_HESAP", "ODM_POST_DEFTER", "RPR_GUNLUK_OZET", "MHS_MUTABAKAT"],
              "test": ["ACC_DAILY_CLOSE", "LN_EXPOSURE_CALC", "PAY_LEDGER_POST", "RPT_DAILY_DIGEST", "ACC_RECON"]}
 
@@ -177,7 +185,9 @@ def scenario(seed, split="dev", faults=None):
         faults = list(COMPOUND[(seed // 10 + seed) % len(COMPOUND)]) if seed % 10 < 3 else [SINGLE[(seed * 7 + len(split)) % len(SINGLE)]]
     for f in faults:
         FAULTS[f].apply(s, job)
-    s["target"], s["faults"] = job, list(faults)
+    s["target"], s["faults"], s["split"] = job, list(faults), split
+    if split == "test" and TEST_WORDING:
+        s["wording"] = {f: rng.choice(TEST_WORDING[f]) for f in faults if f in TEST_WORDING}
     s["jobs"][job]["status"] = "notok"
     first = _active(s, job)
     s["jobs"][job]["log"] = [first[1]] if first else []
@@ -187,7 +197,10 @@ def scenario(seed, split="dev", faults=None):
 
 def _active(s, job):
     errs = sorted((FAULTS[f].order, FAULTS[f].check(s, job), f) for f in s["faults"] if FAULTS[f].check(s, job))
-    return (errs[0][2], errs[0][1]) if errs else None
+    if not errs:
+        return None
+    key, line = errs[0][2], errs[0][1]
+    return key, s.get("wording", {}).get(key, line)
 
 
 class OpsWorld:

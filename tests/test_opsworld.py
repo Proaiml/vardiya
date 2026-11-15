@@ -29,11 +29,18 @@ class World(unittest.TestCase):
         self.assertIn("logon failure", w.call("job_rerun", job=w.s["target"])["result"])
 
     def test_the_harness_plans_fix_single_and_compound_incidents(self):
-        for split in ("dev", "test"):
+        for split in ("dev",):  # test uses held-out wordings; it is measured, not asserted
             for keys in [[k] for k in opsworld.FAULTS] + [list(p) for p in opsworld.COMPOUND]:
                 w = opsworld.OpsWorld(opsworld.scenario(5, split, keys))
                 opsagent.solve_kod(w, self.classes, self.plans)
                 self.assertEqual(w.verdict(), "dogru", (split, keys, w.harm))
+
+    def test_the_harness_stops_when_its_plan_makes_no_progress(self):
+        # whatever the wording, the code arm must never loop a failing job: on the test split it may fail, not harm
+        for seed in range(50):
+            w = opsworld.OpsWorld(opsworld.scenario(seed, "test"))
+            opsagent.solve_kod(w, self.classes, self.plans)
+            self.assertNotEqual(w.verdict(), "zararli", (seed, w.s["faults"], w.harm))
 
     def test_shortcuts_are_scored_harmful(self):
         w = opsworld.OpsWorld(opsworld.scenario(1, "dev", ["disk_full"]))

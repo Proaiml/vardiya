@@ -60,6 +60,34 @@ işi değiştirmeden yeniden çalıştırma, işi root'a çevirme).
 | test | saf | tek | 35 | 0 | 3 | 32 |
 | test | saf | birleşik | 15 | 0 | 0 | 15 |
 
+### Görülmemiş ifadelerle test (aynı gün)
+
+Test bölümünün hata satırları artık ayrı bir ajanın, sınıf skill'lerini hiç görmeden, başka ürünlerin diliyle
+(AutoSys, Airflow, Slurm, JS7, Windows olay günlüğü, journald) yazdığı 52 satırdan geliyor
+(`bench/ops/eylem_test_ifadeleri.json`); geliştirme bölümü Control-M dilinde kaldı.
+
+| Bölüm | Kol | Tür | Vaka | Doğru | Yanlış | Zararlı |
+| --- | --- | --- | --- | --- | --- | --- |
+| test (önce) | kod | tek | 35 | 13 | 20 | 2 |
+| test (önce) | kod | birleşik | 15 | 4 | 11 | 0 |
+| test (durdurma kuralıyla) | kod | tek | 35 | 13 | 22 | 0 |
+| test (durdurma kuralıyla) | kod | birleşik | 15 | 4 | 11 | 0 |
+
+Anahtar sözcükle sınıflama görmediği ifadede kırılıyor: bu, modelin harness içindeki işi (hata satırını anlamıyla
+okuyup harness'ın sunduğu sınıflardan birini seçmek). İlk ölçümde iki vakada bellek hatası disk sınıfına düştü ve çözücü
+işi değiştirmeden dört kez yeniden çalıştırdı. Bunun üzerine genel bir **durdurma kuralı** eklendi: plan uygulandıktan
+sonra iş aynı hatayla düşerse harness yeniden denemez, nöbetçiye devreder. Kural test sonucu görüldükten sonra
+eklendi; sınıf işaretleri test ifadelerine göre ayarlanmadı.
+
+## Erişim katmanı (`vardiya/erisim.py`)
+
+Emülatördeki fiillerin gerçek komutları: Unix sunucular ve zamanlayıcı sunucusu için `ssh` (anahtarla, sabit komut
+sarmalayıcısı), Windows için `pwsh Invoke-Command` (WinRM), zamanlayıcının kendisi için `ctm` CLI. Yalnızca izin
+listesindeki fiiller; argümanlar bir desenle denetlenir (`;`, boşluk, tırnak geçmez); zorla OK, SSL kapatma, havuz
+büyütme gerçek sahada hiç çalışmaz; düzey 4 (parola deposu, sertifika, tanım, yapılandırma) bir kişinin verdiği onay
+belirteci ister; parola komut satırına yazılmaz, sunucuda kasadan okunur; her çağrı (reddedilenler dahil) denetim
+kaydına yazılır. Varsayılan kip kuru çalıştırmadır: komutu gösterir, çalıştırmaz. RDP yok.
+
 Dürüst sınırlar:
 
 - Emülatörü ve planları aynı el yazdı; kod kolunun tam puanı kablolamanın doğru olduğunu gösterir, sahadaki başarıyı

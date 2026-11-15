@@ -94,7 +94,14 @@ def solve_kod(world, classes, plans):
             world.call("notify", to="nobetci", text=f"bilinmeyen ariza, insan gerekli: {line}")
             break
         _apply(world, plans[cls], ctx)
-        if world.call("job_rerun", job=ctx["job"])["result"] == "ENDED OK":
+        result = world.call("job_rerun", job=ctx["job"])["result"]
+        if result == "ENDED OK":
+            break
+        # no progress: the same failure came back after the plan. Rerunning again changes nothing and may do harm
+        # (a job killed for memory is killed again); stop and hand over to a human.
+        if result.endswith(line):
+            world.call("notify", to="nobetci", text=f"plan ({cls}) sorunu gidermedi, ayni hata suruyor: {line}")
+            steps.append({"round": "devir", "error": line, "class": cls})
             break
     # the job is green; earlier failures of the same job may point to a root cause still in place
     if world.s["jobs"][ctx["job"]]["status"] == "ok":
