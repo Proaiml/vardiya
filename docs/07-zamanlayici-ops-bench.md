@@ -325,3 +325,16 @@ cümlelerini taşıması. İkisi de test3 görüldükten sonra yapılacağı iç
 
 Sınırlar: tek model, tek koşu, 60 vaka; cevaplar dosya üzerinden bir ajandan alındı (iki ya da üç tur). Puanlama
 sözcük gruplarına bakar; daha eksiksiz cevap daha çok grup tutturur, harness'in sözleşmesi tam da bunu zorlar.
+
+**test4 (59 yeni, görülmemiş vaka; KRON-A1; puanlayıcı ve not düzeltmelerinden sonra temiz ölçüm).** Vaka yazarına
+zararlı ifadeleri eylem olarak yazması söylendi.
+
+| | Doğru | Yarım | Yanlış | Zararlı | Adım grubu isabeti |
+| --- | --- | --- | --- | --- | --- |
+| Yardımsız hydrogen (taslak) | 1 | 27 | 31 | 0 | %47 |
+| Usta (son cevap) | 6 | 29 | 24 | 0 | %54 |
+
+5 vaka düzeldi, bozulan ve zararlı yok. Kazanç test3'ten küçük: bu kümede harness'in eşleşmesi zayıf kaldı (notlar
+olmadan 4 doğru; notlar 2 vaka ekledi) ve kapının geri çevirdiği 56 cevabın tamamlanması doğru sayısını değiştirmedi.
+Sıradaki iş bu kümenin konularında yetenek boşluğunu bulmak; ama test4'e bakarak değil, aynı konuları geliştirme
+tarafında toplayarak.
