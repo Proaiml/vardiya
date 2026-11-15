@@ -373,6 +373,21 @@ procedures:
     triggers: [logon as user, log on as user, fix pack, parola tanimladik, log, cikti olusturamadan, job failed, fork failure, windows agent]
     steps: kullanicinin parolasinin CCM ya da ctmpwd ile tanimli oldugunu dogrula; kullaniciya Yerel Guvenlik Ilkesi'nde 'log on as a batch job' ve 'replace a process level token' haklarini ver; agent servisini yeniden baslat ve bir test isiyle dogrula
     caution: kullaniciyi yerel yoneticiler grubuna ekleyerek gecistirme
+  beklenmedik_gelecek_odate:
+    title: Islerin kimse zorlamadan gelecek bir ODATE ile siparis edilmesi
+    triggers: [yarinin odate, gelecek odate, future odate, tomorrow, siparis edildi, zorlamadi, not forced, new day, ileri tarih]
+    steps: isin ya da ust SMART klasorun saat dilimi alanina bak; saat dilimi ileri siparis yapar (is bir gun once siparis edilir, 48 saat kalir); bu istenmiyorsa saat dilimini kaldir; tanimin sunucuya yuklenen surumunu da kontrol et
+    caution: ODATE'i elle degistirerek gecistirme; davranis her gun tekrarlanir
+  nicel_kaynak_beklemede:
+    title: Nicel kaynakla sinirlanan islerin ilk grup bittikten sonra da beklemede kalmasi
+    triggers: [nicel kaynak, quantitative, paralel, parallel, beklemede, waiting, bittikten sonra, stuck, takili, max]
+    steps: ecaqrtab LIST <kaynak> ile kullanilan ve en buyuk miktara bak; biten islerin tuttugu ve birakilmamis kayitlari bul, isleri dogrulayip asili kayitlari serbest birak; bekleyen islerde 'Why' ile gercek bekleme nedenine bak (kaynak mi, kosul mu, zaman mi)
+    caution: kaynagi sinirsiz yaparak gecistirme; sinirin amaci yuku korumaktir
+  user_daily_ileri_tarih:
+    title: User Daily'nin ertesi gunun islerini onceden yukleyip New Day'e kadar bekletmesi
+    triggers: [user daily, ctmudly, ertesi gun, next day, yuklesin, load, baslamasin, wait until, new day'e kadar, gelecek]
+    steps: ctmudly -DAILY_NAME <ad> -odate <yyyymmdd> -odate_option run_date ile siparis et; isler siparis edilir ama ODATE gelene kadar calismaz; bekleyen islerin lisans sayimina girdigini hesaba kat
+    caution: ayni gunun islerini iki kez yuklememek icin User Daily'nin zamanlamasini dogrula
   zos_executing_temizlik:
     title: z/OS'ta bitmis ama Executing gorunen isi AJF'ten temizlemek
     triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
@@ -563,6 +578,26 @@ procedures:
     triggers: [automation api, rest, api, modify, degistir, ordered job, aktif is, 415, unsupported media type, from time]
     steps: once get ile isin tum tanimini al; istenen alani (ornegin from time) bu tanimda degistir; tanimin tamamini form-data (multipart) olarak modify ucuna gonder; isin yeni degerini get ile dogrula
     caution: yalniz degisen alani ham JSON olarak gondermek 415 verir; artimli degisiklik desteklenmez
+  beklenen_hatayi_guvenle_ok:
+    title: Beklenen hatayla biten isi OK gosterip ardillarin yalniz gercek basarida baslamasini saglamak
+    triggers: [expected failure, beklenen hata, set to ok, ok gorunsun, successors, ardillar, should not start, baslamasin, sequence, zincir]
+    steps: A isine iki kosul ver: OUT kosulu A1-OK ve yalniz OK bitince eklenen ikinci kosul A2-OK (On OK: Add condition); A'nin NOTOK'unda Set OK kullanilabilir; ardil B hem A1-OK hem A2-OK beklesin; boylece A ekranda OK gorunur ama B yalniz gercek basarida baslar; bir test ile her iki yolu dogrula
+    caution: yalniz Set OK yapmak ardillari beklenmeyen hataya ragmen baslatir; ikinci kosulu atlama
+  kontrollu_baslatma:
+    title: Ani kapanmadan sonra islerin hemen kalkmasini engelleyip kontrollu baslatmak
+    triggers: [hard down, crash, coktu, ani kapanma, after restart, yeniden baslayinca, jobs take off, hemen calismasin, verify first, once dogrula]
+    steps: sunucu acilmadan once ya da acilir acilmaz nicel kaynaklarin en buyuk degerini ecaqrtab ile 0'a cek ya da agent'lari kapali tut; disk, veritabani ve bagli sistemlerin saglam oldugunu dogrula; AJF'teki yarim kalmis isleri gozden gecir; sonra kaynaklari eski degerine al ya da agent'lari sirayla ac
+    caution: dogrulamadan tum isleri serbest birakma; yarim kalmis isleri kor yeniden calistirma
+  zaman_penceresinde_durdur:
+    title: Dongusel ya da duzenli isleri belirli bir saat araliginda durdurmak
+    triggers: [stop between, arasinda durdur, arasi, calismamasini, time window, zaman penceresi, maintenance, bakim, cyclic, dongusel, block, workload policy]
+    steps: zamanlanmis bir is yuku politikasi (Workload Policy) tanimla ve o pencerede ilgili isleri 0 calisma sinirina cek; politika bitince isler kendiliginden devam eder; alternatif olarak pencerede bir isin tuttugu exclusive kontrol kaynagi
+    caution: isi iki ayri tanima bolerek cozmek bakim zorlugu getirir
+  dis_tetik_new_day:
+    title: Dis uygulamanin kosul ekleyip is tetiklemesinin New Day sirasinda basarisiz olmasi
+    triggers: [ctmcontb, ctmvar, external application, dis uygulama, add condition, kosul ekle, new day, ndp, fails, basarisiz]
+    steps: urun New Day calisirken yardimci araclari reddeder; cagiran uygulamaya hata kodunu yakalayip birkac dakika sonra yeniden deneyen bir dongu ekle; mumkunse cagrilari New Day penceresinin disina planla; reddedilen cagrilari gunluge yaz
+    caution: hatayi yok sayip devam etmek tetiklenmesi gereken isleri sessizce kacirir
 ---
 
 # Adminlik yordamlari
