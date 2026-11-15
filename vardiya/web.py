@@ -194,6 +194,93 @@ def bench_summary(path=None):
     return {"files": files, "file": path.name, "arms": arms, "families": families}
 
 
+# ---- Usta: the incident side of the console (skills only; a model, when connected, reads the same sheet)
+def _usta_skills():
+    from . import opsbench
+    from .skills import load_chains, load_general_skills, load_incident_classes, load_procedures
+    d = opsbench.SKILLS
+    return load_incident_classes(d), load_procedures(d), load_general_skills(d), load_chains(d)
+
+
+def usta_catalog():
+    """Every skill the agent carries, as titles: incident classes, admin procedures, general server skills, chains."""
+    classes, procedures, general, chains = _usta_skills()
+    return {"classes": [{"name": n, "title": c["title"], "signs": len(c["signs"]), "cause": c["cause"], "harmful": c["harmful"],
+                         "chain": len(chains.get(n, {}).get("order", []))} for n, c in classes.items()],
+            "procedures": [{"name": n, "title": p["title"], "needs": p.get("needs") or []} for n, p in procedures.items()],
+            "general": [{"name": n, "title": g["title"], "classes": g["classes"],
+                         "os": [o for o in ("unix", "windows") if not g["check"][o].startswith("(uygulanmaz")]}
+                        for n, g in general.items()],
+            "chains": len(chains)}
+
+
+def usta_ask(text):
+    """What the harness finds for one incident report, with no model: candidate causes and how sure it is, the
+    verified fix, what must not be done, the procedures, the read-only server checks and the order to try them in."""
+    from . import opsbench
+    classes, procedures, general, chains = _usta_skills()
+    case = {"prompt": str(text)[:6000]}
+    _, found = opsbench.context(case, classes, procedures, general, chains)
+    signs = opsbench.class_signs(classes, case["prompt"])
+    out = {"product": found["product"], "os": found["os"], "candidates": [], "procedures": [], "checks": [], "chain": []}
+    for name in found["classes"]:
+        c = classes[name]
+        out["candidates"].append({"name": name, "title": c["title"], "strength": found["strength"][name],
+                                  "signs": signs.get(name) or [], "cause": c["cause"],
+                                  "fix": c.get("fix_by", {}).get(found["product"]) or c["fix"],
+                                  "harmful": [w[0] for a in c["harmful"] for w in [opsbench.ACTION_WORDS.get(a, [a])]]})
+    for name in found["procedures"]:
+        p = procedures[name]
+        out["procedures"].append({"name": name, "title": p["title"], "steps": [x.strip() for x in p["steps"].split(";") if x.strip()],
+                                  "caution": p["caution"]})
+    for name in found["general"]:
+        g = general[name]
+        oses = [found["os"]] if found["os"] else ["unix", "windows"]
+        out["checks"].append({"name": name, "title": g["title"], "caution": g["caution"],
+                              "by_os": [{"os": o, "check": [x.strip() for x in g["check"][o].split(";") if x.strip()],
+                                         "fix": g["fix"][o]} for o in oses if not g["check"][o].startswith("(uygulanmaz")]})
+    out["chain"] = [{"ref": r, "title": opsbench.ref_title(r, classes, procedures, general)} for r in found["chain"]]
+    return out
+
+
+def usta_examples(limit=8):
+    """A few development cases to try the desk with (never the held-out test cases)."""
+    from . import opsbench
+    rows = [c for c in opsbench.load("dev") if c["track"] == "olay"]
+    step = max(1, len(rows) // limit)
+    return [{"id": c["id"], "text": c["prompt"]} for c in rows[::step][:limit]]
+
+
+def ops_results():
+    """Ops bench: verdict counts per split, arm and model, and the draft-against-final table of the Usta protocol."""
+    from . import opsbench
+    path = opsbench.OUT
+    if not path.is_file():
+        return {"rows": [], "paired": []}
+    table, latest = {}, {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        g = table.setdefault((r["split"], r["arm"], r.get("model") or ""), {"dogru": 0, "yarim": 0, "yanlis": 0, "zararli": 0})
+        g[r["verdict"]] = g.get(r["verdict"], 0) + 1
+        if r["arm"] in opsbench.USTA_ARMS:
+            latest[(r["id"], r["arm"], r.get("model"))] = r
+    rows = [{"split": s, "arm": a, "model": m, "n": sum(g.values()), **g} for (s, a, m), g in sorted(table.items())]
+    paired = {}
+    for (_, arm, model), r in latest.items():
+        g = paired.setdefault((r["split"], arm, model), {"n": 0, "draft": 0, "final": 0, "up": 0, "down": 0, "harm_draft": 0, "harm_final": 0})
+        d, f = r.get("draft_verdict"), r["verdict"]
+        g["n"] += 1
+        g["draft"] += d == "dogru"
+        g["final"] += f == "dogru"
+        g["up"] += d != "dogru" and f == "dogru"
+        g["down"] += d == "dogru" and f != "dogru"
+        g["harm_draft"] += d == "zararli"
+        g["harm_final"] += f == "zararli"
+    return {"rows": rows, "paired": [{"split": s, "arm": a, "model": m, **g} for (s, a, m), g in sorted(paired.items())]}
+
+
 def examples():
     out = [{"name": "Bos sablon", "text": (ROOT / "templates" / "talep-sablonu.txt").read_text(encoding="utf-8")}]
     for p in sorted((ROOT / "ornekler").glob("*.txt")):
@@ -244,6 +331,12 @@ def make_handler(office):
                 return self._send(200 if "candidates" in out else 400, out)
             if url.path == "/api/bench":
                 return self._send(200, bench_summary((q.get("file") or [None])[0]))
+            if url.path == "/api/usta/catalog":
+                return self._send(200, usta_catalog())
+            if url.path == "/api/usta/examples":
+                return self._send(200, usta_examples())
+            if url.path == "/api/ops":
+                return self._send(200, ops_results())
             return self._send(404, {"error": "yok"})
 
         def do_POST(self):
@@ -263,6 +356,11 @@ def make_handler(office):
                     return self._send(400, {"error": "model bagli degil; sunucuyu --model ile baslatin"})
                 out = office.graph_analyse(body.get("run", ""), with_model=True)
                 return self._send(200 if "candidates" in out else 400, out)
+            if path == "/api/usta/ask":
+                text = str(body.get("text", "")).strip()
+                if not text:
+                    return self._send(400, {"error": "olay metni bos"})
+                return self._send(200, usta_ask(text))
             if path == "/api/reset":
                 with office.lock:
                     office.reset()

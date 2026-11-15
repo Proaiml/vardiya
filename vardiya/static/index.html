@@ -3,229 +3,280 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vardiya Operasyon Masası</title>
+<title>Vardiya · Usta operasyon konsolu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* paper and ink: calm surfaces, one accent, status colours only where they carry meaning */
-  --bg: #f5f5f2; --surface: #ffffff; --surface-2: #f9f9f7; --surface-3: #efefeb; --border: #e3e3de; --border-2: #cfcfc8;
-  --text: #15181d; --text-2: #474d56; --text-3: #7a8089;
-  --side: #fbfbf9; --side-2: #ffffff; --side-text: #2b3038; --side-muted: #8a9099;
-  --accent: #23508f; --accent-2: #eaf0f8; --accent-ink: #ffffff;
-  --good: #1d8a4e; --warning: #b7791f; --serious: #c4622d; --critical: #c2352f;
-  --good-bg: #f1f8f3; --warn-bg: #fbf6ec; --crit-bg: #fbf1f0; --info-bg: #eef3fa;
-  --bar: #9fb3cc; --bar-hover: #6f8db3;
-  --k-job: #2a6fc9; --k-host: #d0662f; --k-user: #1c9a6c; --k-conn: #c58f00; --k-table: #cc5c8d; --k-sig: #6b55d0;
-  --k-change: #a87b17; --k-incident: #c2352f; --k-res: #2f8a3b; --k-run: #8a9099;
-  --shadow: 0 1px 0 rgba(20, 24, 30, .03);
+  /* an operations console: a dark rail that stays put, light work surfaces, one accent; status colours only for status */
+  --bg: #f2f4f7; --surface: #ffffff; --surface-2: #f6f8fa; --surface-3: #ebeef2; --border: #e1e5ea; --border-2: #c8ced7;
+  --text: #0c1220; --text-2: #3f4958; --text-3: #6b7584; --text-4: #98a1ae;
+  --nav: #0d1421; --nav-2: #18233a; --nav-line: #1c2740; --nav-text: #c5cedc; --nav-muted: #77839a; --nav-strong: #ffffff;
+  --accent: #2d5bd0; --accent-2: #e8eefc; --accent-ink: #ffffff; --accent-strong: #1f47b0;
+  --good: #117a54; --warning: #a5620a; --serious: #c4622d; --critical: #c4352b; --lamp: #f2a93b;
+  --good-bg: #e4f3ec; --warn-bg: #faf0de; --crit-bg: #fbe8e6; --info-bg: #e8eefc;
+  --bar: #5f86d6; --bar-hover: #3f69c2;
+  --k-job: #2a6fc9; --k-host: #d0662f; --k-user: #1c9a6c; --k-conn: #b58300; --k-table: #cc5c8d; --k-sig: #6b55d0;
+  --k-change: #a87b17; --k-incident: #c4352b; --k-res: #2f8a3b; --k-run: #8a93a1;
+  --shadow: 0 1px 2px rgba(13, 20, 33, .05), 0 1px 1px rgba(13, 20, 33, .03);
+  --shadow-2: 0 10px 30px rgba(13, 20, 33, .12);
+  --radius: 10px;
   --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    --bg: #101215; --surface: #16191d; --surface-2: #1b1f24; --surface-3: #22272d; --border: #2a2f36; --border-2: #3a4049;
-    --text: #e8eaed; --text-2: #b3b8bf; --text-3: #858b94;
-    --side: #13161a; --side-2: #1c2026; --side-text: #d9dce0; --side-muted: #7f858d;
-    --accent: #7aa6e3; --accent-2: #1b2635; --accent-ink: #0d1218;
-    --good: #4fb87a; --warning: #d9a441; --critical: #e5675f;
-    --good-bg: #15221a; --warn-bg: #262012; --crit-bg: #2a1716; --info-bg: #182231;
-    --bar: #4a5f7c; --bar-hover: #6f8db3;
-    --k-incident: #e5675f; --shadow: none; color-scheme: dark;
+  :root:not([data-theme="light"]) {
+    --bg: #090d14; --surface: #111722; --surface-2: #151c29; --surface-3: #1b2432; --border: #222c3c; --border-2: #323e52;
+    --text: #e9edf3; --text-2: #b6bfcc; --text-3: #8791a2; --text-4: #5f6a7c;
+    --nav: #070a10; --nav-2: #141d2e; --nav-line: #161f30;
+    --accent: #7c9eff; --accent-2: #172544; --accent-ink: #08101f; --accent-strong: #a3bcff;
+    --good: #45c08f; --warning: #e0a44a; --critical: #e2574c;
+    --good-bg: #0f2a20; --warn-bg: #2b2110; --crit-bg: #321513; --info-bg: #172544;
+    --bar: #6f8fd0; --bar-hover: #93adeb; --k-incident: #e2574c;
+    --shadow: none; --shadow-2: 0 10px 30px rgba(0, 0, 0, .5); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #101215; --surface: #16191d; --surface-2: #1b1f24; --surface-3: #22272d; --border: #2a2f36; --border-2: #3a4049;
-  --text: #e8eaed; --text-2: #b3b8bf; --text-3: #858b94;
-  --side: #13161a; --side-2: #1c2026; --side-text: #d9dce0; --side-muted: #7f858d;
-  --accent: #7aa6e3; --accent-2: #1b2635; --accent-ink: #0d1218;
-  --good: #4fb87a; --warning: #d9a441; --critical: #e5675f;
-  --good-bg: #15221a; --warn-bg: #262012; --crit-bg: #2a1716; --info-bg: #182231;
-  --bar: #4a5f7c; --bar-hover: #6f8db3;
-  --k-incident: #e5675f; --shadow: none; color-scheme: dark;
+  --bg: #090d14; --surface: #111722; --surface-2: #151c29; --surface-3: #1b2432; --border: #222c3c; --border-2: #323e52;
+  --text: #e9edf3; --text-2: #b6bfcc; --text-3: #8791a2; --text-4: #5f6a7c;
+  --nav: #070a10; --nav-2: #141d2e; --nav-line: #161f30;
+  --accent: #7c9eff; --accent-2: #172544; --accent-ink: #08101f; --accent-strong: #a3bcff;
+  --good: #45c08f; --warning: #e0a44a; --critical: #e2574c;
+  --good-bg: #0f2a20; --warn-bg: #2b2110; --crit-bg: #321513; --info-bg: #172544;
+  --bar: #6f8fd0; --bar-hover: #93adeb; --k-incident: #e2574c;
+  --shadow: none; --shadow-2: 0 10px 30px rgba(0, 0, 0, .5); color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 var(--sans); font-variant-numeric: tabular-nums;
-  -webkit-font-smoothing: antialiased; }
-.app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13.5px/1.5 var(--sans); font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+* { scrollbar-width: thin; scrollbar-color: var(--border-2) transparent; }
+.app { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: 100vh; }
 
-/* sidebar: quiet, the content leads */
-aside { background: var(--side); color: var(--side-text); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
-  border-right: 1px solid var(--border); }
-.brand { padding: 22px 20px 18px; display: flex; gap: 11px; align-items: center; }
-.brand svg { flex: none; }
-.brand b { display: block; color: var(--text); font-size: 15.5px; font-weight: 600; letter-spacing: .1px; }
-.brand span { font-size: 12px; color: var(--side-muted); }
-nav { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; }
-nav .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.1px; color: var(--side-muted); padding: 18px 10px 6px; font-weight: 600; }
-nav button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px;
-  color: var(--side-text); font-size: 13.5px; border: 1px solid transparent; }
-nav button svg { color: var(--side-muted); }
-nav button:hover { background: var(--surface-3); }
-nav button[aria-current="page"] { background: var(--side-2); border-color: var(--border); color: var(--text); font-weight: 500;
-  box-shadow: 0 1px 2px rgba(20, 24, 30, .05); }
-nav button[aria-current="page"] svg { color: var(--accent); }
-nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-nav .count { margin-left: auto; color: var(--critical); font-size: 11.5px; font-weight: 600; min-width: 18px; text-align: right; }
-nav .count::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 5px; vertical-align: 1px; }
-nav .count.warn { color: var(--warning); }
-.side-foot { margin-top: auto; padding: 14px 20px 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--side-muted); }
-.side-foot div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
-.side-foot b { color: var(--side-text); font-weight: 500; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.local { margin-top: 10px; display: flex; gap: 8px; align-items: flex-start; color: var(--text-2); font-size: 11.5px; line-height: 1.45; }
-.local svg { color: var(--good); flex: none; margin-top: 1px; }
+/* rail */
+aside { background: var(--nav); color: var(--nav-text); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+  scrollbar-color: var(--nav-line) transparent; }
+.brand { padding: 18px 18px 16px; display: flex; gap: 11px; align-items: center; border-bottom: 1px solid var(--nav-line); }
+.brand .mark { flex: none; width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(145deg, #223354, #131d31);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); display: grid; place-items: center; }
+.brand b { display: block; color: var(--nav-strong); font-size: 15px; font-weight: 600; letter-spacing: .2px; line-height: 1.2; }
+.brand span { font-size: 11.5px; color: var(--nav-muted); }
+nav { padding: 6px 10px 12px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; flex: 1; min-height: 0; }
+nav .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--nav-muted); padding: 16px 10px 6px; font-weight: 600; }
+nav button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 7px;
+  color: var(--nav-text); font-size: 13px; position: relative; }
+nav button svg { color: var(--nav-muted); flex: none; }
+nav button:hover { background: rgba(255, 255, 255, .05); color: var(--nav-strong); }
+nav button[aria-current="page"] { background: var(--nav-2); color: var(--nav-strong); font-weight: 500; }
+nav button[aria-current="page"]::before { content: ""; position: absolute; left: -10px; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: var(--lamp); }
+nav button[aria-current="page"] svg { color: var(--nav-strong); }
+nav button:focus-visible { outline: 2px solid var(--lamp); outline-offset: 1px; }
+nav .count { margin-left: auto; font-size: 11px; font-weight: 600; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 9px; display: inline-grid;
+  place-items: center; background: #c4352b; color: #fff; }
+nav .count.warn { background: #f2a93b; color: #1d1403; }
+.side-foot { padding: 12px 14px 14px; border-top: 1px solid var(--nav-line); font-size: 11.5px; color: var(--nav-muted); }
+.side-foot .env { background: rgba(255, 255, 255, .04); border: 1px solid var(--nav-line); border-radius: 8px; padding: 8px 10px; }
+.side-foot .env div { display: flex; justify-content: space-between; gap: 8px; padding: 1.5px 0; }
+.side-foot .env b { color: var(--nav-text); font-weight: 500; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.local { margin-top: 10px; display: flex; gap: 7px; align-items: flex-start; line-height: 1.4; }
+.local svg { color: #45c08f; flex: none; margin-top: 1px; }
 
 /* main */
 main { min-width: 0; display: flex; flex-direction: column; }
-.topbar { position: sticky; top: 0; z-index: 3; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.topbar h1 { font-size: 19px; margin: 0; font-weight: 600; letter-spacing: -.2px; }
-.topbar .sub { color: var(--text-3); font-size: 13px; margin-top: 1px; }
-.topbar .right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
-.content { padding: 24px 32px 56px; max-width: 1440px; width: 100%; }
+.topbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--border); padding: 12px 28px; display: flex; align-items: center; gap: 14px; min-height: 62px; }
+.topbar h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: -.15px; line-height: 1.25; }
+.topbar .sub { color: var(--text-3); font-size: 12.5px; }
+.topbar .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-2); font-size: 12px; white-space: nowrap; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-4); }
+.chip.on i { background: var(--good); } .chip b { font-weight: 600; color: var(--text); }
+.content { padding: 22px 28px 60px; max-width: 1400px; width: 100%; margin: 0 auto; }
 .menu-btn { display: none; }
-@media (max-width: 980px) {
+@media (max-width: 1020px) {
   .app { grid-template-columns: 1fr; }
-  aside { position: fixed; inset: 0 auto 0 0; width: 260px; transform: translateX(-100%); transition: transform .2s; z-index: 20;
-    box-shadow: 0 0 40px rgba(0, 0, 0, .18); }
+  aside { position: fixed; inset: 0 auto 0 0; width: 262px; transform: translateX(-100%); transition: transform .2s; z-index: 20; box-shadow: var(--shadow-2); }
   aside.open { transform: none; }
   .menu-btn { display: inline-flex; }
   .content, .topbar { padding-left: 16px; padding-right: 16px; }
+  .topbar .chip.opt { display: none; }
 }
 
-/* building blocks */
-.grid { display: grid; gap: 18px; }
+/* blocks */
+.grid { display: grid; gap: 16px; }
 .g2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.g21 { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); }
 .g-split { grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); }
-.g-desk { grid-template-columns: minmax(320px, .9fr) minmax(0, 1.1fr); }
-@media (max-width: 1100px) { .g2, .g-split, .g-desk { grid-template-columns: 1fr; } }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); min-width: 0; }
-.card > header { display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-bottom: 1px solid var(--border); min-height: 50px; }
-.card > header h2 { font-size: 13.5px; margin: 0; font-weight: 600; letter-spacing: .1px; }
-.card > header .hint { margin-left: auto; }
-.card .body { padding: 16px 18px; }
+.g-desk { grid-template-columns: minmax(320px, .85fr) minmax(0, 1.15fr); }
+@media (max-width: 1180px) { .g2, .g21, .g-split, .g-desk { grid-template-columns: 1fr; } }
+.mt { margin-top: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); min-width: 0; }
+.card > header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); min-height: 48px; }
+.card > header h2 { font-size: 13px; margin: 0; font-weight: 600; letter-spacing: .1px; }
+.card > header .hint, .card > header .btn, .card > header select { margin-left: auto; }
+.card .body { padding: 14px 16px; }
+.sect { font-size: 11px; font-weight: 600; letter-spacing: .9px; text-transform: uppercase; color: var(--text-3); margin: 18px 0 8px; }
+.sect:first-child { margin-top: 0; }
 
-/* key figures: one strip, separated by hairlines */
-.kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
-.kpis .card { border: 0; border-radius: 0; box-shadow: none; background: none; }
-.kpis .card + .card { border-left: 1px solid var(--border); }
-@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpis .card:nth-child(3) { border-left: 0; } .kpis .card:nth-child(n+3) { border-top: 1px solid var(--border); } }
-.kpi { padding: 18px 20px; position: relative; }
-.kpi .label { color: var(--text-2); font-size: 12.5px; display: flex; align-items: center; gap: 7px; }
-.kpi .value { font-size: 30px; font-weight: 600; margin-top: 6px; letter-spacing: -.8px; line-height: 1.15; }
-.kpi .foot { color: var(--text-3); font-size: 12px; margin-top: 4px; }
-.kpi.crit::before { content: ""; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px; border-radius: 0 2px 2px 0; background: var(--critical); }
-.kpi.warn::before { content: ""; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px; border-radius: 0 2px 2px 0; background: var(--warning); }
+/* status line + key figures */
+.statusline { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.statusline::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--good); }
+.statusline.crit::before { background: var(--critical); } .statusline.warn::before { background: var(--warning); }
+.statusline .big { font-size: 15px; font-weight: 600; letter-spacing: -.1px; }
+.statusline .hint { margin-left: auto; }
+.pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--good); flex: none; box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+.crit .pulse { background: var(--critical); box-shadow: 0 0 0 4px color-mix(in srgb, var(--critical) 22%, transparent); }
+.warn .pulse { background: var(--warning); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 22%, transparent); }
+.kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1180px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: 1fr; } }
+.kpi { padding: 14px 16px 13px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: end; }
+.kpi .label { color: var(--text-2); font-size: 12px; font-weight: 500; grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; }
+.kpi .ico { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--surface-3); color: var(--text-2); }
+.kpi.crit .ico { background: var(--crit-bg); color: var(--critical); } .kpi.warn .ico { background: var(--warn-bg); color: var(--warning); }
+.kpi.ok .ico { background: var(--good-bg); color: var(--good); } .kpi.info .ico { background: var(--info-bg); color: var(--accent); }
+.kpi .value { font-size: 28px; font-weight: 600; letter-spacing: -.8px; line-height: 1.15; margin-top: 6px; }
+.kpi .foot { color: var(--text-3); font-size: 12px; grid-column: 1 / -1; }
+.kpi .mini { align-self: end; margin-bottom: 5px; }
 
-.hint { color: var(--text-3); font-size: 12.5px; }
+.hint { color: var(--text-3); font-size: 12px; }
 .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-2); background: var(--surface); color: var(--text);
-  padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; }
-.btn:hover { background: var(--surface-2); border-color: var(--text-3); }
-.btn.hint { color: var(--text-2); font-size: 12.5px; padding: 4px 10px; }
+  height: 30px; padding: 0 12px; border-radius: 7px; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); border-color: var(--text-4); }
+.btn.ghost { border-color: transparent; background: none; color: var(--text-2); padding: 0 8px; }
+.btn.ghost:hover { background: var(--surface-3); color: var(--text); }
+.btn.icon { width: 30px; padding: 0; justify-content: center; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.btn.primary:hover { filter: brightness(1.08); }
+.btn.primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-2); background: var(--surface); color: var(--text); max-width: 100%; }
-textarea { width: 100%; min-height: 430px; font: 12.5px/1.65 var(--mono); padding: 14px; border: 1px solid var(--border-2);
-  border-radius: 6px; background: var(--surface-2); color: var(--text); resize: vertical; }
-.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.mt { margin-top: 18px; }
+.btn:focus-visible, select:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+select, input[type=search] { font: inherit; font-size: 12.5px; height: 30px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--border-2);
+  background: var(--surface); color: var(--text); max-width: 100%; }
+input[type=search] { width: 260px; padding: 0 10px; }
+textarea { width: 100%; min-height: 430px; font: 12.5px/1.65 var(--mono); padding: 12px 14px; border: 1px solid var(--border-2);
+  border-radius: 8px; background: var(--surface-2); color: var(--text); resize: vertical; }
+textarea.short { min-height: 190px; font-family: var(--sans); font-size: 13.5px; line-height: 1.55; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.seg { display: inline-flex; background: var(--surface-3); border-radius: 8px; padding: 3px; gap: 2px; }
+.seg button { all: unset; cursor: pointer; padding: 4px 12px; border-radius: 6px; font-size: 12.5px; color: var(--text-2); font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.seg button:focus-visible { outline: 2px solid var(--accent); }
 
-/* status: icon and label carry the meaning; colour stays in the icon */
-.status { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; font-size: 12px; padding: 1px 8px 1px 6px; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--surface); color: var(--text-2); white-space: nowrap; line-height: 20px; }
+/* status: label and icon carry the meaning, colour supports it */
+.status { display: inline-flex; align-items: center; gap: 5px; font-weight: 500; font-size: 11.5px; padding: 0 8px 0 6px; border-radius: 6px;
+  background: var(--surface-3); color: var(--text-2); white-space: nowrap; line-height: 21px; }
 .status svg { flex: none; }
-.s-good, .s-warn, .s-crit, .s-info { background: var(--surface); }
-.s-crit { color: var(--critical); border-color: color-mix(in srgb, var(--critical) 35%, var(--border)); }
-.s-warn { color: var(--text); }
-.s-good { color: var(--text); }
-.tag { font-family: var(--mono); font-size: 11.5px; background: var(--surface-3); padding: 0 6px; border-radius: 4px; display: inline-block;
-  margin: 2px 4px 2px 0; color: var(--text-2); line-height: 19px; }
-.ph { font-family: var(--sans); font-size: 11px; color: var(--text-2); background: var(--surface-3); border-radius: 3px;
-  padding: 0 5px; margin: 0 1px; white-space: nowrap; letter-spacing: .2px; }
+.s-crit { background: var(--crit-bg); color: var(--critical); } .s-warn { background: var(--warn-bg); color: var(--warning); }
+.s-good { background: var(--good-bg); color: var(--good); } .s-info { background: var(--info-bg); color: var(--accent); }
+.tag { font-family: var(--mono); font-size: 11.5px; background: var(--surface-3); padding: 0 6px; border-radius: 5px; display: inline-block;
+  margin: 2px 4px 2px 0; color: var(--text-2); line-height: 20px; }
+.tag.no { background: var(--crit-bg); color: var(--critical); }
+.ph { font-family: var(--sans); font-size: 11px; color: var(--text-3); background: var(--surface-3); border-radius: 4px; padding: 0 5px; margin: 0 1px; white-space: nowrap; }
 .nowrap { white-space: nowrap; }
-.type { font-size: 11.5px; font-weight: 500; padding: 1px 7px; border-radius: 4px; background: var(--surface-3); color: var(--text-2); white-space: nowrap; }
+.type { font-size: 11.5px; font-weight: 500; padding: 1px 7px; border-radius: 5px; background: var(--surface-3); color: var(--text-2); white-space: nowrap; }
 
-/* tables: hairlines, quiet headers */
-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
-th { color: var(--text-3); font-weight: 500; font-size: 11.5px; letter-spacing: .3px; background: none; white-space: nowrap; }
-thead th { border-bottom: 1px solid var(--border-2); }
+/* tables */
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--text-3); font-weight: 600; font-size: 10.5px; letter-spacing: .7px; text-transform: uppercase; white-space: nowrap; background: var(--surface-2); }
+thead th { border-bottom: 1px solid var(--border); }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: var(--surface-2); }
-td.mono, .mono { font-family: var(--mono); font-size: 12.5px; }
+td.mono, .mono { font-family: var(--mono); font-size: 12px; }
+td.num, th.num { text-align: right; }
 tr.changed td { background: var(--info-bg); }
 .scroll { overflow-x: auto; }
-.empty { color: var(--text-3); padding: 28px 0; text-align: center; font-size: 13px; }
+.empty { color: var(--text-3); padding: 30px 12px; text-align: center; font-size: 13px; }
+.empty b { display: block; color: var(--text-2); font-weight: 600; margin-bottom: 2px; }
 .diff-old { color: var(--text-3); text-decoration: line-through; }
 .diff-new { font-weight: 600; }
-.kv th { width: 34%; letter-spacing: 0; font-size: 12.5px; color: var(--text-2); white-space: normal; }
+.kv th { width: 34%; letter-spacing: 0; text-transform: none; font-size: 12.5px; font-weight: 500; color: var(--text-2); white-space: normal; background: none; }
+.meter { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: var(--surface-3); vertical-align: middle; margin-right: 8px; overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--bar); border-radius: 3px; }
 
-/* notices: a hairline rule on the left says how serious; the surface stays calm */
-.notice { display: flex; gap: 10px; padding: 11px 14px; border-radius: 6px; font-size: 13px; margin: 10px 0; border: 1px solid var(--border);
-  background: var(--surface-2); position: relative; }
-.notice::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; border-radius: 6px 0 0 6px; background: var(--border-2); }
-.notice.crit::before { background: var(--critical); }
-.notice.warn::before { background: var(--warning); }
-.notice.info::before { background: var(--accent); }
+/* notices */
+.notice { display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; margin: 8px 0; background: var(--surface-2); border: 1px solid var(--border); }
+.notice.crit { background: var(--crit-bg); border-color: color-mix(in srgb, var(--critical) 25%, transparent); }
+.notice.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warning) 25%, transparent); }
+.notice.info { background: var(--info-bg); border-color: color-mix(in srgb, var(--accent) 22%, transparent); }
 .notice svg { flex: none; margin-top: 3px; }
 .notice b { font-weight: 600; }
 ul.plain { list-style: none; margin: 0; padding: 0; }
-ul.plain li { padding: 11px 0; border-bottom: 1px solid var(--border); }
+ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); }
 ul.plain li:last-child { border-bottom: 0; }
-.list-item { all: unset; display: block; width: 100%; box-sizing: border-box; cursor: pointer; padding: 12px 16px; border-bottom: 1px solid var(--border);
-  overflow-wrap: anywhere; }
+.list-item { all: unset; display: block; width: 100%; box-sizing: border-box; cursor: pointer; padding: 11px 16px; border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere; position: relative; }
+.list-item:last-child { border-bottom: 0; }
 .list-item:hover { background: var(--surface-2); }
 .list-item[aria-selected="true"] { background: var(--accent-2); box-shadow: inset 3px 0 0 var(--accent); }
-.list-item .t { font-weight: 600; font-size: 13px; }
+.list-item .t { font-weight: 600; font-size: 12.5px; }
 .list-item .m { color: var(--text-2); font-size: 12.5px; margin-top: 4px; }
-.list-item .m + .m { margin-top: 2px; }
-.err { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px;
+.list-item .m.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.err { font-family: var(--mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
   word-break: break-word; color: var(--text); border-left: 3px solid var(--critical); }
-.cand { border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; margin-bottom: 8px; }
+.cand { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
 .cand.top { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: inset 3px 0 0 var(--accent); }
 .cand .score { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; margin-top: 10px; }
 .cand .score span { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
-h3 { font-weight: 600; }
+h3 { font-weight: 600; font-size: 13px; }
+
+/* commands and steps */
+.cmd { display: flex; align-items: flex-start; gap: 8px; font: 12px/1.55 var(--mono); background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 6px 8px 6px 10px; margin: 5px 0; overflow-wrap: anywhere; }
+.cmd span { flex: 1; min-width: 0; }
+.cmd button { all: unset; cursor: pointer; color: var(--text-4); flex: none; padding: 1px 4px; border-radius: 4px; font: 11px var(--sans); }
+.cmd button:hover { color: var(--accent); background: var(--accent-2); }
+ol.steps { margin: 6px 0 0; padding: 0; list-style: none; counter-reset: s; }
+ol.steps li { counter-increment: s; position: relative; padding: 0 0 10px 30px; }
+ol.steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 11px; font-weight: 600; background: var(--accent-2); color: var(--accent); }
+ol.steps li:not(:last-child)::after { content: ""; position: absolute; left: 9.5px; top: 22px; bottom: 2px; width: 1px; background: var(--border-2); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { padding: 14px 16px; }
+.tile .value { font-size: 26px; font-weight: 600; letter-spacing: -.6px; line-height: 1.2; }
+.tile .label { color: var(--text-2); font-size: 12.5px; font-weight: 500; }
+.tile .foot { color: var(--text-3); font-size: 12px; margin-top: 2px; }
 
 /* charts */
 .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); }
-.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .chart { position: relative; margin-top: 8px; }
 .chart svg { display: block; width: 100%; height: auto; }
 .chart text { font-size: 11px; fill: var(--text-3); font-family: var(--sans); }
-.chart .grid-line { stroke: var(--border); stroke-dasharray: 2 3; }
+.chart .grid-line { stroke: var(--border); }
 .chart .base { stroke: var(--border-2); }
 .chart g[data-i]:hover .ok { fill: var(--bar-hover); }
-.tip { position: fixed; pointer-events: none; background: var(--text); color: var(--bg); padding: 8px 11px; border-radius: 6px; font-size: 12px;
-  max-width: 340px; z-index: 30; display: none; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); line-height: 1.5; }
-.toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: var(--bg); padding: 10px 14px; border-radius: 6px; display: none;
-  z-index: 30; font-size: 13px; }
-.graph-pic svg { width: 100%; height: auto; display: block; }
+.chart g[data-i]:hover .hit { fill: color-mix(in srgb, var(--text) 4%, transparent); }
+.tip { position: fixed; pointer-events: none; background: #0d1421; color: #e9edf3; padding: 8px 11px; border-radius: 8px; font-size: 12px;
+  max-width: 340px; z-index: 30; display: none; box-shadow: var(--shadow-2); line-height: 1.5; border: 1px solid #25314a; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: #0d1421; color: #e9edf3; padding: 10px 14px; border-radius: 8px; display: none;
+  z-index: 30; font-size: 12.5px; box-shadow: var(--shadow-2); border: 1px solid #25314a; }
+.graph-pic svg { width: 100%; height: auto; display: block; min-width: 760px; }
 .graph-pic text { font: 11px var(--mono); fill: var(--text); }
-.graph-pic { overflow-x: auto; } .graph-pic svg { min-width: 760px; }
+.graph-pic { overflow-x: auto; }
 .graph-pic .edge { stroke: var(--border-2); stroke-width: 1.3; }
 .graph-pic .elabel { font: 10px var(--sans); fill: var(--text-3); }
 .dag svg { width: 100%; height: auto; }
 .dag text { font: 11px var(--mono); fill: var(--text); }
-.dag .edge { stroke: var(--text-3); stroke-width: 1.2; fill: none; }
+.dag .edge { stroke: var(--text-4); stroke-width: 1.2; fill: none; }
 .dag .node rect { fill: var(--surface); stroke: var(--border-2); }
 .dag .node.changed rect { fill: var(--info-bg); stroke: var(--accent); }
 .dag .sub { fill: var(--text-3); font-size: 10px; }
-.fam { display: inline-block; min-width: 34px; text-align: center; font-family: var(--mono); font-size: 11.5px; padding: 0 4px; border-radius: 3px; }
+.fam { display: inline-block; min-width: 34px; text-align: center; font-family: var(--mono); font-size: 11.5px; padding: 0 4px; border-radius: 4px; }
 .fam.full { color: var(--good); } .fam.part { color: var(--warning); } .fam.zero { color: var(--critical); }
-.bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--surface-3); min-width: 120px; gap: 2px; }
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--surface-3); min-width: 130px; gap: 2px; }
 .bar span { display: block; height: 100%; }
-.bar .ok { background: var(--good); } .bar .harm { background: var(--critical); }
+.bar .ok { background: var(--good); } .bar .half { background: var(--bar); } .bar .harm { background: var(--critical); }
 kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--border-2); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--surface); }
-details > summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
+details > summary { cursor: pointer; color: var(--text-2); font-size: 12.5px; }
 pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono); background: var(--surface-2); border: 1px solid var(--border);
-  padding: 11px; border-radius: 6px; margin: 8px 0; }
+  padding: 10px 12px; border-radius: 8px; margin: 8px 0; }
 .spark { vertical-align: middle; flex: none; }
 </style>
 </head>
@@ -233,23 +284,25 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
 <div class="app">
   <aside id="side">
     <div class="brand">
-      <svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="7" fill="var(--text)"/>
-        <path d="M9 11h16M9 17h10M9 23h6" stroke="var(--bg)" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="22.5" r="3" fill="var(--good)"/></svg>
-      <div><b>Vardiya</b><span>Toplu iş yönetim masası</span></div>
+      <div class="mark"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h9M3 15h5" stroke="#e9edf3" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="14" r="3" fill="#f2a93b"/></svg></div>
+      <div><b>Vardiya</b><span>Usta · operasyon konsolu</span></div>
     </div>
     <nav aria-label="Bölümler">
-      <div class="group">Operasyon</div>
-      <button data-page="genel"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/></svg>Genel bakış</button>
-      <button data-page="olay"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 15 14H1z"/><path d="M8 6v3.5M8 11.5v.5"/></svg>Olaylar ve kök neden<span class="count" id="nav-open" hidden></span></button>
+      <div class="group">İzleme</div>
+      <button data-page="genel"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.2"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.2"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.2"/><rect x="9" y="9" width="5.5" height="5.5" rx="1.2"/></svg>Genel bakış</button>
+      <button data-page="olay"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.8 14.8 14H1.2z" stroke-linejoin="round"/><path d="M8 6.2v3.4M8 11.6v.4"/></svg>Olaylar ve kök neden<span class="count" id="nav-open" hidden></span></button>
       <button data-page="uyari"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 12 5.5 7l3 3 6-7"/><path d="M10.5 3h4v4"/></svg>Erken uyarılar<span class="count warn" id="nav-warn" hidden></span></button>
       <button data-page="rapor"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1.5h10v13H3z"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg>Raporlar</button>
+      <div class="group">Usta</div>
+      <button data-page="usta"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h12v8H8.5L5 14.5v-3H2z" stroke-linejoin="round"/><path d="M5 6.5h6M5 8.8h4"/></svg>Usta'ya sor</button>
+      <button data-page="yetenek"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 14 4.5 8 7.5 2 4.5z" stroke-linejoin="round"/><path d="M2 8l6 3 6-3M2 11.5l6 3 6-3"/></svg>Yetenekler</button>
       <div class="group">Talep</div>
       <button data-page="talep"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1.5h7l3 3v10H3z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg>Talep masası</button>
       <button data-page="gecmis"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5V8l2.5 1.5"/></svg>Talep geçmişi</button>
       <button data-page="defter"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7.5" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Denetim defteri</button>
       <div class="group">Ortam ve ölçüm</div>
       <button data-page="ortam"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="3.5" r="2"/><circle cx="12.5" cy="12.5" r="2"/><path d="M5.3 7.1 10.7 4.4M5.3 8.9l5.4 2.7"/></svg>Ortam ve işler</button>
-      <button data-page="saglik"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14.5s-6-3.6-6-8A3.3 3.3 0 0 1 8 4.3 3.3 3.3 0 0 1 14 6.5c0 4.4-6 8-6 8z"/></svg>Tanım sağlığı<span class="count warn" id="nav-health" hidden></span></button>
+      <button data-page="saglik"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 8h3l1.5-4 3 8 1.5-4h4"/></svg>Tanım sağlığı<span class="count warn" id="nav-health" hidden></span></button>
       <button data-page="bench"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14.5h12M4 12V8M8 12V3.5M12 12V6"/></svg>Bench sonuçları</button>
     </nav>
     <div class="side-foot" id="side-foot"></div>
@@ -257,29 +310,34 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
 
   <main>
     <div class="topbar">
-      <button class="btn menu-btn" id="menu" aria-label="Menü">☰</button>
+      <button class="btn icon menu-btn" id="menu" aria-label="Menü"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg></button>
       <div><h1 id="title">Genel bakış</h1><div class="sub" id="subtitle"></div></div>
-      <div class="right"><span class="hint" id="clock"></span><button class="btn" id="refresh" title="Yenile">↻ Yenile</button></div>
+      <div class="right">
+        <span class="chip opt" id="chip-day"></span><span class="chip opt" id="chip-model"></span>
+        <button class="btn icon" id="theme" title="Tema" aria-label="Tema"></button>
+        <button class="btn" id="refresh" title="Yenile"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg>Yenile</button>
+      </div>
     </div>
     <div class="content">
 
       <section data-page="genel">
-        <div class="grid kpis" id="kpis"></div>
-        <div class="grid g2 mt">
+        <div class="statusline" id="statusline"></div>
+        <div class="grid kpis mt" id="kpis"></div>
+        <div class="grid g21 mt">
           <div class="card"><header><h2>Son 30 gün: çalışmalar</h2><span class="hint" id="daily-note"></span></header>
             <div class="body"><div class="legend"><span><i style="background:var(--bar)"></i>Başarılı</span><span><i style="background:var(--critical)"></i>Hatalı</span></div>
               <div class="chart" id="daily"></div></div></div>
-          <div class="card"><header><h2>Açık olaylar</h2><button class="btn hint" data-go="olay">Tümü →</button></header><div id="open-list"></div></div>
+          <div class="card"><header><h2>Açık olaylar</h2><button class="btn ghost" data-go="olay">Tümü →</button></header><div id="open-list"></div></div>
         </div>
         <div class="grid g2 mt">
-          <div class="card"><header><h2>Erken uyarılar</h2><button class="btn hint" data-go="uyari">Tümü →</button></header><div class="body" id="warn-short"></div></div>
+          <div class="card"><header><h2>Erken uyarılar</h2><button class="btn ghost" data-go="uyari">Tümü →</button></header><div class="body" id="warn-short"></div></div>
           <div class="card"><header><h2>En sık hata imzaları</h2></header><div class="scroll" id="sig-table"></div></div>
         </div>
       </section>
 
       <section data-page="olay" hidden>
         <div class="grid g-split">
-          <div class="card" style="align-self:start;position:sticky;top:84px"><header><h2>Olaylar</h2><span class="hint">açık olanlar üstte</span></header><div id="inc-list" style="max-height:calc(100vh - 170px);overflow-y:auto"></div></div>
+          <div class="card" style="align-self:start;position:sticky;top:78px"><header><h2>Olaylar</h2><span class="hint">açık olanlar üstte</span></header><div id="inc-list" style="max-height:calc(100vh - 160px);overflow-y:auto"></div></div>
           <div id="analysis"><div class="card"><div class="body empty">Soldan bir olay seçin.</div></div></div>
         </div>
       </section>
@@ -291,7 +349,7 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
       <section data-page="rapor" hidden>
         <div class="grid g2">
           <div class="card"><header><h2>Elle başarılı sayılan işler (Set OK)</h2><span class="hint">yeşil görünür, veri gelmemiş olabilir</span></header><div class="body" id="rep-setok"></div></div>
-          <div class="card"><header><h2>Son değişiklikler</h2><select id="rep-days" aria-label="Gün" style="margin-left:auto"><option value="7">7 gün</option><option value="30">30 gün</option><option value="90">90 gün</option></select></header><div class="body" id="rep-changes"></div></div>
+          <div class="card"><header><h2>Son değişiklikler</h2><select id="rep-days" aria-label="Gün"><option value="7">7 gün</option><option value="30">30 gün</option><option value="90">90 gün</option></select></header><div class="body" id="rep-changes"></div></div>
         </div>
         <div class="grid g2 mt">
           <div class="card"><header><h2>En uzun süren işler</h2><span class="hint">son 30 gün, medyan</span></header><div class="scroll" id="rep-slow"></div></div>
@@ -300,25 +358,45 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
         <div class="card mt"><header><h2>Aylık hata sayıları</h2></header><div class="scroll" id="rep-monthly"></div></div>
       </section>
 
+      <section data-page="usta" hidden>
+        <div class="grid g-desk">
+          <div class="card" style="align-self:start"><header><h2>Olayı ya da soruyu yazın</h2><select id="uex" aria-label="Örnek olay" style="max-width:55%"></select></header>
+            <div class="body">
+              <textarea id="utext" class="short" spellcheck="false" aria-label="Olay metni" placeholder="Örnek: Agent Unavailable görünüyor; agent günlüğünde SSLHandshakeException: certificate expired var."></textarea>
+              <div class="row mt"><button class="btn primary" id="uask">Usta'ya sor</button><span class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> · hata satırını olduğu gibi yapıştırın</span></div>
+              <div class="notice mt"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--text-3)" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+                <div>Usta önce yalnız bakar: kontrol adımlarının hepsi salt okurdur. Düzeltme, kontrol nedeni doğruladıktan sonra ve yetki düzeyine göre yapılır.</div></div>
+            </div></div>
+          <div id="uresult"><div class="card"><div class="body empty"><b>Henüz soru yok</b>Bir olay yazın ya da örnek seçin. Usta kök neden adaylarını, ilk bakılacak yerleri, yordamı ve yapılmaması gerekenleri çıkarır.</div></div></div>
+        </div>
+      </section>
+
+      <section data-page="yetenek" hidden>
+        <div class="tiles" id="cat-tiles"></div>
+        <div class="card mt"><header><div class="seg" id="cat-seg" role="group" aria-label="Yetenek türü">
+              <button data-cat="classes" aria-pressed="true">Olay sınıfları</button><button data-cat="procedures" aria-pressed="false">Yordamlar</button><button data-cat="general" aria-pressed="false">Genel yetenekler</button></div>
+            <input type="search" id="cat-q" placeholder="Yeteneklerde ara" aria-label="Yeteneklerde ara" style="margin-left:auto"></header>
+          <div class="scroll" id="cat-list"></div></div>
+      </section>
+
       <section data-page="saglik" hidden>
         <div class="card"><header><h2>Tanım sağlığı taraması</h2><span class="hint">ortamdaki her iş, yeni bir talep gibi denetlenir</span></header><div class="body" id="health"></div></div>
       </section>
 
       <section data-page="talep" hidden>
         <div class="grid g-desk">
-          <div class="card"><header><h2>Talep şablonu</h2>
-              <select id="ex" aria-label="Örnek talep" style="margin-left:auto;max-width:60%"></select></header>
+          <div class="card"><header><h2>Talep şablonu</h2><select id="ex" aria-label="Örnek talep" style="max-width:60%"></select></header>
             <div class="body">
               <textarea id="text" spellcheck="false" aria-label="Talep metni"></textarea>
               <div class="row mt"><button class="btn primary" id="send">Talebi işle</button>
                 <span class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> · her satır <span class="mono">alan: değer</span> · parola yazılmaz</span></div>
             </div></div>
-          <div class="card" id="result"><header><h2>Sonuç</h2></header><div class="body empty">Bir talep yazın ya da örnek seçin, sonra “Talebi işle”.</div></div>
+          <div class="card" id="result"><header><h2>Sonuç</h2></header><div class="body empty"><b>Henüz talep yok</b>Bir talep yazın ya da örnek seçin, sonra “Talebi işle”.</div></div>
         </div>
       </section>
 
       <section data-page="gecmis" hidden>
-        <div class="card"><header><h2>İşlenen talepler</h2><button class="btn" id="reset" style="margin-left:auto">Ortamı başa döndür</button></header>
+        <div class="card"><header><h2>İşlenen talepler</h2><button class="btn" id="reset">Ortamı başa döndür</button></header>
           <div class="body" id="history"></div></div>
       </section>
 
@@ -338,8 +416,15 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
       </section>
 
       <section data-page="bench" hidden>
-        <div class="card"><header><h2>Scheduler Admin Bench</h2>
-            <select id="bfile" aria-label="Sonuç dosyası" style="margin-left:auto"></select></header>
+        <div class="card"><header><h2>Zamanlayıcı Ops Bench</h2><span class="hint">forumlardaki gerçek adminlik sorunları</span></header>
+          <div class="body">
+            <div class="legend"><span><i style="background:var(--good)"></i>Doğru</span><span><i style="background:var(--bar)"></i>Yarım</span><span><i style="background:var(--critical)"></i>Zararlı</span><span><i style="background:var(--surface-3);border:1px solid var(--border)"></i>Yanlış</span></div>
+            <div class="scroll mt" id="ops"></div>
+            <div id="ops-paired"></div>
+            <p class="hint">Ayrıntı ve sınırlar: <span class="mono">docs/07-zamanlayici-ops-bench.md</span></p>
+          </div></div>
+        <div class="card mt"><header><h2>Scheduler Admin Bench (talep karşılama)</h2>
+            <select id="bfile" aria-label="Sonuç dosyası"></select></header>
           <div class="body">
             <div class="legend"><span><i style="background:var(--good)"></i>Doğru</span><span><i style="background:var(--critical)"></i>Zararlı (sahte yeşil + yıkıcı)</span><span><i style="background:var(--surface-3);border:1px solid var(--border)"></i>Güvenli başarısızlık</span></div>
             <div class="scroll mt"><table id="bench"></table></div>
@@ -363,18 +448,21 @@ const KIND = {job:["İş","--k-job"], host:["Sunucu","--k-host"], user:["Kullan�
   table:["Tablo","--k-table"], signature:["Hata imzası","--k-sig"], change:["Değişiklik","--k-change"], incident:["Olay","--k-incident"],
   resolution:["Çözüm","--k-res"], run:["Çalışma","--k-run"], dis:["Dış kaynak","--k-run"], resource:["Kaynak","--k-table"]};
 const ICON = {
-  ok: '<svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="var(--good)"/><path d="m4.8 8.2 2.2 2.2 4.2-4.6" stroke="#fff" stroke-width="1.8" fill="none"/></svg>',
-  warn: '<svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1 15.5 14.5H.5z" fill="var(--warning)"/><path d="M8 6v4M8 12v.6" stroke="#1a1300" stroke-width="1.7"/></svg>',
-  crit: '<svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="var(--critical)"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#fff" stroke-width="1.8"/></svg>',
-  info: '<svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="var(--accent)"/><path d="M8 7v4.5M8 4.6v.6" stroke="#fff" stroke-width="1.8"/></svg>'};
+  ok: '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor" opacity=".16"/><path d="m4.6 8.3 2.3 2.3 4.5-4.9" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn: '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 15 14H1z" fill="currentColor" opacity=".16" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6.2v3.6M8 11.7v.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  crit: '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor" opacity=".16"/><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  info: '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor" opacity=".16"/><path d="M8 7.2v4.2M8 4.6v.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>'};
+const tone = {ok: "var(--good)", warn: "var(--warning)", crit: "var(--critical)", info: "var(--accent)"};
+const icon = k => `<span style="color:${tone[k]};display:inline-flex">${ICON[k]}</span>`;
 const OUT = {closed:["Kapandı","s-good","ok"], returned:["İade edildi","s-warn","warn"], proposed:["Öneri olarak kaldı","s-info","info"],
   none:["İşlenemedi","s-crit","crit"], applied_not_closed:["Yüklendi, kapanmadı","s-crit","crit"]};
-const badge = (cls, icon, text) => `<span class="status ${cls}">${ICON[icon]}${esc(text)}</span>`;
+const badge = (cls, ic, text) => `<span class="status ${cls}">${ICON[ic]}${esc(text)}</span>`;
 const outBadge = o => { const [t, c, i] = OUT[o] || [o, "s-info", "info"]; return badge(c, i, t); };
 const tag = x => `<span class="tag">${esc(x)}</span>`;
 const PH = {n: "sayı", yol: "yol", q: "değer", id: "kimlik"};
 const sigHtml = sig => esc(sig).replace(/&lt;(n|yol|q|id)&gt;/g, (m, k) => `<span class="ph">${PH[k]}</span>`);
-let site = null, graph = null, examples = [], current = null;
+const empty = (title, text) => `<div class="empty"><b>${esc(title)}</b>${esc(text || "")}</div>`;
+let site = null, graph = null, examples = [], current = null, catalog = null, catKind = "classes";
 
 async function api(path, body) {
   const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
@@ -382,18 +470,32 @@ async function api(path, body) {
   if (!r.ok) throw new Error(j.error || r.statusText);
   return j;
 }
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; setTimeout(() => t.style.display = "none", 2800); }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; setTimeout(() => t.style.display = "none", 2600); }
 function tip(e, html) { const t = $("#tip"); t.innerHTML = html; t.style.display = "block";
   t.style.left = Math.min(e.clientX + 14, innerWidth - 350) + "px"; t.style.top = (e.clientY + 14) + "px"; }
 const untip = () => $("#tip").style.display = "none";
+
+// ---- theme: follows the system until the user picks one
+const THEMES = ["auto", "light", "dark"];
+const THEME_ICON = {auto: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11" /><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none"/></svg>',
+  light: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>',
+  dark: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13.5 9.5A5.8 5.8 0 0 1 6.5 2.5a5.8 5.8 0 1 0 7 7z" stroke-linejoin="round"/></svg>'};
+function setTheme(t) { if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  $("#theme").innerHTML = THEME_ICON[t]; $("#theme").title = {auto: "Tema: sistem", light: "Tema: açık", dark: "Tema: koyu"}[t];
+  try { localStorage.setItem("vardiya-theme", t); } catch (e) {} }
+let theme = "auto"; try { theme = localStorage.getItem("vardiya-theme") || "auto"; } catch (e) {}
+setTheme(THEMES.includes(theme) ? theme : "auto");
+$("#theme").onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; setTheme(theme); if (graph) drawDaily(); };
 
 // ---- navigation
 const TITLES = {genel:["Genel bakış","Ortamın durumu ve önümüzdeki riskler"], olay:["Olaylar ve kök neden","Yerel hata çizgesinden kanıt, aday nedenler ve geçmişte işe yarayan çözüm"],
   uyari:["Erken uyarılar","Olay olmadan önce: yavaşlayan işler, tekrarlayan hatalar, kalıcı çözülmemiş nedenler"], talep:["Talep masası","Zorunlu şablonla gelen tanım talepleri: denetle, uygula, kaydet ya da gerekçeyle iade et"],
   gecmis:["Talep geçmişi","Bu oturumda işlenen talepler"], defter:["Denetim defteri","Değiştirilemez, özet zincirli kayıt"], ortam:["Ortam ve işler","Tanımlar, bağımlılıklar, takvimler ve bağlantı profilleri"],
-  bench:["Bench sonuçları","Scheduler Admin Bench: harness ile ve harness olmadan"],
+  bench:["Bench sonuçları","Usta'nın ölçümü: gerçek adminlik sorunları ve talep karşılama"],
   rapor:["Raporlar","Haftalık sorulanlar: değişiklikler, Set OK, en uzun süren işler, aylık hatalar"],
-  saglik:["Tanım sağlığı","Kontroller yokken girmiş tanımlar: olay olmadan temizlenmek üzere"]};
+  saglik:["Tanım sağlığı","Kontroller yokken girmiş tanımlar: olay olmadan temizlenmek üzere"],
+  usta:["Usta'ya sor","Bir olayı anlatın: kök neden adayları, ilk bakılacak yerler, yordam ve yapılmaması gerekenler"],
+  yetenek:["Yetenekler","Usta'nın taşıdığı bilgi: olay sınıfları, adminlik yordamları ve genel sunucu yetenekleri"]};
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => go(b.dataset.page));
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
 $("#menu").onclick = () => $("#side").classList.toggle("open");
@@ -403,18 +505,21 @@ function go(page) {
   $("#title").textContent = TITLES[page][0]; $("#subtitle").textContent = TITLES[page][1];
   $("#side").classList.remove("open");
   try { localStorage.setItem("vardiya-page", page); } catch (e) {}
-  ({ortam: renderSite, gecmis: loadHistory, defter: loadLedger, bench: () => loadBench(), rapor: () => loadReports(), saglik: loadHealth})[page]?.();
+  ({ortam: renderSite, gecmis: loadHistory, defter: loadLedger, bench: () => { loadOps(); loadBench(); }, rapor: () => loadReports(), saglik: loadHealth,
+    usta: loadUsta, yetenek: loadCatalog})[page]?.();
+  if (page === "olay" && current) pick(current);
 }
 $("#refresh").onclick = () => boot(true);
 
 // ---- data
 async function loadSite() {
   site = await api("/api/site");
-  $("#side-foot").innerHTML = `<div><span>Ortam</span><b>${esc(site.site_file)}</b></div><div><span>Gün</span><b>${day(site.today)}</b></div>
-    <div><span>Model</span><b>${esc(site.model || "bağlı değil")}</b></div><div><span>Yetki</span><b>L${site.licence}${site.licence < 3 ? " · yalnızca öneri" : ""}</b></div>
-    <div><span>Sürüm</span><b>${esc(site.version)}</b></div>
-    <div class="local"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Yerel çalışır: tanımlar, geçmiş ve çizge bu makineden çıkmaz.</div>`;
-  $("#clock").textContent = `Ortam günü ${day(site.today)}`;
+  $("#side-foot").innerHTML = `<div class="env"><div><span>Ortam</span><b>${esc(site.site_file)}</b></div><div><span>Yetki</span><b>L${site.licence}${site.licence < 3 ? " · yalnızca öneri" : ""}</b></div>
+    <div><span>Sürüm</span><b>${esc(site.version)}</b></div></div>
+    <div class="local"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Yerel çalışır: tanımlar, geçmiş ve çizge bu makineden çıkmaz.</div>`;
+  $("#chip-day").innerHTML = `Ortam günü <b>${day(site.today)}</b>`;
+  $("#chip-model").className = "chip opt" + (site.model ? " on" : "");
+  $("#chip-model").innerHTML = `<i></i>Model <b>${esc(site.model || "bağlı değil")}</b>`;
 }
 async function loadGraph() {
   graph = await api("/api/graph");
@@ -425,25 +530,41 @@ async function loadGraph() {
 }
 
 // ---- overview
+const KICON = {crit: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 1.8 14.8 14H1.2z" stroke-linejoin="round"/><path d="M8 6.2v3.4M8 11.6v.4"/></svg>',
+  rate: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m3.5 8.5 3 3 6-7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M1.5 12 5.5 7l3 3 6-7"/></svg>',
+  desk: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 1.5h7l3 3v10H3z"/><path d="M5.5 8h5M5.5 11h3"/></svg>'};
+function miniBars(values, color) { const W = 86, H = 26, n = values.length, mx = Math.max(1, ...values), bw = Math.max(1.5, W / n - 1.2);
+  return `<svg class="mini" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${values.map((v, i) => { const h = v ? Math.max(2, (H - 2) * v / mx) : 1;
+    return `<rect x="${(i * W / n).toFixed(1)}" y="${(H - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${v ? color : "var(--border-2)"}"/>`; }).join("")}</svg>`; }
 function renderOverview() {
   const open = graph.incidents.filter(i => i.open), runs = graph.daily.reduce((a, d) => [a[0] + d.ok, a[1] + d.failed], [0, 0]);
-  const rate = runs[0] + runs[1] ? 100 * runs[0] / (runs[0] + runs[1]) : 0;
-  const closedToday = (window._hist || []).filter(h => h.outcome === "closed").length;
+  const rate = runs[0] + runs[1] ? 100 * runs[0] / (runs[0] + runs[1]) : 0, hist = window._hist || [];
+  const closed = hist.filter(h => h.outcome === "closed").length, affected = open.map(i => i.jobs.length).reduce((a, b) => a + b, 0);
+  const risks = graph.warnings.filter(w => w.level === "risk").length;
+  const level = open.length ? "crit" : graph.warnings.length ? "warn" : "ok";
+  $("#statusline").className = "statusline " + level;
+  $("#statusline").innerHTML = `<span class="pulse"></span><div><div class="big">${open.length ? `${open.length} açık olay var, ${affected} iş etkileniyor` : graph.warnings.length ? `Açık olay yok, ${graph.warnings.length} erken uyarı izleniyor` : "Her şey yolunda"}</div>
+    <div class="hint">${open.length ? "En güçlü kök neden adayları ve geçmişte tutan çözümler hazır." : "Olaylar, uyarılar ve tanım sağlığı kodla hesaplanır; model yalnızca yorumlar."}</div></div>
+    ${open.length ? `<button class="btn primary" style="margin-left:auto" data-go2="olay">Olayları aç</button>` : `<span class="hint">Ortam günü ${day(site.today)}</span>`}`;
+  $("#statusline").querySelector("[data-go2]")?.addEventListener("click", () => go("olay"));
+  const last = graph.daily.slice(-30);
   $("#kpis").innerHTML = [
-    ["Açık olay", open.length, open.length ? `${open.map(i => i.jobs.length).reduce((a, b) => a + b, 0)} iş etkileniyor` : "her şey yolunda", open.length ? "crit" : "ok"],
-    ["Son 30 gün başarı", rate.toFixed(1) + "%", `${runs[0] + runs[1]} çalışmadan ${runs[1]} hatalı`, rate > 98 ? "ok" : "warn"],
-    ["Erken uyarı", graph.warnings.length, graph.warnings.filter(w => w.level === "risk").length + " risk, " + graph.warnings.filter(w => w.level !== "risk").length + " uyarı", graph.warnings.length ? "warn" : "ok"],
-    ["İşlenen talep (oturum)", (window._hist || []).length, `${closedToday} kapandı, ${(window._hist || []).length - closedToday} iade ya da öneri`, "info"],
-  ].map(([l, v, f, i]) => `<div class="card kpi ${i === "crit" || i === "warn" ? i : ""}"><div class="label">${i === "crit" || i === "warn" ? ICON[i] : ""}${esc(l)}</div><div class="value">${esc(v)}</div><div class="foot">${esc(f)}</div></div>`).join("");
+    ["Açık olay", open.length, open.length ? `${affected} iş etkileniyor` : "açık olay yok", open.length ? "crit" : "ok", KICON.crit, ""],
+    ["Son 30 gün başarı", rate.toFixed(1).replace(".", ",") + "%", `${runs[0] + runs[1]} çalışmadan ${runs[1]} hatalı`, rate >= 98 ? "ok" : "warn", KICON.rate, miniBars(last.map(d => d.failed), "var(--critical)")],
+    ["Erken uyarı", graph.warnings.length, `${risks} risk, ${graph.warnings.length - risks} uyarı`, graph.warnings.length ? "warn" : "ok", KICON.warn, ""],
+    ["İşlenen talep", hist.length, `${closed} kapandı, ${hist.length - closed} iade ya da öneri`, "info", KICON.desk, ""],
+  ].map(([l, v, f, k, ic, extra]) => `<div class="card kpi ${k}"><div class="label"><span class="ico">${ic}</span>${esc(l)}</div><div class="value">${esc(v)}</div>${extra || "<span></span>"}<div class="foot">${esc(f)}</div></div>`).join("");
   drawDaily();
-  $("#open-list").innerHTML = open.length ? open.map(i => incItem(i)).join("") : `<div class="body empty">Açık olay yok.</div>`;
-  $("#open-list").querySelectorAll(".list-item").forEach(b => b.onclick = () => { go("olay"); pick(b.dataset.inc); });
-  $("#warn-short").innerHTML = graph.warnings.slice(0, 4).map(warnItem).join("") || `<div class="empty">Uyarı yok.</div>`;
+  $("#open-list").innerHTML = open.length ? open.map(i => incItem(i)).join("") : empty("Açık olay yok", "Yeni bir hata çıkınca burada görünür.");
+  $("#open-list").querySelectorAll(".list-item").forEach(b => b.onclick = () => { current = b.dataset.inc; go("olay"); });
+  $("#warn-short").innerHTML = graph.warnings.slice(0, 4).map(warnItem).join("") || empty("Uyarı yok", "Önümüzdeki günler için risk görünmüyor.");
+  const smax = Math.max(1, ...graph.signatures.map(s => s.count));
   $("#sig-table").innerHTML = `<table><thead><tr><th>Hata imzası</th><th>Kez</th><th>İşler</th><th>Son</th></tr></thead><tbody>` +
-    graph.signatures.slice(0, 7).map(s => `<tr><td class="mono">${sigHtml(s.signature)}</td><td>${s.count}</td><td>${s.jobs.map(tag).join("")}</td><td class="nowrap hint">${day(s.last)}</td></tr>`).join("") + "</tbody></table>";
+    graph.signatures.slice(0, 7).map(s => `<tr><td class="mono">${sigHtml(s.signature)}</td><td class="nowrap"><span class="meter"><span style="width:${100 * s.count / smax}%"></span></span>${s.count}</td><td>${s.jobs.map(tag).join("")}</td><td class="nowrap hint">${day(s.last)}</td></tr>`).join("") + "</tbody></table>";
 }
 function drawDaily() {
-  const d = graph.daily, W = 660, H = 190, L = 30, B = 24, T = 10, n = d.length || 1, slot = (W - L) / n, bw = Math.max(3, Math.min(14, slot - 4));
+  const d = graph.daily, W = 760, H = 210, L = 30, B = 24, T = 10, n = d.length || 1, slot = (W - L) / n, bw = Math.max(3, Math.min(16, slot - 5));
   const max = Math.max(1, ...d.map(x => x.ok + x.failed)), nice = Math.ceil(max / 5) * 5;
   const y = v => H - B - (H - B - T) * v / nice;
   const top = (x, yy, w, h, r) => h <= 0 ? "" : `M${x},${yy + h}V${yy + Math.min(r, h)}Q${x},${yy} ${x + Math.min(r, w / 2)},${yy}H${x + w - Math.min(r, w / 2)}Q${x + w},${yy} ${x + w},${yy + Math.min(r, h)}V${yy + h}Z`;
@@ -451,17 +572,17 @@ function drawDaily() {
   [0, .5, 1].forEach(t => { const v = Math.round(nice * t), yy = y(v);
     s += `<line class="${t ? "grid-line" : "base"}" x1="${L}" x2="${W}" y1="${yy}" y2="${yy}"/><text x="${L - 8}" y="${yy + 4}" text-anchor="end">${v}</text>`; });
   d.forEach((x, i) => { const X = L + i * slot + (slot - bw) / 2, yo = y(x.ok), base = H - B;
-    s += `<g data-i="${i}"><rect x="${L + i * slot}" y="${T}" width="${slot}" height="${H - B - T}" fill="transparent"/>`;
-    // successes: one quiet hue; failures stacked on top in red with a 2px surface gap
+    s += `<g data-i="${i}"><rect class="hit" x="${L + i * slot}" y="${T}" width="${slot}" height="${H - B - T}" fill="transparent"/>`;
+    // successes in one calm hue; failures stacked on top in the status colour, with a 2px surface gap
     if (x.failed) { const yf = y(x.ok + x.failed);
       s += `<rect class="ok" x="${X}" y="${yo}" width="${bw}" height="${Math.max(0, base - yo)}" fill="var(--bar)"/>`;
-      s += `<path d="${top(X, yf, bw, Math.max(2, yo - yf - 2), 3)}" fill="var(--critical)"/>`; }
-    else s += `<path class="ok" d="${top(X, yo, bw, base - yo, 3)}" fill="var(--bar)"/>`;
+      s += `<path d="${top(X, yf, bw, Math.max(2, yo - yf - 2), 4)}" fill="var(--critical)"/>`; }
+    else s += `<path class="ok" d="${top(X, yo, bw, base - yo, 4)}" fill="var(--bar)"/>`;
     s += `</g>`;
     if (i % 5 === 0 || i === n - 1) s += `<text x="${i === n - 1 ? X + bw : X + bw / 2}" y="${H - 7}" text-anchor="${i === n - 1 ? "end" : "middle"}">${x.day.slice(8)}.${x.day.slice(5, 7)}</text>`; });
   $("#daily").innerHTML = s + "</svg>";
   $("#daily").querySelectorAll("g[data-i]").forEach(g => { const x = d[+g.dataset.i];
-    g.onmousemove = e => tip(e, `<b>${day(x.day)}</b><br>${x.ok} başarılı${x.failed ? ` · <span style="color:var(--crit-bg)">${x.failed} hatalı</span>` : ""}`); g.onmouseleave = untip; });
+    g.onmousemove = e => tip(e, `<b>${day(x.day)}</b><br>${x.ok} başarılı${x.failed ? ` · <span style="color:#ff9d94">${x.failed} hatalı</span>` : ""}`); g.onmouseleave = untip; });
   const bad = d.filter(x => x.failed).length;
   $("#daily-note").textContent = `${d.length} gün · ${bad} günde hata`;
 }
@@ -469,9 +590,9 @@ function drawDaily() {
 // ---- incidents and analysis
 const incItem = i => `<button class="list-item" data-inc="${esc(i.id)}"><div class="row">${i.open ? badge("s-crit", "crit", "Açık") : (i.verified ? badge("s-good", "ok", "Çözüldü") : badge("s-warn", "warn", "Kapandı, doğrulanmadı"))}
   <span class="t mono">${esc(i.id.replace("incident:", ""))}</span><span class="hint" style="margin-left:auto">${day(i.day)}</span></div>
-  <div class="m">${esc(i.cause)}</div><div class="m">${i.jobs.map(tag).join("")}</div></button>`;
+  <div class="m clamp" title="${esc(i.cause)}">${esc(i.cause)}</div><div class="m">${i.jobs.map(tag).join("")}</div></button>`;
 function renderIncidents() {
-  $("#inc-list").innerHTML = graph.incidents.map(incItem).join("");
+  $("#inc-list").innerHTML = graph.incidents.map(incItem).join("") || empty("Olay yok", "");
   $("#inc-list").querySelectorAll(".list-item").forEach(b => b.onclick = () => pick(b.dataset.inc));
   if (current) $("#inc-list").querySelector(`[data-inc="${CSS.escape(current)}"]`)?.setAttribute("aria-selected", "true");
 }
@@ -480,7 +601,7 @@ async function pick(incId, withModel) {
   $("#inc-list").querySelectorAll(".list-item").forEach(b => b.setAttribute("aria-selected", b.dataset.inc === incId));
   const inc = graph.incidents.find(i => i.id === incId);
   const run = graph.failures.find(f => f.incident === incId);
-  if (!run) { $("#analysis").innerHTML = `<div class="card"><div class="body empty">Bu olayın çalışma kaydı yok.</div></div>`; return; }
+  if (!run) { $("#analysis").innerHTML = `<div class="card"><div class="body">${empty("Bu olayın çalışma kaydı yok", "")}</div></div>`; return; }
   $("#analysis").innerHTML = `<div class="card"><div class="body empty">Çözümleniyor…</div></div>`;
   try {
     const ev = withModel ? await api("/api/graph/explain", {run: run.id}) : await api("/api/graph/analyse?run=" + encodeURIComponent(run.id));
@@ -492,27 +613,27 @@ async function pick(incId, withModel) {
 function renderAnalysis(inc, ev) {
   const top = ev.candidates[0], max = Math.max(...ev.candidates.map(c => c.score), 1);
   const kindName = id => (KIND[id.split(":")[0]] || [id.split(":")[0]])[0];
-  let h = `<div class="card"><header><h2>${esc(ev.job)} · ${day(ev.day)}</h2>${inc.open ? badge("s-crit", "crit", "Açık olay") : badge(inc.verified ? "s-good" : "s-warn", inc.verified ? "ok" : "warn", inc.verified ? "Çözüldü, doğrulandı" : "Kapandı, doğrulanmadı")}
+  let h = `<div class="card"><header><h2 class="mono">${esc(ev.job)}</h2><span class="hint" style="margin-left:0">${day(ev.day)}</span>${inc.open ? badge("s-crit", "crit", "Açık olay") : badge(inc.verified ? "s-good" : "s-warn", inc.verified ? "ok" : "warn", inc.verified ? "Çözüldü, doğrulandı" : "Kapandı, doğrulanmadı")}
     <span class="hint">olağan süre ${ev.duration.median ?? "?"} dk · bu çalışma ${ev.duration.last} dk</span></header><div class="body">
-    <div class="err">${esc(ev.error)}</div><div class="hint mt">Hata imzası: <span class="mono">${sigHtml(ev.signature)}</span></div>`;
-  if (ev.existing_incident) h += `<div class="notice info">${ICON.info}<div><b>Aynı olay zaten açık.</b> Bu iş için aynı hatayla açılmış ${esc(ev.existing_incident.replace("incident:", ""))} var; yeni olay açılmaz, bu çalışma ona eklenir.</div></div>`;
-  if (ev.predecessor_set_ok?.length) h += `<div class="notice crit">${ICON.crit}<div><b>Öncül elle başarılı sayılmış.</b> ${ev.predecessor_set_ok.map(x => esc(x.replace("run:", ""))).join(", ")} hata verdi ve Set OK yapıldı; zincir yeşil göründü ama veri gelmedi.</div></div>`;
-  if (ev.lesson) h += `<div class="notice crit">${ICON.crit}<div><b>Geçmişten ders.</b> ${esc(ev.lesson)}</div></div>`;
-  if (ev.suggestion) h += `<div class="notice ${ev.suggestion.verified ? "info" : "warn"}">${ev.suggestion.verified ? ICON.ok : ICON.info}<div><b>Önerilen müdahale.</b> ${esc(ev.suggestion.action)}
+    <div class="err">${esc(ev.error)}</div><div class="hint" style="margin-top:8px">Hata imzası: <span class="mono">${sigHtml(ev.signature)}</span></div>`;
+  if (ev.existing_incident) h += `<div class="notice info">${icon("info")}<div><b>Aynı olay zaten açık.</b> Bu iş için aynı hatayla açılmış ${esc(ev.existing_incident.replace("incident:", ""))} var; yeni olay açılmaz, bu çalışma ona eklenir.</div></div>`;
+  if (ev.predecessor_set_ok?.length) h += `<div class="notice crit">${icon("crit")}<div><b>Öncül elle başarılı sayılmış.</b> ${ev.predecessor_set_ok.map(x => esc(x.replace("run:", ""))).join(", ")} hata verdi ve Set OK yapıldı; zincir yeşil göründü ama veri gelmedi.</div></div>`;
+  if (ev.lesson) h += `<div class="notice crit">${icon("crit")}<div><b>Geçmişten ders.</b> ${esc(ev.lesson)}</div></div>`;
+  if (ev.suggestion) h += `<div class="notice ${ev.suggestion.verified ? "info" : "warn"}">${icon(ev.suggestion.verified ? "ok" : "info")}<div><b>Önerilen müdahale.</b> ${esc(ev.suggestion.action)}
       <div class="hint">${ev.suggestion.verified ? `Aynı kök nedende ${esc(ev.suggestion.from.replace("incident:", ""))} olayında uygulandı ve işe yaradığı doğrulandı.` : "Bilinen hata türünün çözümü; bu ortamda daha önce doğrulanmadı."}</div></div></div>`;
   if (inc.resolution && !inc.open) h += `<div class="hint">Bu olayda yapılan: <b>${esc(inc.resolution)}</b></div>`;
-  h += `<h3 style="font-size:13px;margin:18px 0 8px">Kök neden adayları <span class="hint">kod sıralar; model yalnızca bu listeden seçebilir</span></h3>`;
-  h += ev.candidates.map((c, i) => `<div class="cand${i === 0 ? " top" : ""}"><div class="row"><span class="status s-info" style="background:none;border-color:var(--border)"><i style="width:9px;height:9px;border-radius:2px;background:var(${(KIND[c.kind] || KIND.job)[1]})"></i>${esc(kindName(c.id))}</span>
+  h += `<div class="sect">Kök neden adayları <span style="text-transform:none;letter-spacing:0;font-weight:400">· kod sıralar; model yalnızca bu listeden seçebilir</span></div>`;
+  h += ev.candidates.map((c, i) => `<div class="cand${i === 0 ? " top" : ""}"><div class="row"><span class="status"><i style="width:8px;height:8px;border-radius:2px;background:var(${(KIND[c.kind] || KIND.job)[1]})"></i>${esc(kindName(c.id))}</span>
       <b class="mono">${esc(c.id.split(":").slice(1).join(":"))}</b>${i === 0 ? '<span class="hint">en güçlü aday</span>' : ""}<span class="hint" style="margin-left:auto">puan ${c.score}</span></div>
-      <div style="margin-top:4px">${esc(c.why)}</div><div class="score"><span style="width:${100 * c.score / max}%"></span></div></div>`).join("") || `<div class="empty">Aday yok.</div>`;
-  if (ev.model) h += ev.model.rejected ? `<div class="notice warn">${ICON.warn}<div><b>Model cevabı reddedildi.</b> Model kodun sunduğu adaylardan birini seçmedi; kodun sıralaması geçerli.</div></div>`
-    : `<div class="notice info">${ICON.info}<div><b>Modelin yorumu (${esc(site.model)}).</b> Seçtiği aday: <span class="mono">${esc(ev.model.candidate)}</span>${ev.model.candidate === top?.id ? " (kodun ilk adayıyla aynı)" : " (kodun ilk adayından farklı)"}<br>${esc(ev.model.explanation)}<br><span class="hint">Sonraki adım: ${esc(ev.model.next_step)}</span></div></div>`;
+      <div style="margin-top:4px">${esc(c.why)}</div><div class="score"><span style="width:${100 * c.score / max}%"></span></div></div>`).join("") || empty("Aday yok", "");
+  if (ev.model) h += ev.model.rejected ? `<div class="notice warn">${icon("warn")}<div><b>Model cevabı reddedildi.</b> Model kodun sunduğu adaylardan birini seçmedi; kodun sıralaması geçerli.</div></div>`
+    : `<div class="notice info">${icon("info")}<div><b>Modelin yorumu (${esc(site.model)}).</b> Seçtiği aday: <span class="mono">${esc(ev.model.candidate)}</span>${ev.model.candidate === top?.id ? " (kodun ilk adayıyla aynı)" : " (kodun ilk adayından farklı)"}<br>${esc(ev.model.explanation)}<br><span class="hint">Sonraki adım: ${esc(ev.model.next_step)}</span></div></div>`;
   h += `<div class="row mt"><button class="btn${site.model ? " primary" : ""}" id="ask-model" ${site.model ? "" : "disabled title='Sunucuyu --model ile başlatın'"}>Model ile yorumla</button>
     <span class="hint">${site.model ? "Model kanıtı okur, bir aday seçer ve gerekçe yazar." : "Model bağlı değil: sıralama ve öneri yalnızca koddan."}</span></div></div></div>`;
   h += `<div class="grid g2 mt"><div class="card"><header><h2>Geçmişte aynı hata</h2></header><div class="body">${ev.precedents.length ? `<ul class="plain">` + ev.precedents.map(p => `<li><div class="row"><b class="mono">${esc(p.id.replace("incident:", ""))}</b><span class="hint">${day(p.day)}</span>${p.verified ? badge("s-good", "ok", "çözüm tuttu") : badge("s-warn", "warn", "hata tekrarladı")}</div>
-      <div class="hint" style="margin-top:3px">Kök neden <span class="mono">${esc(p.root || "—")}</span> · etkilenen ${p.jobs.map(tag).join("")}</div><div style="margin-top:3px">Yapılan: ${esc(p.resolution || "—")}</div></li>`).join("") + "</ul>" : `<div class="empty">Bu hata ilk kez görülüyor.</div>`}</div></div>
-    <div class="card"><header><h2>Aynı gün</h2></header><div class="body">${ev.same_window.length ? `<ul class="plain">${ev.same_window.map(x => `<li><b class="mono">${esc(x.job)}</b><div class="hint mono">${esc(x.error)}</div></li>`).join("")}</ul>` : `<div class="empty">Aynı gün başka hata yok.</div>`}
-    ${ev.changes.length ? `<h3 style="font-size:13px">Hatadan önceki değişiklikler</h3><ul class="plain">${ev.changes.map(c => `<li>${day(c.day)} · <span class="mono">${esc(c.id.replace("change:", ""))}</span><div class="hint">${esc(c.what)}</div></li>`).join("")}</ul>` : ""}</div></div></div>`;
+      <div class="hint" style="margin-top:3px">Kök neden <span class="mono">${esc(p.root || "—")}</span> · etkilenen ${p.jobs.map(tag).join("")}</div><div style="margin-top:3px">Yapılan: ${esc(p.resolution || "—")}</div></li>`).join("") + "</ul>" : empty("Bu hata ilk kez görülüyor", "")}</div></div>
+    <div class="card"><header><h2>Aynı gün</h2></header><div class="body">${ev.same_window.length ? `<ul class="plain">${ev.same_window.map(x => `<li><b class="mono">${esc(x.job)}</b><div class="hint mono">${esc(x.error)}</div></li>`).join("")}</ul>` : empty("Aynı gün başka hata yok", "")}
+    ${ev.changes.length ? `<div class="sect">Hatadan önceki değişiklikler</div><ul class="plain">${ev.changes.map(c => `<li>${day(c.day)} · <span class="mono">${esc(c.id.replace("change:", ""))}</span><div class="hint">${esc(c.what)}</div></li>`).join("")}</ul>` : ""}</div></div></div>`;
   h += `<div class="card mt"><header><h2>Çizgede bu olay</h2><span class="hint">yerel hata çizgesinin ilgili parçası</span></header><div class="body">
     <div class="legend" id="pic-legend"></div><div class="graph-pic" id="pic"></div></div></div>`;
   return h;
@@ -526,7 +647,6 @@ function drawPicture(ev) {
   const RH = 34, W = 1100, xs = [104, 324, 544, 764, 990], H = Math.max(...cols.map(c => c.length)) * RH + 50, pos = {};
   cols.forEach((c, i) => c.forEach((n, k) => pos[n.id] = {x: xs[i], y: 40 + k * RH + (H - 50 - c.length * RH) / 2}));
   const HEAD = ["Çalışma", "İş", "Paylaşılan kaynak, değişiklik", "Hata imzası, olay", "Çözüm"];
-  const TR = {root: "kök neden", failed_with: "hata", resolved_by: "çözüm", covers: "kapsar"};
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Olayın çizge görünümü">`;
   HEAD.forEach((t, i) => s += `<text class="elabel" x="${xs[i]}" y="16" text-anchor="middle" style="font-weight:600;text-transform:uppercase;letter-spacing:.5px">${t}</text>`);
   ev.picture.edges.forEach(([a, k, b]) => { if (!pos[a] || !pos[b]) return; const A = pos[a], B = pos[b], mx = (A.x + B.x) / 2;
@@ -535,7 +655,7 @@ function drawPicture(ev) {
   nodes.forEach(n => { const p = pos[n.id], col = `var(${(KIND[n.kind] || KIND.run)[1]})`, me = n.id === ev.run, best = n.id === top;
     const raw = n.kind === "run" ? `${n.job.slice(0, 16)} ${day(n.day).slice(0, 5)}` : n.kind === "signature" ? n.label : n.kind === "resolution" ? n.label : n.id.split(":").slice(1).join(":");
     const label = raw.length > 30 ? raw.slice(0, 29) + "…" : raw;
-    s += `<g data-n="${esc(n.id)}"><rect x="${p.x - 98}" y="${p.y - 12}" width="196" height="24" rx="5" fill="var(--surface)" stroke="${best || me ? col : "var(--border)"}" stroke-width="${best || me ? 2 : 1}"/>
+    s += `<g data-n="${esc(n.id)}"><rect x="${p.x - 98}" y="${p.y - 12}" width="196" height="24" rx="6" fill="var(--surface)" stroke="${best || me ? col : "var(--border-2)"}" stroke-width="${best || me ? 2 : 1}"/>
       <rect x="${p.x - 98}" y="${p.y - 12}" width="5" height="24" rx="2" fill="${col}"/><text x="${p.x - 88}" y="${p.y + 4}">${esc(label)}</text></g>`; });
   $("#pic").innerHTML = s + "</svg>";
   const used = [...new Set(nodes.map(n => n.kind))];
@@ -548,25 +668,93 @@ function drawPicture(ev) {
 const LVL = {risk: ["Risk", "s-crit", "crit"], uyari: ["Uyarı", "s-warn", "warn"]};
 function spark(series) { if (!series) return ""; const W = 120, H = 28, mx = Math.max(...series), mn = Math.min(...series);
   const pts = series.map((v, i) => `${(i * W / (series.length - 1)).toFixed(1)},${(H - 3 - (H - 6) * (v - mn) / Math.max(.001, mx - mn)).toFixed(1)}`).join(" ");
-  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>`; }
-const warnItem = w => `<div class="notice ${w.level === "risk" ? "crit" : "warn"}">${ICON[LVL[w.level][2]]}<div style="flex:1"><div class="row"><b>${esc({yavaslama: "Yavaşlama", tekrar: "Tekrarlayan hata", kalici: "Kök neden giderilmemiş", disk: "Disk doluyor", setok: "Elle başarılı sayılan iş", periyodik: "Sırası yaklaşan olay"}[w.kind] || w.kind)}</b>${tag(w.job)}</div>
+  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--text-2)" stroke-width="2" stroke-linejoin="round"/></svg>`; }
+const warnItem = w => `<div class="notice ${w.level === "risk" ? "crit" : "warn"}">${icon(LVL[w.level][2])}<div style="flex:1;min-width:0"><div class="row"><b>${esc({yavaslama: "Yavaşlama", tekrar: "Tekrarlayan hata", kalici: "Kök neden giderilmemiş", disk: "Disk doluyor", setok: "Elle başarılı sayılan iş", periyodik: "Sırası yaklaşan olay"}[w.kind] || w.kind)}</b>${tag(w.job)}</div>
   <div>${esc(w.text)}</div>${w.days ? `<div class="hint">Görüldüğü günler: ${w.days.map(day).join(", ")}</div>` : ""}</div>${spark(w.series)}</div>`;
 function renderWarnings() {
-  $("#warn-list").innerHTML = (graph.warnings.map(warnItem).join("") || `<div class="empty">Önümüzdeki günler için uyarı yok.</div>`) +
+  $("#warn-list").innerHTML = (graph.warnings.map(warnItem).join("") || empty("Uyarı yok", "Önümüzdeki günler için risk görünmüyor.")) +
     `<p class="hint mt">Uyarılar kodla hesaplanır: süre eğilimi (Theil-Sen), aynı hatanın aynı gün tekrarı, kök nedeni giderilmeden kapatılmış olaylar. ${graph.generated ? "Bu ortamın geçmişi örnek olarak üretildi (gecmis.py); gerçek bir zamanlayıcı bağlanınca onun geçmişi kullanılır." : ""}</p>`;
 }
+
+// ---- Usta: ask and catalogue
+const OSN = {unix: "Unix / Linux", windows: "Windows"};
+const PRODUCT = {controlm: "Control-M", airflow: "Airflow", cron: "cron", slurm: "Slurm", autosys: "AutoSys", kubernetes: "Kubernetes", quartz: "Quartz"};
+const cmd = c => `<div class="cmd"><span>${esc(c)}</span><button title="Kopyala" data-copy="${esc(c)}">kopyala</button></div>`;
+let ustaReady = false;
+async function loadUsta() {
+  if (ustaReady) return; ustaReady = true;
+  const ex = await api("/api/usta/examples");
+  $("#uex").innerHTML = `<option value="" selected disabled>Örnek olay seç</option>` + ex.map((e, i) => `<option value="${i}">${esc(e.text.slice(0, 70))}…</option>`).join("");
+  $("#uex").onchange = e => { $("#utext").value = ex[e.target.value].text; };
+  try { $("#utext").value = localStorage.getItem("vardiya-usta") || ""; } catch (e) {}
+}
+$("#utext").oninput = () => { try { localStorage.setItem("vardiya-usta", $("#utext").value); } catch (e) {} };
+$("#utext").onkeydown = e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) ask(); };
+$("#uask").onclick = ask;
+async function ask() {
+  const text = $("#utext").value.trim(); if (!text) { toast("Önce olayı yazın"); return; }
+  const btn = $("#uask"); btn.disabled = true; btn.textContent = "Bakılıyor…";
+  try { $("#uresult").innerHTML = renderUsta(await api("/api/usta/ask", {text})); }
+  catch (e) { $("#uresult").innerHTML = `<div class="card"><div class="body">${badge("s-crit", "crit", "Sorulamadı")} ${esc(e.message)}</div></div>`; }
+  finally { btn.disabled = false; btn.textContent = "Usta'ya sor"; }
+}
+function renderUsta(r) {
+  if (!r.candidates.length && !r.procedures.length && !r.checks.length)
+    return `<div class="card"><div class="body">${empty("Eşleşen yetenek bulunamadı", "Hata satırını ya da ürün adını ekleyin; model bağlıysa Usta kanıttan akıl yürütür.")}</div></div>`;
+  let h = `<div class="card"><header><h2>Usta'nın bulduğu</h2><span class="hint" style="margin-left:0">${r.product ? esc(PRODUCT[r.product] || r.product) : "ürün belirsiz"} · ${r.os ? OSN[r.os] : "işletim sistemi belirsiz"}</span></header><div class="body">`;
+  if (r.candidates.length) {
+    h += `<div class="sect">Kök neden adayları</div>`;
+    h += r.candidates.map((c, i) => `<div class="cand${i === 0 ? " top" : ""}"><div class="row"><b>${esc(c.title)}</b>${c.strength === "strong" ? badge("s-good", "ok", "Güçlü eşleşme") : badge("s-warn", "warn", "Zayıf eşleşme: ipucu")}</div>
+      ${c.signs.length ? `<div class="hint" style="margin-top:4px">Raporda görülen belirtiler: ${c.signs.map(tag).join("")}</div>` : ""}
+      <div style="margin-top:6px"><span class="hint">Olağan neden</span><br>${esc(c.cause)}</div>
+      <details style="margin-top:8px"${i === 0 ? " open" : ""}><summary>Doğrulanmış düzeltme</summary><ul style="margin:6px 0 0;padding-left:18px">${c.fix.split(";").map(x => x.trim()).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>
+      ${c.harmful.length ? `<div style="margin-top:8px"><span class="hint">Bu olayda yapma</span> ${c.harmful.map(x => `<span class="tag no">${esc(x)}</span>`).join("")}</div>` : ""}</div>`).join("");
+  }
+  if (r.chain.length) h += `<div class="sect">Benzer vakaları çözen sıra</div><ol class="steps">${r.chain.map(s => `<li>${esc(s.title || s.ref)}</li>`).join("")}</ol>`;
+  if (r.checks.length) {
+    h += `<div class="sect">İlk bakılacak yerler <span style="text-transform:none;letter-spacing:0;font-weight:400">· salt okuma</span></div>`;
+    h += r.checks.map(g => `<details class="cand" ${r.checks[0] === g ? "open" : ""}><summary><b style="color:var(--text)">${esc(g.title)}</b></summary>
+      ${g.by_os.map(o => `<div class="hint" style="margin-top:8px">${OSN[o.os]}</div>${o.check.map(cmd).join("")}<div style="margin-top:6px"><span class="hint">Kontrol nedeni doğrularsa</span><br>${esc(o.fix)}</div>`).join("")}
+      <div class="notice warn">${icon("warn")}<div>${esc(g.caution)}</div></div></details>`).join("");
+  }
+  if (r.procedures.length) {
+    h += `<div class="sect">Yordam</div>`;
+    h += r.procedures.map(p => `<div class="cand"><b>${esc(p.title)}</b><ol class="steps">${p.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>${p.caution ? `<div class="notice warn">${icon("warn")}<div>${esc(p.caution)}</div></div>` : ""}</div>`).join("");
+  }
+  return h + `</div></div>`;
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-copy]"); if (!b) return;
+  navigator.clipboard?.writeText(b.dataset.copy).then(() => toast("Kopyalandı"), () => toast("Kopyalanamadı")); });
+async function loadCatalog() {
+  if (!catalog) catalog = await api("/api/usta/catalog");
+  $("#cat-tiles").innerHTML = [[catalog.classes.length, "Olay sınıfı", "kök neden, düzeltme, zararlı eylemler"], [catalog.procedures.length, "Adminlik yordamı", "ürün komutları ve adımları"],
+    [catalog.general.length, "Genel sunucu yeteneği", "Unix ve Windows teşhis komutları"], [catalog.chains, "Çözüm zinciri", "doğru çözülmüş vakalardan sıra"]]
+    .map(([v, l, f]) => `<div class="card tile"><div class="value">${v}</div><div class="label">${l}</div><div class="foot">${f}</div></div>`).join("");
+  renderCatalog();
+}
+function renderCatalog() {
+  const q = $("#cat-q").value.trim().toLocaleLowerCase("tr"), rows = catalog[catKind].filter(x => !q || (x.title + " " + x.name + " " + (x.cause || "")).toLocaleLowerCase("tr").includes(q));
+  const head = {classes: ["Olay sınıfı", "Olağan neden", "Belirti", "Zararlı eylem"], procedures: ["Yordam", "Ürün", "Kimlik"], general: ["Genel yetenek", "Yardım ettiği sınıflar", "Sistem"]}[catKind];
+  const line = {classes: x => `<td><b>${esc(x.title)}</b><div class="hint mono">${esc(x.name)}</div></td><td>${esc(x.cause)}</td><td class="num">${x.signs}</td><td>${x.harmful.map(h => `<span class="tag no">${esc(h)}</span>`).join("") || '<span class="hint">—</span>'}</td>`,
+    procedures: x => `<td><b>${esc(x.title)}</b></td><td>${x.needs.length ? tag(x.needs[0]) : '<span class="hint">Control-M / genel</span>'}</td><td class="mono hint">${esc(x.name)}</td>`,
+    general: x => `<td><b>${esc(x.title)}</b><div class="hint mono">${esc(x.name)}</div></td><td>${x.classes.map(tag).join("")}</td><td class="nowrap">${x.os.map(o => `<span class="type">${o === "unix" ? "Unix" : "Windows"}</span>`).join(" ")}</td>`}[catKind];
+  $("#cat-list").innerHTML = rows.length ? `<table><thead><tr>${head.map((t, i) => `<th${catKind === "classes" && i === 2 ? ' class="num"' : ""}>${t}</th>`).join("")}</tr></thead><tbody>${rows.map(x => `<tr>${line(x)}</tr>`).join("")}</tbody></table>` : empty("Eşleşen yetenek yok", "Başka bir sözcük deneyin.");
+}
+$("#cat-q").oninput = () => catalog && renderCatalog();
+$("#cat-seg").querySelectorAll("button").forEach(b => b.onclick = () => { catKind = b.dataset.cat;
+  $("#cat-seg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderCatalog(); });
 
 // ---- reports and health
 async function loadReports() {
   const r = await api("/api/reports?days=" + ($("#rep-days").value || 7));
   $("#rep-setok").innerHTML = r.set_ok.length ? `<ul class="plain">${r.set_ok.map(x => `<li><div class="row">${badge("s-warn", "warn", "Set OK")}<b class="mono">${esc(x.job)}</b><span class="hint">${day(x.day)}</span></div>
-      <div class="hint mono">${esc(x.error || "")}</div>${x.downstream.length ? `<div>Aynı gün hata veren ardıllar: ${x.downstream.map(tag).join("")}</div>` : ""}</li>`).join("")}</ul>` : `<div class="empty">Elle başarılı sayılan iş yok.</div>`;
-  $("#rep-changes").innerHTML = (r.changes.length ? `<ul class="plain">${r.changes.map(c => `<li><div class="row"><b class="mono">${esc(c.id.replace("change:", ""))}</b><span class="hint">${day(c.day)}</span>${c.host ? `<span class="type">sunucu ${esc(c.host)}</span>` : c.job ? tag(c.job) : ""}</div><div class="hint">${esc(c.what)}</div></li>`).join("")}</ul>` : `<div class="empty">Bu aralıkta değişiklik yok.</div>`) +
-    (r.requests.length ? `<h3 style="font-size:13px">Bu oturumda işlenen talepler</h3>${r.requests.map(q => `<div class="row">${outBadge(q.outcome)}<span class="mono">${esc(q.talep_no)}</span>${q.job ? tag(q.job) : ""}</div>`).join("")}` : "");
-  const tbl = (rows, col, unit) => `<table><thead><tr><th>İş</th><th>Çalışma</th><th>Medyan</th><th>%90</th><th>Toplam</th></tr></thead><tbody>${rows.map(x => `<tr><td class="mono">${esc(x.job)}</td><td>${x.runs}</td><td>${x.median} dk</td><td>${x.p90} dk</td><td>${x.total} dk</td></tr>`).join("")}</tbody></table>`;
+      <div class="hint mono">${esc(x.error || "")}</div>${x.downstream.length ? `<div>Aynı gün hata veren ardıllar: ${x.downstream.map(tag).join("")}</div>` : ""}</li>`).join("")}</ul>` : empty("Elle başarılı sayılan iş yok", "");
+  $("#rep-changes").innerHTML = (r.changes.length ? `<ul class="plain">${r.changes.map(c => `<li><div class="row"><b class="mono">${esc(c.id.replace("change:", ""))}</b><span class="hint">${day(c.day)}</span>${c.host ? `<span class="type">sunucu ${esc(c.host)}</span>` : c.job ? tag(c.job) : ""}</div><div class="hint">${esc(c.what)}</div></li>`).join("")}</ul>` : empty("Bu aralıkta değişiklik yok", "")) +
+    (r.requests.length ? `<div class="sect">Bu oturumda işlenen talepler</div>${r.requests.map(q => `<div class="row" style="margin:4px 0">${outBadge(q.outcome)}<span class="mono">${esc(q.talep_no)}</span>${q.job ? tag(q.job) : ""}</div>`).join("")}` : "");
+  const tbl = rows => `<table><thead><tr><th>İş</th><th class="num">Çalışma</th><th class="num">Medyan</th><th class="num">%90</th><th class="num">Toplam</th></tr></thead><tbody>${rows.map(x => `<tr><td class="mono">${esc(x.job)}</td><td class="num">${x.runs}</td><td class="num">${x.median} dk</td><td class="num">${x.p90} dk</td><td class="num">${x.total} dk</td></tr>`).join("")}</tbody></table>`;
   $("#rep-slow").innerHTML = tbl(r.slowest); $("#rep-heavy").innerHTML = tbl(r.heaviest);
   const months = [...new Set(Object.values(r.failures_by_month).flatMap(Object.keys))].sort();
-  $("#rep-monthly").innerHTML = `<table><thead><tr><th>İş</th>${months.map(m => `<th>${m}</th>`).join("")}<th>Toplam</th></tr></thead><tbody>${Object.entries(r.failures_by_month).sort((a, b) => Object.values(b[1]).reduce((x, y) => x + y, 0) - Object.values(a[1]).reduce((x, y) => x + y, 0)).map(([j, m]) => `<tr><td class="mono">${esc(j)}</td>${months.map(k => `<td>${m[k] || ""}</td>`).join("")}<td><b>${Object.values(m).reduce((x, y) => x + y, 0)}</b></td></tr>`).join("")}</tbody></table>`;
+  $("#rep-monthly").innerHTML = `<table><thead><tr><th>İş</th>${months.map(m => `<th class="num">${m}</th>`).join("")}<th class="num">Toplam</th></tr></thead><tbody>${Object.entries(r.failures_by_month).sort((a, b) => Object.values(b[1]).reduce((x, y) => x + y, 0) - Object.values(a[1]).reduce((x, y) => x + y, 0)).map(([j, m]) => `<tr><td class="mono">${esc(j)}</td>${months.map(k => `<td class="num">${m[k] || ""}</td>`).join("")}<td class="num"><b>${Object.values(m).reduce((x, y) => x + y, 0)}</b></td></tr>`).join("")}</tbody></table>`;
 }
 $("#rep-days").onchange = () => loadReports();
 const HLVL = {risk: ["Risk", "s-crit", "crit"], uyari: ["Uyarı", "s-warn", "warn"], bilgi: ["Bilgi", "s-info", "info"]};
@@ -574,8 +762,8 @@ async function loadHealth() {
   const h = await api("/api/health"), f = h.findings;
   const count = l => f.filter(x => x.level === l).length;
   $("#nav-health").hidden = !count("risk"); $("#nav-health").textContent = count("risk");
-  $("#health").innerHTML = `<div class="row" style="margin-bottom:10px">${badge("s-crit", "crit", count("risk") + " risk")}${badge("s-warn", "warn", count("uyari") + " uyarı")}${badge("s-info", "info", count("bilgi") + " bilgi")}<span class="hint">${site.jobs.length} iş tarandı</span></div>` +
-    (f.length ? `<div class="scroll"><table><thead><tr><th>Düzey</th><th>İş</th><th>Bulgu</th><th>Kod</th></tr></thead><tbody>${f.map(x => `<tr><td>${badge(HLVL[x.level][1], HLVL[x.level][2], HLVL[x.level][0])}</td><td class="mono">${esc(x.job)}</td><td>${esc(x.msg)}</td><td class="mono hint">${esc(x.code)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">Bulgu yok.</div>`) +
+  $("#health").innerHTML = `<div class="row" style="margin-bottom:12px">${badge("s-crit", "crit", count("risk") + " risk")}${badge("s-warn", "warn", count("uyari") + " uyarı")}${badge("s-info", "info", count("bilgi") + " bilgi")}<span class="hint">${site.jobs.length} iş tarandı</span></div>` +
+    (f.length ? `<div class="scroll"><table><thead><tr><th>Düzey</th><th>İş</th><th>Bulgu</th><th>Kod</th></tr></thead><tbody>${f.map(x => `<tr><td>${badge(HLVL[x.level][1], HLVL[x.level][2], HLVL[x.level][0])}</td><td class="mono">${esc(x.job)}</td><td>${esc(x.msg)}</td><td class="mono hint">${esc(x.code)}</td></tr>`).join("")}</tbody></table></div>` : empty("Bulgu yok", "")) +
     `<p class="hint mt">Düzeltmek için ilgili iş için bir değişiklik talebi açın; talep masası aynı denetimlerden geçirir.</p>`;
 }
 
@@ -603,32 +791,32 @@ async function send() {
 }
 function renderReport(r, full) {
   let h = `<div class="row"><span class="mono">${esc(r.talep_no)}</span><span class="hint">${esc(r.agent)}</span></div>`;
-  if (r.reasons?.length) h += `<div class="notice ${r.outcome === "proposed" ? "info" : "warn"}">${ICON[r.outcome === "proposed" ? "info" : "warn"]}<div><b>${r.outcome === "proposed" ? "Neden yüklenmedi" : "Talep sahibine giden gerekçe"}</b><ul style="margin:6px 0 0;padding-left:18px">${r.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>`;
-  for (const n of r.notes || []) h += n.votes ? `<div class="notice info">${ICON.info}<div>Günler “${esc(n.given)}” → <b>${esc(n.chosen || "çevrilemedi")}</b> <span class="hint">(${Object.entries(n.votes).map(([k, v]) => `${esc(k)}: ${esc(typeof v === "object" ? JSON.stringify(v) : v)}`).join(", ") || "model bağlı değil"})</span></div></div>`
-    : `<div class="notice info">${ICON.info}<div>Model notu (${esc(n.field)}): ${esc(n.quote || n.review)}</div></div>`;
+  if (r.reasons?.length) h += `<div class="notice ${r.outcome === "proposed" ? "info" : "warn"}">${icon(r.outcome === "proposed" ? "info" : "warn")}<div><b>${r.outcome === "proposed" ? "Neden yüklenmedi" : "Talep sahibine giden gerekçe"}</b><ul style="margin:6px 0 0;padding-left:18px">${r.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>`;
+  for (const n of r.notes || []) h += n.votes ? `<div class="notice info">${icon("info")}<div>Günler “${esc(n.given)}” → <b>${esc(n.chosen || "çevrilemedi")}</b> <span class="hint">(${Object.entries(n.votes).map(([k, v]) => `${esc(k)}: ${esc(typeof v === "object" ? JSON.stringify(v) : v)}`).join(", ") || "model bağlı değil"})</span></div></div>`
+    : `<div class="notice info">${icon("info")}<div>Model notu (${esc(n.field)}): ${esc(n.quote || n.review)}</div></div>`;
   const warn = (r.findings || []).filter(f => f.severity === "warning");
-  if (warn.length) h += `<div class="notice warn">${ICON.warn}<div>${warn.map(f => esc(f.msg)).join("<br>")}</div></div>`;
+  if (warn.length) h += `<div class="notice warn">${icon("warn")}<div>${warn.map(f => esc(f.msg)).join("<br>")}</div></div>`;
   if (r.definition) { const b = r.before || {}, applied = r.outcome === "closed" || r.outcome === "applied_not_closed";
-    h += `<h3 style="font-size:13px;margin:16px 0 6px">${applied ? (r.before ? "Uygulanan değişiklik" : "Uygulanan tanım") : (r.before ? "İstenen değişiklik (uygulanmadı)" : "İstenen tanım (uygulanmadı)")}</h3><table class="kv">` +
+    h += `<div class="sect">${applied ? (r.before ? "Uygulanan değişiklik" : "Uygulanan tanım") : (r.before ? "İstenen değişiklik (uygulanmadı)" : "İstenen tanım (uygulanmadı)")}</div><table class="kv">` +
       Object.entries(r.definition).map(([k, v]) => { const was = b[k], show = x => Array.isArray(x) ? (x.length ? x.map(tag).join("") : "[]") : (k === "type" ? `<span class="type">${esc(TYPE_TR[x] || x)}</span>` : esc(x));
         const changed = r.before && JSON.stringify(was) !== JSON.stringify(v);
         return `<tr${changed ? ' class="changed"' : ""}><th>${FIELD[k] || k}</th><td class="mono">${changed ? `<span class="diff-old">${show(was)}</span> → <span class="diff-new">${show(v)}</span>` : show(v)}</td></tr>`; }).join("") + "</table>"; }
   else if (r.outcome === "closed" && r.before) h += `<p>Kaldırılan iş: <b class="mono">${esc(r.before.name)}</b> (${esc(r.before.folder)})</p>`;
-  if (r.forecast?.length) h += `<h3 style="font-size:13px;margin:16px 0 6px">Sonraki çalışmalar</h3><div>${r.forecast.map(d => tag(day(d))).join("")}</div>`;
-  if (r.record) h += `<h3 style="font-size:13px;margin:16px 0 6px">Denetim kaydı</h3><table class="kv"><tr><th>Kapatan</th><td>${esc(r.record.kapatan)}</td></tr><tr><th>Talep no</th><td class="mono">${esc(r.record.talep_no)}</td></tr><tr><th>Talep eden</th><td>${esc(r.record.talep_eden)}</td></tr><tr><th>İşlem</th><td>${esc(r.record.islem)}</td></tr><tr><th>Geçerlilik</th><td>${esc(r.record.gecerlilik || "")}</td></tr></table>`;
+  if (r.forecast?.length) h += `<div class="sect">Sonraki çalışmalar</div><div>${r.forecast.map(d => tag(day(d))).join("")}</div>`;
+  if (r.record) h += `<div class="sect">Denetim kaydı</div><table class="kv"><tr><th>Kapatan</th><td>${esc(r.record.kapatan)}</td></tr><tr><th>Talep no</th><td class="mono">${esc(r.record.talep_no)}</td></tr><tr><th>Talep eden</th><td>${esc(r.record.talep_eden)}</td></tr><tr><th>İşlem</th><td>${esc(r.record.islem)}</td></tr><tr><th>Geçerlilik</th><td>${esc(r.record.gecerlilik || "")}</td></tr></table>`;
   if (full) h += `<details class="mt"><summary>Ajanın adımları ve eylem izi</summary><table>${(r.steps || []).map(s => `<tr><td class="mono">${esc(s.action)}</td><td>L${s.level}</td><td>${esc(s.verdict)}</td><td>${s.executed ? "uygulandı" : "uygulanmadı"}</td></tr>`).join("")}</table><pre>${esc(JSON.stringify(r.trace, null, 1))}</pre></details>`;
   return h;
 }
 async function loadHistory() {
   const h = window._hist = await api("/api/history");
-  $("#history").innerHTML = h.length ? h.map(r => `<details class="card" style="margin-bottom:10px"><summary style="padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${outBadge(r.outcome)}<span class="mono">${esc(r.talep_no)}</span><b>${esc((r.definition || r.before || {}).name || "")}</b><span class="hint" style="margin-left:auto">${esc(r.at.replace("T", " "))}</span></summary><div class="body"><pre>${esc(r.text)}</pre>${renderReport(r, false)}</div></details>`).join("") : `<div class="empty">Henüz talep işlenmedi.</div>`;
+  $("#history").innerHTML = h.length ? h.map(r => `<details class="cand"><summary style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${outBadge(r.outcome)}<span class="mono">${esc(r.talep_no)}</span><b style="color:var(--text)">${esc((r.definition || r.before || {}).name || "")}</b><span class="hint" style="margin-left:auto">${esc(r.at.replace("T", " "))}</span></summary><div style="margin-top:10px"><pre>${esc(r.text)}</pre>${renderReport(r, false)}</div></details>`).join("") : empty("Henüz talep işlenmedi", "Talep masasından bir talep gönderin.");
 }
 $("#reset").onclick = async () => { if (!confirm("Ortam başa dönsün ve talep geçmişi silinsin mi?")) return; await api("/api/reset", {}); toast("Ortam başa döndü"); boot(true); loadHistory(); };
 async function loadLedger() {
   const l = await api("/api/ledger");
-  $("#ledger").innerHTML = (l.chain_ok ? `<div class="notice info">${ICON.ok}<div>Özet zinciri bütün: hiçbir kayıt sonradan değiştirilmemiş.</div></div>` : `<div class="notice crit">${ICON.crit}<div>Özet zinciri bozuk.</div></div>`) +
+  $("#ledger").innerHTML = (l.chain_ok ? `<div class="notice info">${icon("ok")}<div>Özet zinciri bütün: hiçbir kayıt sonradan değiştirilmemiş.</div></div>` : `<div class="notice crit">${icon("crit")}<div>Özet zinciri bozuk.</div></div>`) +
     (l.rows.length ? `<div class="scroll"><table><thead><tr><th>#</th><th>Talep</th><th>İşlem</th><th>İş</th><th>Sonuç</th><th>Ajan</th><th>Önceki özet</th><th>Özet</th></tr></thead><tbody>` +
-      l.rows.map(r => `<tr><td>${r.id}</td><td class="mono">${esc(r.talep_no)}</td><td>${esc(r.diagnosis)}</td><td class="mono">${esc(r.job || "")}</td><td>${r.verified ? badge("s-good", "ok", "uygulandı") : badge("s-warn", "warn", "iade")}<div class="hint">${esc((r.returned_for || []).join("; ")).slice(0, 180)}</div></td><td class="hint">${esc(r.agent)}</td><td class="mono">${esc(r.prev)}</td><td class="mono">${esc(r.hash)}</td></tr>`).join("") + "</tbody></table></div>" : `<div class="empty">Defter boş.</div>`);
+      l.rows.map(r => `<tr><td>${r.id}</td><td class="mono">${esc(r.talep_no)}</td><td>${esc(r.diagnosis)}</td><td class="mono">${esc(r.job || "")}</td><td>${r.verified ? badge("s-good", "ok", "uygulandı") : badge("s-warn", "warn", "iade")}<div class="hint">${esc((r.returned_for || []).join("; ")).slice(0, 180)}</div></td><td class="hint">${esc(r.agent)}</td><td class="mono">${esc(r.prev)}</td><td class="mono">${esc(r.hash)}</td></tr>`).join("") + "</tbody></table></div>" : empty("Defter boş", "İşlenen her talep buraya bir kayıt bırakır."));
 }
 
 // ---- site
@@ -642,11 +830,11 @@ function renderSite() {
   $("#cals").innerHTML = `<thead><tr><th>Takvim</th><th>Anlamı</th><th>Sonraki günler</th></tr></thead><tbody>` + Object.entries(site.calendars).map(([n, c]) =>
     `<tr><td class="mono">${esc(n)}</td><td>${esc(c.desc)}</td><td>${c.next.slice(0, 6).map(d => tag(day(d))).join("")}</td></tr>`).join("") + "</tbody>";
   const conns = site.connections || {};
-  $("#env").innerHTML = `<h3 style="font-size:13px;margin:0 0 6px">Sunucular</h3><table><tbody>${Object.entries(site.hosts).map(([h, v]) => `<tr><td class="mono">${esc(h)}</td><td>${esc(v.desc)}</td><td>${v.users.map(tag).join("")}</td></tr>`).join("")}</tbody></table>
-    ${Object.keys(conns).length ? `<h3 style="font-size:13px;margin:16px 0 6px">Bağlantı profilleri</h3><table><tbody>${Object.entries(conns).map(([n, c]) => `<tr><td class="mono">${esc(n)}</td><td><span class="type">${esc(TYPE_TR[c.kind] || c.kind)}</span></td><td>${esc(c.desc)}</td></tr>`).join("")}</tbody></table>` : ""}
-    <h3 style="font-size:13px;margin:16px 0 6px">Klasörler ve standartlar</h3><table class="kv"><tbody>${Object.entries(site.folders).map(([f, v]) => `<tr><th>${esc(f)}</th><td>önek ${tag(v.prefix)}</td></tr>`).join("")}
+  $("#env").innerHTML = `<div class="sect">Sunucular</div><table><tbody>${Object.entries(site.hosts).map(([h, v]) => `<tr><td class="mono">${esc(h)}</td><td>${esc(v.desc)}</td><td>${v.users.map(tag).join("")}</td></tr>`).join("")}</tbody></table>
+    ${Object.keys(conns).length ? `<div class="sect">Bağlantı profilleri</div><table><tbody>${Object.entries(conns).map(([n, c]) => `<tr><td class="mono">${esc(n)}</td><td><span class="type">${esc(TYPE_TR[c.kind] || c.kind)}</span></td><td>${esc(c.desc)}</td></tr>`).join("")}</tbody></table>` : ""}
+    <div class="sect">Klasörler ve standartlar</div><table class="kv"><tbody>${Object.entries(site.folders).map(([f, v]) => `<tr><th>${esc(f)}</th><td>önek ${tag(v.prefix)}</td></tr>`).join("")}
     <tr><th>İş adı</th><td class="mono">${esc(site.standards.name_regex)}</td></tr><tr><th>Bildirim</th><td class="mono">…${esc(site.standards.notify_suffix)}</td></tr></tbody></table>
-    <h3 style="font-size:13px;margin:16px 0 6px">Tatiller</h3><div>${site.holidays.map(d => tag(day(d))).join("")}</div>`;
+    <div class="sect">Tatiller</div><div>${site.holidays.map(d => tag(day(d))).join("")}</div>`;
   drawDag(changed);
 }
 function drawDag(changed) {
@@ -657,11 +845,11 @@ function drawDag(changed) {
   const W = 200, H = 48, GX = 64, GY = 14, pos = {};
   Object.entries(cols).forEach(([c, list]) => list.sort((a, b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name)).forEach((j, i) => pos[j.name] = {x: 10 + c * (W + GX), y: 10 + i * (H + GY)}));
   const width = 20 + Object.keys(cols).length * (W + GX) - GX, height = 20 + Math.max(...Object.values(cols).map(l => l.length)) * (H + GY) - GY;
-  let s = `<svg viewBox="0 0 ${width} ${height}" style="min-width:${Math.min(width, 900)}px;max-width:${width}px" role="img" aria-label="İş bağımlılık çizgesi"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--text-3)"/></marker></defs>`;
+  let s = `<svg viewBox="0 0 ${width} ${height}" style="min-width:${Math.min(width, 900)}px;max-width:${width}px" role="img" aria-label="İş bağımlılık çizgesi"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--text-4)"/></marker></defs>`;
   jobs.forEach(j => j.deps.filter(d => pos[d]).forEach(d => { const a = pos[d], b = pos[j.name], x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x - 2, y2 = b.y + H / 2, mx = (x1 + x2) / 2;
     s += `<path class="edge" marker-end="url(#arr)" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"/>`; }));
   jobs.forEach(j => { const p = pos[j.name];
-    s += `<g class="node${changed.has(j.name) ? " changed" : ""}" data-job="${esc(j.name)}" transform="translate(${p.x},${p.y})"><rect width="${W}" height="${H}" rx="6"/>
+    s += `<g class="node${changed.has(j.name) ? " changed" : ""}" data-job="${esc(j.name)}" transform="translate(${p.x},${p.y})"><rect width="${W}" height="${H}" rx="8"/>
       <rect width="4" height="${H}" rx="2" fill="var(${({veritabani: "--k-conn", dosya_izleme: "--k-user", dosya_aktarimi: "--k-host", ssh: "--k-sig", bos: "--k-run"})[j.type] || "--k-job"})"/>
       <text x="12" y="19">${esc(j.name)}</text><text class="sub" x="12" y="36">${esc(TYPE_TR[j.type] || j.type)} · ${esc(j.calendar)} · ${esc(j.time)}</text></g>`; });
   $("#dag").innerHTML = s + "</svg>";
@@ -670,29 +858,45 @@ function drawDag(changed) {
 }
 
 // ---- bench
+const SPLIT = {dev: "Geliştirme", test: "Test", test2: "Test 2"};
+const ARM = {ham: "Yardımsız model", usta: "Usta (gözden geçirme notlarıyla)", usta0: "Usta (yalnız cevap sözleşmesi)", harness: "Harness, tek geçiş", harnessc: "Harness, graf tahmini yok",
+  harnessg: "Harness, zincir yok", harness0: "Harness, genel yetenek yok", skill: "Yalnız beceriler (model yok)", skillc: "Beceriler, graf tahmini yok", skillg: "Beceriler, zincir yok", skill0: "Beceriler, genel yetenek yok"};
+async function loadOps() {
+  const o = await api("/api/ops");
+  if (!o.rows.length) { $("#ops").innerHTML = empty("Sonuç yok", "python -m vardiya ops run --split dev --arms skill"); return; }
+  const order = Object.keys(ARM);
+  o.rows.sort((a, b) => Object.keys(SPLIT).indexOf(a.split) - Object.keys(SPLIT).indexOf(b.split) || a.model.localeCompare(b.model) || order.indexOf(a.arm) - order.indexOf(b.arm));
+  $("#ops").innerHTML = `<table><thead><tr><th>Küme</th><th>Kol</th><th>Model</th><th class="num">Vaka</th><th class="num">Doğru</th><th></th><th class="num">Yarım</th><th class="num">Yanlış</th><th class="num">Zararlı</th></tr></thead><tbody>` +
+    o.rows.map(r => { const p = k => 100 * r[k] / r.n;
+      return `<tr><td>${SPLIT[r.split] || esc(r.split)}</td><td><b>${ARM[r.arm] || esc(r.arm)}</b></td><td class="mono">${esc(r.model || "—")}</td><td class="num">${r.n}</td><td class="num"><b>${p("dogru").toFixed(0)}%</b></td>
+        <td><div class="bar" title="doğru ${r.dogru}, yarım ${r.yarim}, yanlış ${r.yanlis}, zararlı ${r.zararli}"><span class="ok" style="width:${p("dogru")}%"></span><span class="half" style="width:${p("yarim")}%"></span><span style="flex:1"></span><span class="harm" style="width:${p("zararli")}%"></span></div></td>
+        <td class="num">${r.yarim}</td><td class="num">${r.yanlis}</td><td class="num">${r.zararli ? `<b style="color:var(--critical)">${r.zararli}</b>` : 0}</td></tr>`; }).join("") + "</tbody></table>";
+  $("#ops-paired").innerHTML = o.paired.length ? `<div class="sect">Usta protokolü: aynı vakalarda taslak ve son cevap</div><div class="scroll"><table><thead><tr><th>Küme</th><th>Kol</th><th>Model</th><th class="num">Vaka</th><th class="num">Taslak doğru</th><th class="num">Son doğru</th><th class="num">Düzelen</th><th class="num">Bozulan</th><th class="num">Zararlı (taslak → son)</th></tr></thead><tbody>` +
+    o.paired.map(r => `<tr><td>${SPLIT[r.split] || esc(r.split)}</td><td><b>${ARM[r.arm] || esc(r.arm)}</b></td><td class="mono">${esc(r.model || "—")}</td><td class="num">${r.n}</td><td class="num">${r.draft} (${(100 * r.draft / r.n).toFixed(0)}%)</td><td class="num"><b>${r.final} (${(100 * r.final / r.n).toFixed(0)}%)</b></td>
+      <td class="num" style="color:var(--good)">+${r.up}</td><td class="num"${r.down ? ' style="color:var(--critical)"' : ""}>${r.down ? "−" + r.down : 0}</td><td class="num">${r.harm_draft} → ${r.harm_final}</td></tr>`).join("") + "</tbody></table></div>" : "";
+}
 async function loadBench(file) {
   const b = await api("/api/bench" + (file ? "?file=" + encodeURIComponent(file) : ""));
   $("#bfile").innerHTML = b.files.map(f => `<option${f === b.file ? " selected" : ""}>${esc(f)}</option>`).join("");
-  if (!b.arms.length) { $("#bench").innerHTML = `<tr><td class="empty">Sonuç dosyası yok.</td></tr>`; return; }
-  $("#bench").innerHTML = `<thead><tr><th>Kol</th><th>Model</th><th>n</th><th>Doğru</th><th>Zararlı</th><th></th><th>Çağrı</th>${b.families.map(f => `<th class="mono" style="text-transform:none">${esc(f)}</th>`).join("")}</tr></thead><tbody>` +
+  if (!b.arms.length) { $("#bench").innerHTML = `<tr><td>${empty("Bu dosyada talep bench sonucu yok", "Başka bir sonuç dosyası seçin.")}</td></tr>`; return; }
+  $("#bench").innerHTML = `<thead><tr><th>Kol</th><th>Model</th><th class="num">n</th><th class="num">Doğru</th><th class="num">Zararlı</th><th></th><th class="num">Çağrı</th>${b.families.map(f => `<th class="mono" style="text-transform:none;letter-spacing:0">${esc(f)}</th>`).join("")}</tr></thead><tbody>` +
     b.arms.map(a => { const ok = 100 * a.correct / a.n, harm = 100 * a.harmful / a.n;
-      return `<tr><td><b>${esc(a.name)}</b>${a.variant && a.arm.includes("harness") ? `<div class="hint mono">${esc(a.variant)}</div>` : ""}</td><td class="mono">${esc(a.model || "—")}</td><td>${a.n}</td>
-        <td><b>${ok.toFixed(0)}%</b></td><td>${harm.toFixed(0)}%</td><td><div class="bar" title="doğru ${a.correct}/${a.n}, zararlı ${a.harmful}/${a.n}"><span class="ok" style="width:${ok}%"></span><span style="flex:1"></span><span class="harm" style="width:${harm}%"></span></div></td>
-        <td>${a.calls}</td>${b.families.map(f => { const c = a.families[f]; return c ? `<td><span class="fam ${c[0] === c[1] ? "full" : c[0] ? "part" : "zero"}">${c[0]}/${c[1]}</span></td>` : "<td></td>"; }).join("")}</tr>`; }).join("") + "</tbody>";
+      return `<tr><td><b>${esc(a.name)}</b>${a.variant && a.arm.includes("harness") ? `<div class="hint mono">${esc(a.variant)}</div>` : ""}</td><td class="mono">${esc(a.model || "—")}</td><td class="num">${a.n}</td>
+        <td class="num"><b>${ok.toFixed(0)}%</b></td><td class="num">${harm.toFixed(0)}%</td><td><div class="bar" title="doğru ${a.correct}/${a.n}, zararlı ${a.harmful}/${a.n}"><span class="ok" style="width:${ok}%"></span><span style="flex:1"></span><span class="harm" style="width:${harm}%"></span></div></td>
+        <td class="num">${a.calls}</td>${b.families.map(f => { const c = a.families[f]; return c ? `<td><span class="fam ${c[0] === c[1] ? "full" : c[0] ? "part" : "zero"}">${c[0]}/${c[1]}</span></td>` : "<td></td>"; }).join("")}</tr>`; }).join("") + "</tbody>";
 }
 $("#bfile").onchange = e => loadBench(e.target.value);
 
 // ---- start
 async function boot(again) {
-  await Promise.all([loadSite(), loadGraph(), again ? null : loadExamples(), api("/api/history").then(h => window._hist = h)]);
-  renderOverview(); loadHealth().catch(() => {});
-  if (!again) { let page = "genel"; try { page = localStorage.getItem("vardiya-page") || "genel"; } catch (e) {} go(TITLES[page] ? page : "genel"); }
-  else { renderSite(); toast("Yenilendi"); }
-  if (!current) { const first = graph.incidents.find(i => i.open) || graph.incidents[0]; if (first) current = first.id; }
-  if (document.querySelector('section[data-page="olay"]:not([hidden])') && current) pick(current);
+  await Promise.all([loadSite(), api("/api/history").then(h => window._hist = h), again ? null : loadExamples()]);
+  await loadGraph(); loadHealth().catch(() => {});
+  if (!again) { let page = "genel"; try { page = localStorage.getItem("vardiya-page") || "genel"; } catch (e) {}
+    if (!current) { const first = graph.incidents.find(i => i.open) || graph.incidents[0]; if (first) current = first.id; }
+    go(TITLES[page] ? page : "genel"); }
+  else { renderSite(); toast("Yenilendi"); if (document.querySelector('section[data-page="olay"]:not([hidden])') && current) pick(current); }
 }
-const _go = go; go = page => { _go(page); if (page === "olay" && current) pick(current); };
-boot();
+boot().catch(e => { document.querySelector(".content").insertAdjacentHTML("afterbegin", `<div class="notice crit">${icon("crit")}<div><b>Sunucuya ulaşılamadı.</b> ${esc(e.message)}</div></div>`); });
 </script>
 </body>
 </html>

@@ -22,9 +22,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
     if argv[:2] == ["ops", "eylem"]:
-        import argparse
         from . import opsagent
-        from .gateway import connect
         ap = argparse.ArgumentParser(prog="vardiya ops eylem")
         ap.add_argument("--split", default="dev")
         ap.add_argument("--arms", default="kod,saf")
