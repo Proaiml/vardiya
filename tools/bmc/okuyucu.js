@@ -12,6 +12,8 @@
 //   V.dig(skip, n)       stored bodies of the read items, in read order (for the extraction agent)
 //   V.exportList(i, n)   a slice of the list as JSON, to be written to disk
 //   V.importList(json)   merge a slice back (after a profile reset)
+//   V.backup()           compact JSON of the read marks and read order (small; write it to disk)
+//   V.restore(json)      put the read marks back after a profile reset (then V.collect() refills titles)
 //   V.markUsed(ids)      mark source ids already in the bench as done
 //   V.stop()             stop both background loops after the current page
 (() => {
@@ -152,9 +154,17 @@
   const importList = json => { const x = typeof json === "string" ? JSON.parse(json) : json, L = list();
     for (const [k, e] of Object.entries(x.items || {})) { if (!L[k] || (e.st && !L[k].st)) L[k] = e; }
     ls.set("vList", L); if (x.order) ls.set("vOrder", [...new Set([...ls.get("vOrder", []), ...x.order])]); return Object.keys(L).length; };
+  // compact backup: only what cannot be re-collected from search, the read marks and the read order ("id:st,...")
+  const backup = () => { const L = list(); return JSON.stringify({c: ls.get("vCollect", {}),
+    m: Object.entries(L).filter(([, e]) => e.st).map(([k, e]) => k + ":" + e.st).join(","), o: ls.get("vOrder", []).join(",")}); };
+  const restore = json => { const x = typeof json === "string" ? JSON.parse(json) : json, L = list(); let n = 0;
+    for (const p of (x.m || "").split(",").filter(Boolean)) { const [k, st] = p.split(":");
+      L[k] = L[k] || {t: k.startsWith("0D5") ? "q" : "a", ti: "", s: split(k), q: [], st: 0}; L[k].st = +st; n++; }
+    ls.set("vList", L); if (x.o) ls.set("vOrder", [...new Set([...ls.get("vOrder", []), ...x.o.split(",").filter(Boolean)])]);
+    if (x.c && !localStorage.vCollect) ls.set("vCollect", x.c); return n; };
   const markUsed = ids => { const L = list(); let n = 0; for (const id of ids) if (L[id] && L[id].st === 0) { L[id].st = 2; n++; } ls.set("vList", L); return n; };
   const stop = () => { localStorage.vStop = "elle"; return "duracak"; };
   const go = () => { delete localStorage.vStop; return "devam"; };
-  window.V = {collect, read, dig, status, exportList, importList, markUsed, stop, go, TERMS};
+  window.V = {collect, read, dig, status, exportList, importList, backup, restore, markUsed, stop, go, TERMS};
   return "V kuruldu: " + status();
 })();
