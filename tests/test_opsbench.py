@@ -55,6 +55,14 @@ class HarnessSide(unittest.TestCase):
         self.assertEqual(out["steps"], ["check dmesg for oom-killer"])
         self.assertIn("Set OK the job", out["avoid"])
 
+    def test_all_cases_have_word_groups_not_letters(self):
+        # a merge once split harmful phrases into single letters, which made every answer "harmful"
+        for split in ("dev", "test"):
+            for c in opsbench.load(split):
+                for g in c["steps"] + c.get("harmful", []):
+                    self.assertIsInstance(g, list, c["id"])
+                    self.assertTrue(all(isinstance(w, str) and len(w) > 1 for w in g), c["id"])
+
     def test_dev_cases_are_well_formed(self):
         for c in opsbench.load("dev"):
             self.assertIn(c["track"], {"olay", "bilgi", "olaysiz"})
