@@ -270,3 +270,11 @@ yazdı ve kaynaklar herkese açık; bu küme güçlü modeli ayırt etmek için 
 bağlamı güçlü modeli iki ölçümde de (test ve test2) biraz geriye çekti; graf ilk tahmini eklenince fark kapandı.
 Gruplar 29'ar vaka, fark 4 vaka: kesin sonuç değil, yön. (3) Hiçbir kolda zararlı cevap yok. (4) Harness'in iddiası
 küçük modeller içindi; asıl ölçüm aynı üç kolun küçük bir modelle koşusu (GPU sırası gerekli).
+
+**Beceri kolunda kural değişikliği (15 Kasım akşamı).** Model olmayan beceri kolu genel sunucu yeteneklerinin
+düzeltme adımlarını da cevaba koşulsuz ekliyordu (örnek: "yanıt yoksa kill -KILL"). Bir geliştirme vakasında
+(dosya gelene kadar Executing'de bekleyen dosya izleme işi) bu, zararlı bir öneri oldu. Teşhisi doğrulayacak bir model
+olmadığı için genel yetenekler artık bu kolda yalnız salt okuyan kontrol adımlarını veriyor; düzeltme, kontrol
+uyuştuktan sonra modelin ya da operatörün işi. Kararın gerekçesi geliştirme vakası; görülmemiş kümelerde sayı düştü
+(test 20 → 15, test2 27 → 25 doğru; zararlı aynı) çünkü puanlama düzeltme sözcüklerini de sayıyordu. Harness
+kolunda model yeteneğin tamamını (kontrol ve düzeltme) görmeye devam ediyor.

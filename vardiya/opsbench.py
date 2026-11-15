@@ -160,7 +160,7 @@ def ref_steps(ref, classes, procedures, general, os_name):
     if kind == "genel" and general and name in general:
         g = general[name]
         return [x for o in ([os_name] if os_name else ["unix", "windows"])
-                if g["check"][o] and not g["check"][o].startswith("(uygulanmaz") for x in (g["check"][o], g["fix"][o])]
+                if g["check"][o] and not g["check"][o].startswith("(uygulanmaz") for x in (g["check"][o],)]
     return []
 
 
@@ -244,7 +244,9 @@ def skill_answer(case, classes, procedures, general=None, chains=None, hint=None
         g = general[name]
         for o in [found["os"]] if found["os"] else ["unix", "windows"]:
             if g["check"][o] and not g["check"][o].startswith("(uygulanmaz"):
-                steps += [g["check"][o], g["fix"][o]]
+                # without a model nothing confirms the diagnosis, so a general skill contributes its read-only
+                # check only: its fix (kill a process, restart a service) is right only after the check agrees
+                steps.append(g["check"][o])
     for ref in found["chain"]:
         steps += [x for x in ref_steps(ref, classes, procedures, general, found["os"]) if x not in steps]
     return {"cause": cause, "steps": steps, "avoid": []}, found

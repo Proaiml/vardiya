@@ -388,6 +388,21 @@ procedures:
     triggers: [user daily, ctmudly, ertesi gun, next day, yuklesin, load, baslamasin, wait until, new day'e kadar, gelecek]
     steps: ctmudly -DAILY_NAME <ad> -odate <yyyymmdd> -odate_option run_date ile siparis et; isler siparis edilir ama ODATE gelene kadar calismaz; bekleyen islerin lisans sayimina girdigini hesaba kat
     caution: ayni gunun islerini iki kez yuklememek icin User Daily'nin zamanlamasini dogrula
+  takvim_yil_donumu:
+    title: Takvimli islerin yil donumunden sonra siparis edilmemesi
+    triggers: [yil donumu, year end, new year, yeni yil, next year, gelecek yil, siparis edilmiyor, not ordered, takvim, calendar]
+    steps: islerin kullandigi takvimlerde yeni yilin gunlerinin tanimli olup olmadigina bak; tanimli degilse yeni yilin gunlerini ekle (tatil listesinden) ve takvimi sunucuya yukle; eksik kalan gunlerin islerini ctmorder ile siparis et; bir dahaki yil icin takvim guncellemesini yil sonundan once planla
+    caution: eksik gunleri kapatmak icin takvimi kaldirip isi her gune acma
+  kaynagi_kim_tuttu:
+    title: Kaynak bekleyip gec baslayan isler icin o sirada kaynagi tutan isleri bulmak
+    triggers: [kaynak, resource, bekledi, bekledigi, waiting, gec basladi, started late, hangi isler, which jobs, tuttu, held, consumed]
+    steps: EM veritabaninin calisma gecmisi tablosunda (runinfo_history) o kaynagi kullanan islerin baslama ve bitis zamanlarini yalniz okuma sorgusuyla listele; gecikme penceresiyle cakisanlari bul; tekrarliyorsa kritik islere oncelik ver ya da kaynak miktarini yeniden planla
+    caution: kaynagi sinirsiz yaparak gecistirme
+  dosya_izleme_bekliyor:
+    title: Dosya izleme isinin dosya gelene kadar Executing'de durmasi
+    triggers: [dosya izleme, file watcher, filewatcher, executing, yuklenir yuklenmez, dosya gelene kadar, until file, takili, bekliyor, waiting]
+    steps: isin zaman siniri (time limit) 0 ise dosya gelene kadar beklemesi normaldir, takili degildir; izleme suresi isteniyorsa zaman sinirini (ornegin 30 dk) ver; dongusel izlemede dosya bulununca On COMPSTAT=0 ile Stop Cyclic kullan; dosya beklenen saatte gelmiyorsa kaynak sistemi sorgula
+    caution: bekleyen dosya izleme isini takili sanip oldurme ya da OK sayma
   zos_executing_temizlik:
     title: z/OS'ta bitmis ama Executing gorunen isi AJF'ten temizlemek
     triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
@@ -598,6 +613,26 @@ procedures:
     triggers: [ctmcontb, ctmvar, external application, dis uygulama, add condition, kosul ekle, new day, ndp, fails, basarisiz]
     steps: urun New Day calisirken yardimci araclari reddeder; cagiran uygulamaya hata kodunu yakalayip birkac dakika sonra yeniden deneyen bir dongu ekle; mumkunse cagrilari New Day penceresinin disina planla; reddedilen cagrilari gunluge yaz
     caution: hatayi yok sayip devam etmek tetiklenmesi gereken isleri sessizce kacirir
+  takvim_nerede_kullaniliyor:
+    title: Bir takvimin hangi islerde ve klasorlerde kullanildigini bulmak (silmeden once)
+    triggers: [calendar, takvim, where used, nerede kullan, which jobs, hangi isler, delete calendar, takvim sil, obsolete, kullanilmayan]
+    steps: takvimin hangi alanlarda gecebilecegini listele (Month Days, Week Days, Confirmation, kural tabanli takvim, SMART klasor RBC); EM istemcisinde klasorleri bir calisma alanina yukleyip Find/Update ile her alan icin ayri ara ya da EM veritabaninda yalniz okuma sorgusuyla tum alanlari tara; is tanimi raporlarini filtreyle birlestir; sonuc bossa takvimi sil
+    caution: tek bir alani arayip bos cikinca silme; takvim baska alanda kullaniliyor olabilir
+  toplu_tanim_guncelleme:
+    title: Yuzlerce isin tanimini toplu degistirmek (kaynak, takvim, ayar)
+    triggers: [mass update, toplu, find and update, find & update, many jobs, cok is, hundreds, yuzlerce, add to all, hepsine ekle, bulk, tek tek, one at a time, mevcut is, existing jobs]
+    steps: degistirilecek isleri bir calisma alanina yukle; Find/Update ile yalniz hedef isleri bulan olcutu kur ve sonucu dogrula (istenmeyenleri Unload ile cikar); Update kisminda Add, Replace ya da Remove sec; web arayuzunde bu yoksa tanimlari JSON olarak disa aktar, metin duzenleyicide degistir ve yeniden ice al; once test ortaminda dene, sonra yukle (check in) ve birkac isi elle dogrula
+    caution: olcutu dogrulamadan toplu degisiklik yapma; degisiklikten once tanimlarin yedegini al
+  is_gunu_takvim_kurallari:
+    title: N'inci is gunu, tatil kaydirma, ters takvim gibi takvim kurallarini kurmak
+    triggers: [business day, is gunu, workday, holiday, tatil, nth, inci, second friday, ikinci cuma, saturday after, inverse, ters, leap year, artik yil, last day, son gun]
+    steps: tatilleri yalniz bir is gunu takviminde tut ve yilda bir guncelle; N'inci is gunu icin kural tabanli takvimi bu takvime gore kur; tatile denk gelince kaydirmak icin gunu secip onay takvimini (Confirmation) is gunu takvimi yapip 'sonraki/onceki gune kaydir' sec; belirli haftanin gunu icin (ornegin ikinci cuma) yalniz o gunleri iceren bir takvimle onayla; ters takvim icin her gunu siparis edip takvimdeki gunleri -D kurallariyla dislayan tanim kullan; sonucu yillik forecast ile dogrula
+    caution: her is icin ayri elle isaretlenmis takvim yaratmak her yil guncelleme yukune doner
+  takvim_yillik_otomasyon:
+    title: Takvimlerin yillik guncellenmesini otomatiklestirmek
+    triggers: [calendar, takvim, yearly, yillik, update, guncelle, automate, otomatik, next year, gelecek yil, automation api, json]
+    steps: takvimleri Automation API ile JSON olarak tanimla; yilin tatil listesinden JSON'u ureten bir betik yaz; ctm deploy ile yukle; yukleme sonrasi takvimlerin sunucuyla senkron oldugunu ve forecast'in dogru gunleri verdigini kontrol et
+    caution: uretimde ilk kez test ortaminda denemeden toplu takvim yukleme
 ---
 
 # Adminlik yordamlari
