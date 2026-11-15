@@ -76,7 +76,7 @@ class ServerTest(unittest.TestCase):
         base = f"http://127.0.0.1:{httpd.server_port}"
         try:
             page = urllib.request.urlopen(base + "/").read().decode()
-            self.assertIn("Vardiya Operasyon", page)
+            self.assertIn("Usta operasyon konsolu", page)
             site = json.loads(urllib.request.urlopen(base + "/api/site").read())
             self.assertIn("RPR_GUNLUK_OZET", [j["name"] for j in site["jobs"]])
             req = urllib.request.Request(base + "/api/request", json.dumps({"text": NEW}).encode(),
@@ -84,6 +84,16 @@ class ServerTest(unittest.TestCase):
             self.assertEqual(json.loads(urllib.request.urlopen(req).read())["outcome"], "closed")
             self.assertEqual(len(json.loads(urllib.request.urlopen(base + "/api/history").read())), 1)
             self.assertTrue(json.loads(urllib.request.urlopen(base + "/api/examples").read()))
+            # Usta: catalogue, examples from the development split only, and an answer with no model
+            cat = json.loads(urllib.request.urlopen(base + "/api/usta/catalog").read())
+            self.assertGreaterEqual(len(cat["general"]), 50)
+            self.assertTrue(all(e["id"].startswith("ops-dev-") for e in json.loads(urllib.request.urlopen(base + "/api/usta/examples").read())))
+            ask = urllib.request.Request(base + "/api/usta/ask", json.dumps({"text": "Job failed: No space left on device, /data 100% dolu"}).encode(),
+                                         {"Content-Type": "application/json"})
+            found = json.loads(urllib.request.urlopen(ask).read())
+            self.assertEqual(found["candidates"][0]["name"], "disk")
+            self.assertTrue(found["checks"])
+            self.assertIn("rows", json.loads(urllib.request.urlopen(base + "/api/ops").read()))
         finally:
             httpd.shutdown()
             httpd.server_close()
