@@ -295,7 +295,7 @@ procedures:
     caution: farkli surumden ikinci agent kurmaya calisma, kurulum ilkini yukseltmeye kalkar ve DLL cakismasi olur
   windows_bat_degiskenleri:
     title: Windows .bat betiginde Control-M degiskenlerini kullanmak
-    triggers: [.bat, batch, betik, script, degisken, variable, autoedit, odate, bos, empty, windows]
+    triggers: [.bat, batch, degisken, variable, autoedit, odate, jobname]
     steps: agent'ta ctmagcfg ile AutoEdit Inline=Y yap ki is tanimindaki kullanici degiskenleri betige ortam degiskeni olarak gelsin; ODATE ve JOBNAME gibi sistem degiskenleri de gerekiyorsa sunucuda config.dat'ta AUTOEDIT_INC_SEC=SYSTEM ayarla; betikte %DEGISKEN% bicimiyle oku ve bir test isiyle dogrula
     caution: degerleri betige sabit yazarak gecistirme
   mft_coklu_ornek:
@@ -308,6 +308,46 @@ procedures:
     triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
     steps: once JES2'de isin sysout'u HELD mi bak, oyleyse serbest birak ve durumun guncellenmesini bekle; degilse CTMCAJF CLEANUP ile isi DELETED durumuna al (monitor acik kalabilir), New Day fiziksel olarak siler; COMPRESS yalniz monitor kapaliyken
     caution: monitor calisirken COMPRESS calistirma
+  uyari_bastirma:
+    title: Yukseltmeden sonra gelen istenmeyen uyarilari kapatmak
+    triggers: [alert, uyari, suppress, bastir, kapat, alert manager, global alert, gas, message id, mesaj kimligi]
+    steps: kapatilacak uyarinin mesaj kimligini is gunlugunden ya da sunucunun data dizinindeki dbs_msgtbl ve dbs_ag_msgtbl dosyalarindan bul; config.dat'in yedegini al; ALERT_ON_MESSAGE ayarinda bu kimlikleri kapat; sunucunun ayari yeniden okumasini sagla ve uyarinin artik gelmedigini dogrula
+    caution: uyarilari toptan kapatma; yalniz gercekten gereksiz olan kimlikleri kapat
+  veritabani_sorgu_satiri:
+    title: Zamanlayici veritabanina komut satirindan baglanmak
+    triggers: [database, veritabani, sql, psql, command line, komut satiri, em_sql, login, baglan, query, sorgu]
+    steps: zamanlayici sunucusunda sunucu kullanicisiyla sql komutunu calistir (ya da ctm_menu > Troubleshooting > Interactive SQL); yonetim sunucusunda Windows'ta em_sql -U <dbo> -P, Unix'te em psql -U <dbo> -d <veritabani>; yalniz okuma sorgulari calistir
+    caution: urun tablolarinda elle UPDATE ya da DELETE yapma; destek yonlendirmesi olmadan veriyi degistirme
+  mft_gecmis_saklama:
+    title: Dosya aktarim panosundaki gecmisin saklama suresini ayarlamak
+    triggers: [mft, transfer history, aktarim gecmisi, dashboard, pano, retention, saklama, days to keep]
+    steps: varsayilan 30 gun ya da 7 milyon kayittir; CCM'de EM sistem parametresi olarak MFTDaysToKeep ve MFTRecordsToKeep'i (bilesen tipi CMS) elle ekle ve degerini ver; temizlik araligini da gerekiyorsa ayarla; EM veritabani buyumesini izle
+    caution: saklama suresini cok uzatmak EM veritabanini buyutur
+  uyari_betige_yonlendirme:
+    title: Yonetim sunucusu uyarilarini bir betige ya da izleme aracina gondermek
+    triggers: [alert, uyari, alarm, snmp, sendalarmtoscript, monitoring tool, izleme araci]
+    steps: CCM'de EM sistem parametrelerinde SendSnmp'yi betik secenegine al ve SendAlarmToScript'e betigin tam yolunu yaz; gecidi yeniden baslat; betik uyari alanlarini argumanlardan ($* ya da %*) okur; bir test uyarisiyla dogrula
+    caution: betik yavas ya da takilirsa uyarilar birikir; betigi kisa tut, agir isi baska surece birak
+  host_grubu_dagitimi:
+    title: Host grubundaki islerin agent'lara nasil dagitildigini anlamak
+    triggers: [host group, host grubu, node group, nodegroup, round robin, dagitim, distribution, ayni agent, same agent]
+    steps: sunucu host grubunda zaman damgasina gore round robin uygular, en eski damgali host once secilir; ayni hostu tek basina hedefleyen isler o hostun damgasini guncelleyip sirayi bozar; dengeli dagilim isteniyorsa isleri yalniz grubu hedefleyecek bicimde tanimla ve dagilimi raporla dogrula
+    caution: dagilim bozuk diye hostlari gruptan cikarip eklemek sorunu cozmez
+  kontrol_kaynagi_komut:
+    title: Kontrol kaynaklarini komut satirindan gormek ve yonetmek
+    triggers: [control resource, kontrol kaynagi, ecactltb, ecaqrtab, quantitative, add, delete, command line]
+    steps: dagitik Control-M'de kontrol kaynaklarini ecactltb ile yalniz goruntuleyebilirsin, ekleme ve silme komutu yoktur; nicel kaynaklar icin ecaqrtab ile ekle, sil, guncelle; kontrol kaynagini tutan isi bulup onu yonet
+    caution: kontrol kaynagini serbest birakmak icin onu tutan calisan isi oldurme; once neden tuttugunu bul
+  sap_ic_hata:
+    title: SAP isinin SAP tarafindaki ic hatayla dusmesini incelemek
+    triggers: [sap, bapi, bapi_xbp, error code, internal problem, abap, xbp]
+    steps: hatanin oldugu saati not et; SAP Basis ile SM21 (sistem gunlugu), RZ15 (XMI gunlugu) ve ST22 (ABAP dokumu) kayitlarina bak; SAP tarafindaki neden giderilince isi yeniden calistir
+    caution: SAP tarafi hatasini Control-M'de basarili sayip gecme
+  pg_bakim:
+    title: Gomulu PostgreSQL veritabaninin bakimini izlemek
+    triggers: [postgresql, postgres, vacuum, autovacuum, bakim, maintenance, health, saglik, dbustatus]
+    steps: autovacuum varsayilan olarak aciktir; DBUStatus ile durumu, veritabani ve disk buyumesini duzenli izle; uzun suren islemleri ve kilitleri kontrol et; agir bakimi (VACUUM FULL, yeniden indeksleme) yalniz bakim penceresinde ve once yedek alarak yap
+    caution: is saatinde VACUUM FULL calistirma, tablolari kilitler
 ---
 
 # Adminlik yordamlari
