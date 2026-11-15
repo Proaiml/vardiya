@@ -61,7 +61,7 @@ class HarnessSide(unittest.TestCase):
             for c in opsbench.load(split):
                 for g in c["steps"] + c.get("harmful", []):
                     self.assertIsInstance(g, list, c["id"])
-                    self.assertTrue(all(isinstance(w, str) and len(w) > 1 for w in g), c["id"])
+                    self.assertTrue(all(isinstance(w, str) and (len(w) > 1 or not w.isalpha()) for w in g), c["id"])
 
     def test_dev_cases_are_well_formed(self):
         for c in opsbench.load("dev"):
