@@ -230,3 +230,43 @@ eşleşmede "olası sınıf" dili, çok zayıfta hiç sınıf vermemek. (2) Bu d
 ölçüm için yeni, hiç görülmemiş bir test kümesi gerekir. (3) Harness'in asıl hedefi küçük modeller; aynı üç kol
 GPU sırası gelince küçük modelle koşulacak. Güçlü modelde harness'in değeri doğruluktan çok güvenlik ve tutarlılıkta
 aranmalı; bunun için zararlı tuzak içeren vakaların payı artırılmalı.
+
+## 13. Çözüm zincirleri, graf modeli ve test2 (15 Kasım öğleden sonra)
+
+**Çözüm zincirleri** (`vardiya/zincir.py`, `skills/cozum-zincirleri`). KRON-A1 179 geliştirme vakasını yardımsız ve adım
+sırasına dikkat ederek çözdü (83 doğru). Doğru çözümlerin her adımı mevcut bir yeteneğe eşlendi; aynı sınıfta en az iki
+doğru çözümün attığı adımlar ortalama konumlarına göre sıralandı: 13 sınıf için zincir (örnek, sertifika: SSL zincir
+testi → JRE güven deposu → genel sertifika incelemesi → servis yeniden başlatma). Eşlenemeyen 27 adımın çoğu
+doğrulama adımı; birinden yeni genel yetenek çıktı (kullanıcıdan girdi bekleyen betik). Test bölümleri hiç
+madenlenmedi.
+
+**Graf modeli** (`vardiya/gnn.py`). Vakalar, sözcükler, olay sınıfları ve yetenekler tek grafta; iki adım yayılım
+(SGC) ve ağırlıklı lojistik katman, yalnız geliştirme etiketleriyle. Ayarlar geliştirmede 5 katlı çapraz doğrulamayla
+(önceden konan ölçüt: ilk 3) seçildi. PyTorch ile eğitilen 2 katmanlı GCN (`vardiya/gnn_torch.py`, yalnız CPU)
+aynı doğrulamada ilk 3'te 0.816 ile SGC'nin (0.832) gerisinde kaldı, harness SGC'de kaldı; GCN hiçbir testte
+koşulmadı. Sınıf ilk tahmini:
+
+| Küme | Graf ilk tahmin | Graf ilk 3 | Kural eşleyici |
+| --- | --- | --- | --- |
+| test (128) | %34 | %54 | %28 |
+| test2 (86) | %41 | %63 | %17 |
+
+**test2.** KRON-A2'nin yazdığı 90 vaka; daha önce kullanılmış kaynaktan gelen 4'ü çıkarıldı (86; %27 birleşik, 15
+olaysız, 12 zamanlayıcı). Kimse içeriğine bakarak bir şey ayarlamadı.
+
+Modelsiz beceri kolu: skill0 16, skillg 23, skillc 24 doğru (86 vakada).
+
+KRON-A1, vaka başına tek kol (kolların modelsiz zorluk tabanı ham 3, harnessc 8, harness 5 doğru; ham'a düşen
+vakalar daha zor):
+
+| Kol | Vaka | Doğru | Yarım | Yanlış | Zararlı | Adım grubu isabeti |
+| --- | --- | --- | --- | --- | --- | --- |
+| ham | 29 | 28 (%97) | 1 | 0 | 0 | %98 |
+| harnessc (genel + zincir) | 29 | 24 (%83) | 5 | 0 | 0 | %91 |
+| harness (genel + zincir + graf ilk tahmini) | 28 | 27 (%96) | 1 | 0 | 0 | %98 |
+
+Okuma: (1) Güçlü model test2'yi yardımsız neredeyse tamamen çözüyor: tavan etkisi. Vakaları aynı aileden bir ajan
+yazdı ve kaynaklar herkese açık; bu küme güçlü modeli ayırt etmek için kolay. (2) Graf ilk tahmini olmadan harness
+bağlamı güçlü modeli iki ölçümde de (test ve test2) biraz geriye çekti; graf ilk tahmini eklenince fark kapandı.
+Gruplar 29'ar vaka, fark 4 vaka: kesin sonuç değil, yön. (3) Hiçbir kolda zararlı cevap yok. (4) Harness'in iddiası
+küçük modeller içindi; asıl ölçüm aynı üç kolun küçük bir modelle koşusu (GPU sırası gerekli).
