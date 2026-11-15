@@ -323,6 +323,26 @@ procedures:
     triggers: [mft, pano, panosu, dashboard, guncellenmiyor, no updates, gorunmuyor, durum, status, aktarim]
     steps: agent'ta ctmagcfg ile Logical Agent Name'in sunucunun agent'i tanidigi adla birebir ayni oldugunu dogrula; aft_configurable.properties'teki agentname ve ctmshostname degerlerini ve agentname.dat'i ayni ada esitle; agent'i yeniden baslat ve yeni bir aktarimin panoda gorundugunu kontrol et
     caution: panoyu duzeltmek icin MFT'yi yeniden kurma
+  aktarim_boyut_dogrulama:
+    title: Aktarim sonrasi boyut dogrulamasinin dusmesi
+    triggers: [boyut, size, dogrulama, validation, verify, -1, aktarim, transfer, ftp, mft]
+    steps: hedefteki dosyanin gercek boyutuna elle bak; gunlukte hedef boyutu -1 ise karsi FTP sunucusu boyut bilgisini vermiyordur, FTP sunucusu yoneticisiyle duzelt; duzelmiyorsa hesapta 'Verify destination file size' secenegini bilerek kapat ve riski kaydet; aktarimi yeniden calistir
+    caution: isi OK sayarak gecme; boyut dogrulamasi tamamen kalkmis olur
+  ajf_silinmeyen_klasor:
+    title: Suresi gecen SMART klasorlerin ve islerin New Day'de AJF'ten silinmemesi
+    triggers: [keep active, silinmiyor, not deleted, not removed, ajf, smart klasor, smart folder, new day, kaliyor]
+    steps: klasorun ya da isin DAYSKEEPINNOTOK (Keep Days if NOT OK) ile tanimli olup olmadigina bak; bilinen urun hatasidir (9.0.21.100'de duzeldi); gecici cozum: silinmis kaydi geri al (undelete), Keep Days if NOT OK degerini 0 yap, kaydet ve yeniden sil; kalici cozum icin yamayi uygula
+    caution: silmeden once OK yapma; klasor HOLD'da kalir
+  uzak_host_sysout:
+    title: Uzak host (WMI) isleri basarili oldugu halde NOTOK bitiyor
+    triggers: [wmi, uzak host, remote host, agentless, sysout, oscompstat 1, notok, basarili, successful]
+    steps: agent'in proclog'unda 'Cannot map remote sysout directory' gibi satirlara bak; uzak hostta SYSOUT paylasiminin tanimli oldugunu ve agent'in kullandigi hesabin bu paylasima yazma izni oldugunu dogrula; izni yalniz o hesaba ver; bir test isiyle dogrula
+    caution: paylasima herkese tam izin verme; isi OK sayarak gecme
+  ca_baslamiyor:
+    title: Zamanlayici sunucusunun yapilandirma ajani (CA) baslamiyor
+    triggers: [start_ca, yapilandirma ajani, configuration agent, acilmiyor, does not start, baslamiyor, ca gunlugu, thread, is parcacik]
+    steps: proclog'daki CA gunlugune bak; is parcaciklarinin kalkmasini beklerken sure doluyorsa shut_ca ile durdur, sunucunun data dizinindeki config.dat'a THREAD_STATE_RETRY_SLEEP 1000 satirini ekle (HA'da etkin dugumde) ve start_ca ile yeniden baslat; CCM'de CA'nin gorundugunu dogrula
+    caution: config.dat'i yedeksiz degistirme
   zos_executing_temizlik:
     title: z/OS'ta bitmis ama Executing gorunen isi AJF'ten temizlemek
     triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
@@ -388,6 +408,41 @@ procedures:
     triggers: [on/do, on do, on statement, statement, code, ciktida, output, string, metin, yakala]
     steps: On satirinda Statement komutun kendisiyle (ya da * ile her satirla), Code ise ayni satirdaki ciktiyla eslesir; aranan metin bir sonraki komuttan once tek satirda olmali; joker karakterleri (*) metnin iki yanina koy; bir test isiyle eslesmeyi dogrula
     caution: cok genis desen (*Fail*) beklenmeyen satirlari da yakalar; deseni olabildigince dar tut
+  new_day_yeniden:
+    title: New Day'i yeniden calistirmak ya da ertelemek
+    triggers: [new day, yeni gun, newday, rerun, yeniden calistir, restart, ertele, defer, delay, geciktir]
+    steps: yarida kalan New Day'i sunucu yoneticisi olarak ctm_menu > Troubleshooting > Restart New Day ile yeniden baslat; ertelemek gerekiyorsa ctmsys > System Parameters'ta Day Time'i ileri al (en fazla ~24 saat), daha uzun erteleme icin sunucu kapali tutulur; sonra siparislerin tamam oldugunu ctmudchk ya da AJF ile dogrula
+    caution: New Day'i ust uste iki kez calistirma, mukerrer siparis olur; Day Time degisikligi butun ODATE'leri etkiler
+  new_day_hizlandirma:
+    title: Uzun suren New Day'i hizlandirmak
+    triggers: [new day, yeni gun, newday, slow, yavas, uzun suruyor, long, optimize, hizlandir]
+    steps: ctmlog ile New Day'in hangi adimda uzadigini bul; on New Day suresi yetmiyorsa PRE_NEWDAY_TIME'i artir; AJF'te birikmis eski isleri (Keep Active, NOTOK kalanlar) azalt; istatistik ve gecmis temizligi gibi agir adimlari dokumantasyondaki parametrelerle sinirla; veritabaninin bakimli oldugunu dogrula
+    caution: adimlari bilmeden kapatma; gunluk temizligi kapatmak AJF'i buyutur
+  agent_portlari:
+    title: Ayni hosttaki agent'larin ve guvenlik duvarinin portlari
+    triggers: [port, ports, agent, firewall, guvenlik duvari, multiple agents, birden fazla agent, unique, benzersiz, 7005, 7006]
+    steps: ayni hosttaki her agent'in portlari benzersiz olmali (sunucu-agent 7006, agent-sunucu 7005, uzak yardimci RU_COMM_PORT 8000 ve kalici baglanti kipinde AR_* portlari); guvenlik duvarinda yalniz sunucu-agent, agent-sunucu ve uzak yardimci portlari acilir; ctmagcfg ile degerleri dogrula
+    caution: iki agent'a ayni portu verme; guvenlik duvarinda gereksiz port acma
+  mft_tls_surumu:
+    title: Dosya aktariminda en dusuk TLS surumunu zorlamak
+    triggers: [tls, tlsv1.2, tls 1.2, minimum, en dusuk, ssl version, protocol, mft]
+    steps: agent'ta cm/AFT/data altindaki ftpssl_config.properties ve fts_config.properties dosyalarinin yedegini al; izin verilen protokol satirini yalniz TLSv1.2 (ve ustu) olacak sekilde ac; MFT'yi yeniden baslat; karsi sunucuyla bir test aktarimi yap
+    caution: TLS'i kapatip duz FTP'ye donme; karsi taraf desteklemiyorsa once onu yukselttir
+  sakli_yordam_donus_kodu:
+    title: Veritabani isinde sakli yordamin donus kodunu isin sonucuna yansitmak
+    triggers: [stored procedure, sakli yordam, return code, donus kodu, exit code, cikis kodu, databases, return_value]
+    steps: yordamin RETURN_VALUE ya da OUTPUT degiskenini is tanimindaki Databases sekmesinde bir global degiskene esle; ya da ciktida arayan On/Do kuraliyla kodu belirle; yordam hatayi THROW ya da RAISERROR ile yukseltsin ki is NOTOK bitsin
+    caution: yordamin hatayi yutmasina izin verip isi basarili saymak sessiz hataya yol acar
+  pg_ha_kullanici_adi:
+    title: PostgreSQL yuksek erisilebilirlik kurulumunda replikasyonun 'zaten calisan sureç' diye durmasi
+    triggers: [postgresql, postgres, replication, replikasyon, high availability, yuksek erisilebilirlik, already running, secondary, ikinci]
+    steps: ayni makinedeki baska bir postgres surecinin yolunda ya da kullanici adinda Control-M kullanici adinin alt dize olarak gecip gecmedigine bak (ornegin ctm9 ve emctm9); geciyorsa farkli bir Control-M kullanicisi ya da farkli kurulum yolu kullan
+    caution: diger urunun postgres surecini oldurme
+  denetim_raporu:
+    title: Kullanicilarin nereden ve ne zaman giris yaptigini ya da bir kosulu kimin degistirdigini raporlamak
+    triggers: [audit, denetim, login, giris, who, kim, report, rapor, condition, kosul]
+    steps: CCM'de EM sistem parametrelerinde denetimi (auditing) ac; Reporting Facility'de Audit kategorisinde Custom Audit raporu olustur ve islem tipine (Login User, kosul ekleme/silme) gore filtrele
+    caution: denetim kapaliyken gecmise donuk bilgi yoktur; denetimi kalici acik tut
 ---
 
 # Adminlik yordamlari
