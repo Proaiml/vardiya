@@ -263,6 +263,22 @@ def load_general_skills(directory):
     return out
 
 
+def load_chains(directory):
+    """Solution chains from `kind: solution_chains` skills: {incident class: {"order": [ref, ...], "support": n}}.
+    A ref is genel:<name>, yordam:<name> or sinif:<name>."""
+    out = {}
+    for path in sorted(pathlib.Path(directory).glob("*/SKILL.md")):
+        if _kind(path) != "solution_chains":
+            continue
+        m = parse_yaml(path.read_text(encoding="utf-8").split("---", 2)[1])
+        for cls, c in (m.get("chains") or {}).items():
+            order = c.get("order") if isinstance(c, dict) and isinstance(c.get("order"), list) else []
+            order = [str(r) for r in order if re.fullmatch(r"(genel|yordam|sinif):[a-z0-9_]+", str(r))]
+            if order:
+                out[cls] = {"order": order, "support": int(c.get("support") or 0)}
+    return out
+
+
 WINDOWS_WORDS = ("windows", "powershell", ".bat", ".ps1", ".cmd", "registry", "kayit defteri", "winrm", "secpol",
                  "event viewer", "c:\\", "net use", "unc", "iis", "mssql", "sqlcmd", "logon as", "log on as")
 UNIX_WORDS = ("linux", "unix", "aix", "solaris", "hp-ux", "rhel", "ubuntu", "bash", "ksh", "/etc/", "/var/",

@@ -5,8 +5,12 @@
              actions), the matching admin procedures and the policy; the harness drops any step that its own
              class marks as harmful before the answer is scored
     skill    no model: the matched skills' own text is the answer (how much the skills alone already cover)
-    skill0, harness0   the same arms without the general server skills (skills/genel-yetenekler): the ablation
-             that shows what the product-independent OS skills add
+    skill0, harness0   the same arms without the general server skills (skills/genel-yetenekler) and without
+             solution chains: the ablation that shows what the product-independent OS skills add
+    skillg, harnessg   with the general skills but without the solution chains (skills/cozum-zincirleri): what
+             the order learned from correctly solved development cases adds
+    skillc, harnessc   general skills and chains, without the graph model's first guess (vardiya/gnn.py); the plain
+             skill and harness arms add that guess: what a fast trained pre-diagnosis adds for the language model
 
 Scoring is deterministic: every `steps` group of the case needs one of its synonyms in the answer's cause or
 steps; a `harmful` synonym there makes the answer harmful. What the answer lists under `avoid` is a warning and
@@ -25,7 +29,7 @@ import time
 from . import __version__
 from .gateway import connect
 from .graph import mark_signals
-from .skills import (fold, host_os, load_general_skills, load_incident_classes, load_procedures, match_general,
+from .skills import (fold, host_os, load_chains, load_general_skills, load_incident_classes, load_procedures, match_general,
                      match_procedures, soft_in)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -140,13 +144,38 @@ def general_text(g, os_name):
     return "\n".join(rows)
 
 
-def context(case, classes, procedures, general=None):
+def ref_title(ref, classes, procedures, general):
+    kind, name = ref.split(":", 1)
+    src = {"genel": general, "yordam": procedures, "sinif": classes}[kind] or {}
+    return src[name]["title"] if name in src else None
+
+
+def ref_steps(ref, classes, procedures, general, os_name):
+    """What applying a chain step means, in that skill's own words."""
+    kind, name = ref.split(":", 1)
+    if kind == "yordam" and name in procedures:
+        return [procedures[name]["steps"]]
+    if kind == "sinif" and name in classes:
+        return [classes[name]["fix"]]
+    if kind == "genel" and general and name in general:
+        g = general[name]
+        return [x for o in ([os_name] if os_name else ["unix", "windows"])
+                if g["check"][o] and not g["check"][o].startswith("(uygulanmaz") for x in (g["check"][o], g["fix"][o])]
+    return []
+
+
+def context(case, classes, procedures, general=None, chains=None, hint=None):
     """What the harness hands the model for this case, and what it found."""
     found_classes = match_classes(classes, case["prompt"])
     found = {"class": found_classes[0] if found_classes else None, "classes": found_classes,
              "procedures": match_procedures(procedures, case["prompt"]), "product": product(case["prompt"]),
              "general": match_general(general, case["prompt"], found_classes) if general else [],
-             "os": host_os(case["prompt"]), "strength": strength(classes, case["prompt"], found_classes)}
+             "os": host_os(case["prompt"]), "strength": strength(classes, case["prompt"], found_classes),
+             "chain": [], "gnn": hint or {}}
+    for name in found_classes:
+        if chains and name in chains:
+            found["chain"] = [r for r in chains[name]["order"] if ref_title(r, classes, procedures, general)]
+            break
     signs = class_signs(classes, case["prompt"])
     parts = []
     if len(found_classes) > 1:
@@ -169,6 +198,17 @@ def context(case, classes, procedures, general=None):
         parts.append(f"Admin procedure: {p['title']}\nSteps: {p['steps']}\nCaution: {p['caution']}")
     for name in found["general"]:
         parts.append(general_text(general[name], found["os"]))
+    if hint and hint.get("class"):
+        guess = ", ".join(f"{classes[k]['title'] if k in classes else k} ({p:.0%})" for k, p in hint["class"])
+        row = f"Graph model first guess (trained on solved cases, can be wrong): root cause class: {guess}"
+        if hint.get("skills"):
+            row += "\nSkills it would start with: " + ", ".join(
+                f"{ref_title(r, classes, procedures, general) or r}" for r, _ in hint["skills"])
+        parts.insert(0, row)
+    if found["chain"]:
+        rows = [f"{i}. {ref_title(r, classes, procedures, general)} ({r})" for i, r in enumerate(found["chain"], 1)]
+        parts.append("Order that solved similar cases (try the skills in this order, skip a step the evidence rules "
+                     "out):\n" + "\n".join(rows))
     if not parts:
         parts.append("No known failure class or procedure matched; reason from the evidence only.")
     return "\n\n".join(parts + [POLICY]), found
@@ -189,8 +229,8 @@ def guard(answer, found, classes):
     return {**answer, "steps": keep, "avoid": list(answer.get("avoid") or []) + moved}
 
 
-def skill_answer(case, classes, procedures, general=None):
-    _, found = context(case, classes, procedures, general)
+def skill_answer(case, classes, procedures, general=None, chains=None, hint=None):
+    _, found = context(case, classes, procedures, general, chains, hint)
     steps, causes = [], []
     for name in found.get("classes") or []:
         c = classes[name]
@@ -205,6 +245,8 @@ def skill_answer(case, classes, procedures, general=None):
         for o in [found["os"]] if found["os"] else ["unix", "windows"]:
             if g["check"][o] and not g["check"][o].startswith("(uygulanmaz"):
                 steps += [g["check"][o], g["fix"][o]]
+    for ref in found["chain"]:
+        steps += [x for x in ref_steps(ref, classes, procedures, general, found["os"]) if x not in steps]
     return {"cause": cause, "steps": steps, "avoid": []}, found
 
 
@@ -253,15 +295,44 @@ def ask(model, case, ctx=None):
     return model.ask_json([{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}])
 
 
+SKILL_ARMS = ("skill", "skillc", "skillg", "skill0")
+HARNESS_ARMS = ("harness", "harnessc", "harnessg", "harness0")
+
+
+def arm_skills(arm, general, chains):
+    """(general skills, chains) an arm may use: '0' neither, 'g' general only, 'c' and plain both."""
+    if arm.endswith("0"):
+        return {}, {}
+    if arm.endswith("g"):
+        return general, {}
+    return general, chains
+
+
+def uses_gnn(arm):
+    return arm in ("skill", "harness")
+
+
+def gnn_hints(split, arms):
+    """{case id: first guess} from the graph model trained on the development split, for arms that use it."""
+    if not any(uses_gnn(a) for a in arms):
+        return {}
+    from . import gnn  # needs numpy; only loaded when an arm uses the graph model
+    model, cases = gnn.train(None if split == "dev" else split)
+    ids = [c["id"] for c in (load("dev") if split == "dev" else cases)]
+    return {i: model.predict(i) for i in ids}
+
+
 def run(split, arms, model_spec=None, out=OUT, limit=None):
     classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
+    chains = load_chains(SKILLS)
+    hints = gnn_hints(split, arms)
     model = connect(model_spec) if model_spec else None
     done = set()
     if out.exists():
         keep = []
         for line in out.read_text(encoding="utf-8").splitlines():
             r = json.loads(line)
-            if r["arm"] in ("skill", "skill0") and r["split"] == split and r["arm"] in arms:
+            if r["arm"] in SKILL_ARMS and r["split"] == split and r["arm"] in arms:
                 continue  # the skill arm has no model and takes no time: always score it against the current skills
             keep.append(line)
             done.add((r["id"], r["arm"], r.get("model")))
@@ -269,19 +340,20 @@ def run(split, arms, model_spec=None, out=OUT, limit=None):
     out.parent.mkdir(parents=True, exist_ok=True)
     for case in load(split)[:limit]:
         for arm in arms:
-            key = (case["id"], arm, None if arm in ("skill", "skill0") else model_spec)
+            key = (case["id"], arm, None if arm in SKILL_ARMS else model_spec)
             if key in done:
                 continue
             t0, found = time.time(), None
-            gen = {} if arm.endswith("0") else general
-            if arm in ("skill", "skill0"):
-                answer, found = skill_answer(case, classes, procedures, gen)
+            gen, ch = arm_skills(arm, general, chains)
+            hint = hints.get(case["id"]) if uses_gnn(arm) else None
+            if arm in SKILL_ARMS:
+                answer, found = skill_answer(case, classes, procedures, gen, ch, hint)
             elif model is None:
                 continue
             elif arm == "ham":
                 answer = ask(model, case)
             else:
-                ctx, found = context(case, classes, procedures, gen)
+                ctx, found = context(case, classes, procedures, gen, ch, hint)
                 answer = guard(ask(model, case, ctx), found, classes)
             verdict, hits = score(case, answer)
             row = {"id": case["id"], "split": split, "track": case["track"], "class": case["class"],
@@ -298,6 +370,8 @@ def export(split, arms, path, seed_split=True):
     Each case goes to ONE arm only (alternating inside each incident class), so an agent never sees the same
     case twice with and without help. The file carries the prompt the arm would send, never the expected steps."""
     classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
+    chains = load_chains(SKILLS)
+    hints = gnn_hints(split, arms)
     rows = []
     # sorted by class, then dealt round-robin: every arm gets about the same number and mix of classes
     for i, case in enumerate(sorted(load(split), key=lambda c: (c["class"], c["id"]))):
@@ -305,7 +379,8 @@ def export(split, arms, path, seed_split=True):
         if arm == "ham":
             ctx = None
         else:
-            ctx, _ = context(case, classes, procedures, {} if arm.endswith("0") else general)
+            ctx, _ = context(case, classes, procedures, *arm_skills(arm, general, chains),
+                             hints.get(case["id"]) if uses_gnn(arm) else None)
         user = case["prompt"] + ("\n\n" + ctx if ctx else "") + "\n\n" + SCHEMA
         rows.append({"id": case["id"], "arm": arm, "system": SYSTEM, "prompt": user})
     # arms in the order given: an agent answers every unaided case before it sees any harness text
@@ -318,6 +393,7 @@ def ingest(split, path, label, out=OUT):
     """Score answers an outside model wrote ({"id", "arm", "answer": {cause, steps, avoid}} per line).
     The harness arms get the same guard as in `run`."""
     classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
+    chains = load_chains(SKILLS)
     cases = {c["id"]: c for c in load(split)}
     n = 0
     for line in pathlib.Path(path).read_text(encoding="utf-8").splitlines():
@@ -325,11 +401,11 @@ def ingest(split, path, label, out=OUT):
             continue
         a = json.loads(line)
         case, arm, answer = cases.get(a.get("id")), a.get("arm"), a.get("answer")
-        if not case or arm not in ("ham", "harness", "harness0"):
+        if not case or arm not in ("ham",) + HARNESS_ARMS:
             continue
         found = None
         if arm != "ham":
-            _, found = context(case, classes, procedures, {} if arm == "harness0" else general)
+            _, found = context(case, classes, procedures, *arm_skills(arm, general, chains))
             answer = guard(answer, found, classes)
         verdict, hits = score(case, answer)
         row = {"id": case["id"], "split": split, "track": case["track"], "class": case["class"],
