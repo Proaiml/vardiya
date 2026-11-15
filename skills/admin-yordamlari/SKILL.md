@@ -122,7 +122,7 @@ procedures:
     title: Yuksek erisilebilirlikte zamanlayici sunucusunu elle ikinciye gecirmek ve geri almak
     triggers: [high availability, failover, fallback, yuksek erisilebilirlik, ikinci, birincil, secondary, primary, gecis, geceriz, ctmipc, emcha, hangs, askida]
     steps: zamanlayici sunucusunda gecis ve geri donus ayni komutla yapilir (ctmipc -msgid MFO -dest CA); yonetim sunucusu (EM) HA'sinda iki dugum arasinda guvenlik duvari varsa gecis duser: duzeltme paketini uygula ve bilesen portlarini HostPort ile sabitleyip yalnizca onlari ac; birincil calisiyorsa birincilde, birincil kapaliysa ikincilde calistirilir; birincil kapaliysa ikincilde komutu calistirmadan once yaklasik 20 dakika bekle; sonra durumu ve aktif tarafi dogrula; EM gecisi CCM'de askida kalirsa birincil dugumde em emcha -restore primary (yalniz ikincil erisilebilirse orada em emcha -restore secondary) ile dugumu geri yukle
-    caution: iki tarafin ayni anda aktif olmasi veritabanini bozar; birincilin gercekten kapali oldugundan emin ol
+    caution: iki tarafin ayni anda aktif olmasi veritabanini bozar; birincilin gercekten kapali oldugundan emin ol; hangi hostun etkin oldugunu ctmha -ACTION IS_ACTIVE (IS_PRIMARY, IS_HA) ile sor; EM'de otomatik gecis tum EM bilesenleri yanit vermediginde olur, gecici olarak kapatmak icin ikincideki Configuration Agent'i durdur ya da CCM'de gecis kipini Manual yap
   pg_yedek:
     title: Zamanlayici ya da yonetim sunucusunun PostgreSQL veritabanini yedeklemek
     triggers: [backup, yedek, postgres, postgresql, database, veritabani, dbuhotbackup, dbucoldbackup, restore]
@@ -303,6 +303,26 @@ procedures:
     triggers: [mft, managed file transfer, ikinci, second, ornek, instance, ayni host, same host, port, karisik]
     steps: ikinci ornegin hub_config.properties dosyasinda server.port, management.port ve hub.http-port degerlerini ve konteyner portlarini ilk ornekten farkli, bos portlara al; ornegi yeniden baslat; CCM'de iki ornegin bilgisinin ayrildigini dogrula
     caution: iki ornegi ayni portlarla birakma; CCM yanlis bilgi gosterir
+  mft_bos_parola:
+    title: Yukseltmeden sonra dosya aktarim profillerindeki parolalarin bos gorunmesi
+    triggers: [mft, aft, baglanti profili, connection profile, parola, password, bos, blank, empty, yukselt, upgrade]
+    steps: aft_configurable.properties'te localPasswordAlgorithm satirinin tek oldugunu dogrula; fts_config.properties ve accounts.xml'deki parolalarin ayni algoritmayla (Blowfish ya da AES) sifrelendigine bak; tutarsizligi giderip parolalari CCM'den yeniden gir ve profilleri dogrula
+    caution: algoritma satirlarini neye yol actigini bilmeden silme; once dosyalarin yedegini al
+  s3_profil_izinleri:
+    title: S3 baglanti profilinin dogrulanmamasi ya da bucket listesinin bos gelmesi
+    triggers: [s3, bucket, listing, listeleme, no data found, dogrula, validate, izin, permission]
+    steps: profildeki kullanicinin IAM politikasinda s3:ListAllMyBuckets ve s3:GetBucketLocation izinlerinin olup olmadigini AWS yoneticisiyle kontrol et; eksikse politikaya eklet; profili yeniden dogrula
+    caution: sorunu cozmek icin kullaniciya tam yetki (s3:*) verme; yalniz gereken izinleri ekle
+  em_yuksek_cpu:
+    title: Yukseltmeden sonra yonetim sunucusunda CPU'nun surekli yuksek olmasi
+    triggers: [cpu, %100, yuksek, high, mikroservis, microservice, java, em, yonetim sunucusu, yavas]
+    steps: once makinenin surumun istedigi CPU ve bellek gereksinimini karsiladigini dogrula; hangi surecin tukettigini bul; Java mikroservisleriyse EM_HOME/services/context altindaki tanimlara -XX:+UseSerialGC ekle; EM'yi yeniden baslat ve CPU'yu izle
+    caution: Xms ve Xmx degerlerini destek yonlendirmesi olmadan degistirme
+  mft_pano_guncellenmiyor:
+    title: Dosya aktarim panosunun ya da aktarim sunucusu durumunun guncellenmemesi
+    triggers: [mft, pano, panosu, dashboard, guncellenmiyor, no updates, gorunmuyor, durum, status, aktarim]
+    steps: agent'ta ctmagcfg ile Logical Agent Name'in sunucunun agent'i tanidigi adla birebir ayni oldugunu dogrula; aft_configurable.properties'teki agentname ve ctmshostname degerlerini ve agentname.dat'i ayni ada esitle; agent'i yeniden baslat ve yeni bir aktarimin panoda gorundugunu kontrol et
+    caution: panoyu duzeltmek icin MFT'yi yeniden kurma
   zos_executing_temizlik:
     title: z/OS'ta bitmis ama Executing gorunen isi AJF'ten temizlemek
     triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
@@ -348,6 +368,26 @@ procedures:
     triggers: [postgresql, postgres, vacuum, autovacuum, bakim, maintenance, health, saglik, dbustatus]
     steps: autovacuum varsayilan olarak aciktir; DBUStatus ile durumu, veritabani ve disk buyumesini duzenli izle; uzun suren islemleri ve kilitleri kontrol et; agir bakimi (VACUUM FULL, yeniden indeksleme) yalniz bakim penceresinde ve once yedek alarak yap
     caution: is saatinde VACUUM FULL calistirma, tablolari kilitler
+  ortak_degisken_dosyasi:
+    title: Bircok isin okuyacagi ortak degisken dosyasi tanimlamak
+    triggers: [libmemsym, ortak, central, merkezi, degisken dosyasi, variable file, variables, autoedit]
+    steps: her satirda bir atama olan bir metin dosyasi yaz (ornegin %%a=5); is tanimlarinda %%LIBMEMSYM=<tam yol> ver; yol buyuk kucuk harf duyarlidir ve dosya isi calistiran taraftan okunabilir olmali; bir test isiyle degerleri dogrula
+    caution: dosyaya parola yazma; dosyayi degistirmek onu okuyan butun isleri etkiler
+  takvim_goreli_gun:
+    title: Isi bir takvimin ilk, son ya da n'inci is gununde calistirmak
+    triggers: [first work day, last work day, ilk is gunu, son is gunu, calendar, takvim, relative, goreli, month end, ay sonu]
+    steps: Schedule'da Based on Calendar'i sec; Relative Calendar Days from Start/End of Month/Period'u sec; takvimi ver ve Order only on calendar days'i isaretle; ilk gun icin 1, sondan ilk gun icin -1 gibi gun numarasini sec; forecast ile dogrula
+    caution: ay sonu gunlerini her ay elle tutarak cozme
+  sql_ciktisi:
+    title: Veritabani isinin SQL ciktisini is ciktisinda gormek
+    triggers: [databases, veritabani isi, sql output, sql ciktisi, job output, is ciktisi, append]
+    steps: Databases is tanimindaki Job Output bolumunde 'Append SQL output to Job Output' secenegini isaretle ve bicimi Text yap; isi yeniden calistirip ciktiyi kontrol et
+    caution: cok buyuk sonuc kumelerini ciktiya eklemek ciktiyi sisirir; gerekiyorsa sorguyu sinirla
+  ondo_metin_eslesme:
+    title: Is ciktisinda bir metni On/Do ile yakalamak
+    triggers: [on/do, on do, on statement, statement, code, ciktida, output, string, metin, yakala]
+    steps: On satirinda Statement komutun kendisiyle (ya da * ile her satirla), Code ise ayni satirdaki ciktiyla eslesir; aranan metin bir sonraki komuttan once tek satirda olmali; joker karakterleri (*) metnin iki yanina koy; bir test isiyle eslesmeyi dogrula
+    caution: cok genis desen (*Fail*) beklenmeyen satirlari da yakalar; deseni olabildigince dar tut
 ---
 
 # Adminlik yordamlari
