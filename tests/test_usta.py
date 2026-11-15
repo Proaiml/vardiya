@@ -53,6 +53,42 @@ class Protocol(unittest.TestCase):
         self.assertEqual(out["steps"], DRAFT["steps"])
         self.assertEqual(out["cause"], DRAFT["cause"])
 
+    def test_gate_returns_an_incomplete_answer_with_what_is_missing(self):
+        thin = {"cause": "bellek", "steps": ["bellege bak"], "avoid": []}
+        self.assertEqual(opsbench.gate(thin), ["steps", "command", "verify", "avoid"])
+        full = {"cause": "bellek", "avoid": ["isi oldugu gibi yeniden calistirma"],
+                "steps": ["dmesg -T ile oom kaydina bak", "isin bellek ihtiyacini olc", "isi daha buyuk bellekli hosta tasi",
+                          "isi yeniden calistir ve ciktisini dogrula"]}
+        self.assertEqual(opsbench.gate(full), [])
+        # "nothing is wrong" needs a confirming check, not four steps
+        calm = {"cause": "Bu beklenen davranis, mudahale gerekmez", "steps": ["systemctl list-timers ile zamanlamayi gor", "izlemeye devam et"],
+                "avoid": ["zamanlamayi degistirme"]}
+        self.assertEqual(opsbench.gate(calm), [])
+        note = opsbench.return_prompt(CASE, thin, opsbench.gate(thin))
+        self.assertIn("returned this answer", note)
+        self.assertIn("fewer than four steps", note)
+
+    def test_verified_notes_only_for_a_cause_the_harness_is_sure_of(self):
+        from vardiya.skills import load_general_skills
+        general = load_general_skills(opsbench.SKILLS)
+        strong = {"class": "sinyal", "classes": ["sinyal"], "strength": {"sinyal": "strong"}, "procedures": [],
+                  "general": ["bellek_ve_oom"], "os": "unix", "product": "controlm"}
+        steps, avoid = opsbench.verified_notes(CASE, strong, self.classes, self.procs, general)
+        self.assertTrue(steps[0].startswith("Usta notu ("))
+        self.assertIn("salt okuyan kontrol", steps[1])
+        self.assertTrue(avoid)
+        weak = {**strong, "strength": {"sinyal": "weak"}}
+        self.assertEqual(opsbench.verified_notes(CASE, weak, self.classes, self.procs, general), ([], []))
+
+    def test_finish_keeps_both_rounds_and_adds_notes_last(self):
+        final = {"cause": "bellek", "steps": ["dmesg -T ile oom kaydina bak"]}
+        returned = {"cause": "bellek", "steps": ["isi yeniden calistir ve dogrula"], "avoid": ["Set OK"]}
+        out = opsbench.finish(CASE, DRAFT, final, returned, None, self.classes, self.procs, {}, False)
+        text = " ".join(out["steps"])
+        for kept in ("dmesg -T ile oom kaydina bak", "isi daha buyuk bellekli hosta tasi", "isi yeniden calistir ve dogrula"):
+            self.assertIn(kept, text)
+        self.assertEqual(out.get("notes"), None)
+
     def test_product_gate_keeps_other_schedulers_procedures_out(self):
         slurm = "Slurm isi OUT_OF_MEMORY ile dustu, sacct ciktisinda MaxRSS ReqMem'i asiyor"
         self.assertIn("slurm_is_dustu", match_procedures(self.procs, slurm))

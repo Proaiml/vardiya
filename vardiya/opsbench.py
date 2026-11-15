@@ -17,7 +17,13 @@
              writes the final answer; (3) the harness moves harmful steps to `avoid` and restores every draft step
              the review neither kept nor explicitly dropped. The harness may add knowledge and remove harm; it may
              not silently lose what the model already knew, so the final answer is never thinner than the draft.
-    usta0    the same protocol with the answer contract only, no review sheet: what the protocol alone adds
+             Then two more harness steps: (4) the gate: an answer that does not meet the contract (too few steps,
+             no command or parameter named, no verification, nothing to avoid) is returned once with the list of
+             what is missing, as an incomplete request is returned at the request desk; (5) verified notes: for a
+             cause the harness is sure of (two of its own signs, or the rule matcher and the graph model agreeing)
+             it attaches that class's verified fix and read-only check under its own name.
+    usta0    the same protocol with the answer contract and the gate only, no review sheet and no notes: what the
+             protocol alone adds
 
 Scoring is deterministic: every `steps` group of the case needs one of its synonyms in the answer's cause or
 steps; a `harmful` synonym there makes the answer harmful. What the answer lists under `avoid` is a warning and
@@ -130,6 +136,8 @@ PRODUCTS = {"airflow": ["airflow", " dag", "dag ", "dags", "operator", "xcom"], 
             "slurm": ["slurm", "sbatch", "squeue", "srun", "sinfo", "scontrol"],
             "autosys": ["autosys", "jil", "sendevent", "autorep"],
             "kubernetes": ["kubernetes", "kubectl", "k8s", "cronjob", " pod"], "quartz": ["quartz"],
+            "systemd": ["systemd", "systemctl", "oncalendar", ".timer", ".service"], "rundeck": ["rundeck"],
+            "gorev_zamanlayici": ["task scheduler", "gorev zamanlayici", "schtasks", "scheduled task", "zamanlanmis gorev"],
             "controlm": ["control-m", "ctm", "ccm", "user daily", "new day", " agent", "smart folder", "oscompstat", "zamanlayici sunucusu"]}
 
 
@@ -349,7 +357,8 @@ def _tokens(text):
 
 def merge(draft, final, found, classes):
     """The harness's last word on a reviewed answer. A draft step that the final answer neither kept (60% of its
-    words) nor listed under `dropped` is restored at the end; then the guard moves harmful steps to `avoid`."""
+    words) nor listed under `dropped` is restored at the end, and a draft cause that the review rewrote away is kept
+    beside the new one; then the guard moves harmful steps to `avoid`."""
     draft = draft if isinstance(draft, dict) else {}
     final = final if isinstance(final, dict) else {}
     steps = [str(x) for x in final.get("steps") or []]
@@ -360,7 +369,14 @@ def merge(draft, final, found, classes):
         words = _tokens(step)
         if words and len(words & kept) / len(words) < 0.6 and len(words & gone) / len(words) < 0.6:
             restored.append(str(step))
-    out = {"cause": str(final.get("cause") or draft.get("cause") or ""), "steps": steps + restored,
+    # the same rule for the cause: a first assessment the review rewrote away stays on record beside the new one
+    cause, first = str(final.get("cause") or ""), str(draft.get("cause") or "")
+    words = _tokens(first)
+    if not cause:
+        cause = first
+    elif words and len(words & kept) / len(words) < 0.6 and len(words & gone) / len(words) < 0.6:
+        cause = f"{cause} (ilk degerlendirme: {first})"
+    out = {"cause": cause, "steps": steps + restored,
            "avoid": list(final.get("avoid") or draft.get("avoid") or [])}
     if found:
         out = guard(out, found, classes)
@@ -368,11 +384,102 @@ def merge(draft, final, found, classes):
     return out
 
 
+TECH = re.compile(r"`|\b\w+_\w+\b|(?:^|\s)--?[A-Za-z][\w-]*|/[\w.-]+/[\w.-]+|\b[A-Za-z]:\\|\b\w+=\S+"
+                  r"|\b[\w-]+\.(?:dat|conf|cfg|ini|xml|json|yaml|yml|log|sh|ps1|bat|py|properties|sql)\b|\b[A-Z][A-Z0-9_]{3,}\b"
+                  r"|\b(?:systemctl|kubectl|journalctl|crontab|airflow|squeue|sacct|scontrol|sinfo|sbatch|autorep|sendevent|docker"
+                  r"|openssl|keytool|curl|ssh|scp|sftp|grep|netstat|nslookup|icacls|schtasks|powershell|pwsh|chmod|chown|ulimit|sudo"
+                  r"|kinit|klist|tnsping|sqlplus|psql|sqlcmd|ctm\w+|ecaqrtab)\b|\b(?:Get|Set|Test|Start|Stop|Restart|New|Invoke)-[A-Z]\w+")
+VERIFY = re.compile(r"dogrula|verify|kontrol et|teyit|confirm|test et|yeniden calistir|rerun|re-run|izle|monitor|check that|sina")
+CALM = re.compile(r"mudahale gerek|no intervention|beklenen davranis|expected behavio|normal davranis|sorun yok|not a failure|"
+                  r"ariza degil|hata degil|not an error")
+MISSING = {"steps": "fewer than four steps: cover every part of the contract (confirm, fix, alternative, restart and verify, prevent)",
+           "command": "no exact command, parameter, option, file or screen is named",
+           "verify": "no step says how to verify that the fix worked",
+           "avoid": "nothing is listed under avoid"}
+
+
+def gate(answer):
+    """What a final answer lacks against the contract; an empty list passes. Deterministic, no model."""
+    answer = answer if isinstance(answer, dict) else {}
+    steps = [str(x) for x in answer.get("steps") or []]
+    text = fold(" ".join(steps))
+    calm = CALM.search(fold(str(answer.get("cause", ""))) + " " + text)  # "nothing is wrong" needs fewer steps
+    out = []
+    if len(steps) < (2 if calm else 4):
+        out.append("steps")
+    if not TECH.search(" ".join(steps)):
+        out.append("command")
+    if not calm and not VERIFY.search(text):
+        out.append("verify")
+    if not (answer.get("avoid") or []):
+        out.append("avoid")
+    return out
+
+
+def return_prompt(case, answer, missing):
+    """The gate's note back to the model: its own answer and what the contract still asks for."""
+    shown = {k: answer.get(k) for k in ("cause", "steps", "avoid")}
+    rows = [case["prompt"], "", "Your answer:", json.dumps(shown, ensure_ascii=False), "",
+            "The harness returned this answer because it does not meet the answer contract:"]
+    rows += [f"- {MISSING[m]}" for m in missing]
+    rows += ["", "Complete it. Keep everything that is already there and add what is missing. Do not invent a command: "
+             "when you are not sure of one, name the tool, log or screen instead.", "", CONTRACT, "", REVIEW_SCHEMA]
+    return "\n".join(rows)
+
+
+def verified_notes(case, found, classes, procedures, general):
+    """What the harness adds under its own name, only where it is sure: the verified fix and the first read-only
+    check of every strongly matched class, and a procedure three of whose triggers occur in the report."""
+    if not found:
+        return [], []
+    steps, avoid = [], []
+    for name in found.get("classes") or []:
+        if (found.get("strength") or {}).get(name) != "strong":
+            continue
+        c = classes[name]
+        own = c.get("fix_by", {}).get(found.get("product"))
+        steps.append(f"Usta notu ({c['title']}, dogrulanmis duzeltme): {own + '; ' if own else ''}{c['fix']}")
+        avoid += [f"{c['title']}: {ACTION_WORDS.get(a, [a])[0]}" for a in c["harmful"]]
+        for g_name in found.get("general") or []:
+            g = (general or {}).get(g_name)
+            if g and name in g["classes"]:
+                oses = [found["os"]] if found.get("os") else ["unix", "windows"]
+                checks = [g["check"][o] for o in oses if not g["check"][o].startswith("(uygulanmaz")]
+                if checks:
+                    steps.append(f"Usta notu ({g['title']}, salt okuyan kontrol): {' | '.join(dict.fromkeys(checks))}")
+                break
+    for name in found.get("procedures") or []:
+        pr = procedures[name]
+        if sum(soft_in(t, case["prompt"]) for t in pr["triggers"]) >= 3:
+            steps.append(f"Usta notu ({pr['title']}, yordam): {pr['steps']}")
+    return steps, avoid
+
+
+def attach(answer, case, found, classes, procedures, general):
+    steps, avoid = verified_notes(case, found, classes, procedures, general)
+    return {**answer, "steps": list(answer.get("steps") or []) + steps, "avoid": list(answer.get("avoid") or []) + avoid,
+            "notes": len(steps)}
+
+
 def ask_usta(model, case, sheet):
     draft = ask(model, case)
     final = model.ask_json([{"role": "system", "content": SYSTEM},
                             {"role": "user", "content": review_prompt(case, draft, sheet)}])
     return draft, final
+
+
+def finish(case, draft, final, returned, found, classes, procedures, general, notes):
+    """Stages 3 to 5 for one case: merge the review into the draft, merge the gate's second answer when there is one,
+    then attach the verified notes (the `usta` arm only)."""
+    answer = merge(draft, final, found, classes)
+    restored = answer["restored"]
+    if returned is not None:
+        answer = merge(answer, returned, found, classes)
+        restored += answer["restored"]
+    if notes:
+        answer = attach(answer, case, found, classes, procedures, general)
+    answer["restored"] = restored
+    return answer
 
 
 SKILL_ARMS = ("skill", "skillc", "skillg", "skill0")
@@ -435,7 +542,11 @@ def run(split, arms, model_spec=None, out=OUT, limit=None):
                 if arm == "usta":
                     sheet, found = context(case, classes, procedures, general, chains, hint)
                 draft, final = ask_usta(model, case, sheet)
-                answer = merge(draft, final, found, classes)
+                missing, returned = gate(merge(draft, final, found, classes)), None
+                if missing:
+                    returned = model.ask_json([{"role": "system", "content": SYSTEM}, {"role": "user", "content":
+                                                return_prompt(case, merge(draft, final, found, classes), missing)}])
+                answer = finish(case, draft, final, returned, found, classes, procedures, general, arm == "usta")
             elif arm == "ham":
                 answer = ask(model, case)
             else:
@@ -500,12 +611,34 @@ def export_review(split, drafts_path, path, arms=USTA_ARMS):
     return collections.Counter(r["arm"] for r in rows)
 
 
-def ingest(split, path, label, out=OUT, drafts_path=None):
+def export_return(split, drafts_path, finals_path, path):
+    """Stage 3 prompts for an outside model: only the stage 2 answers the gate returns, each with what it lacks."""
+    classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
+    chains, drafts = load_chains(SKILLS), read_answers(drafts_path)
+    finals = [json.loads(x) for x in pathlib.Path(finals_path).read_text(encoding="utf-8").splitlines() if x.strip()]
+    hints = gnn_hints(split, ["usta"])
+    cases = {c["id"]: c for c in load(split)}
+    rows = []
+    for a in finals:
+        case, arm = cases.get(a.get("id")), a.get("arm")
+        if not case or arm not in USTA_ARMS or case["id"] not in drafts:
+            continue
+        found = context(case, classes, procedures, general, chains, hints.get(case["id"]))[1] if arm == "usta" else None
+        merged = merge(drafts[case["id"]], a.get("answer"), found, classes)
+        missing = gate(merged)
+        if missing:
+            rows.append({"id": case["id"], "arm": arm, "system": SYSTEM, "prompt": return_prompt(case, merged, missing)})
+    pathlib.Path(path).write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    return {"returned": len(rows), "passed": len(finals) - len(rows)}
+
+
+def ingest(split, path, label, out=OUT, drafts_path=None, returns_path=None):
     """Score answers an outside model wrote ({"id", "arm", "answer": {cause, steps, avoid}} per line).
     The harness arms get the same guard as in `run`."""
     classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
     chains = load_chains(SKILLS)
     drafts = read_answers(drafts_path) if drafts_path else {}
+    returns = read_answers(returns_path) if returns_path else {}
     hints = gnn_hints(split, ["usta"]) if drafts_path else {}
     cases = {c["id"]: c for c in load(split)}
     n = 0
@@ -523,8 +656,9 @@ def ingest(split, path, label, out=OUT, drafts_path=None):
                 continue
             if arm == "usta":
                 _, found = context(case, classes, procedures, general, chains, hints.get(case["id"]))
-            answer = merge(draft, answer, found, classes)
-            extra = {"draft_verdict": score(case, draft)[0], "restored": answer.get("restored", 0)}
+            answer = finish(case, draft, answer, returns.get(case["id"]), found, classes, procedures, general, arm == "usta")
+            extra = {"draft_verdict": score(case, draft)[0], "restored": answer.get("restored", 0),
+                     "returned": case["id"] in returns, "notes": answer.get("notes", 0)}
         elif arm != "ham":
             _, found = context(case, classes, procedures, *arm_skills(arm, general, chains))
             answer = guard(answer, found, classes)
@@ -592,12 +726,18 @@ def main(argv=None):
     i.add_argument("--file", required=True)
     i.add_argument("--label", required=True)
     i.add_argument("--drafts", help="stage 1 answers; needed to score the usta arms")
+    i.add_argument("--returns", help="stage 3 answers (the gate's returns), when there are any")
     i.add_argument("--out", default=str(OUT))
     v = sub.add_parser("export-review", help="stage 2 of the Usta protocol for an outside model")
     v.add_argument("--split", default="test")
     v.add_argument("--drafts", required=True)
     v.add_argument("--file", required=True)
     v.add_argument("--arms", default="usta,usta0")
+    w = sub.add_parser("export-return", help="stage 3 of the Usta protocol: answers the gate returns")
+    w.add_argument("--split", default="test")
+    w.add_argument("--drafts", required=True)
+    w.add_argument("--finals", required=True)
+    w.add_argument("--file", required=True)
     q = sub.add_parser("paired", help="draft against final answer for the usta arms")
     q.add_argument("--model", required=True)
     q.add_argument("--split")
@@ -607,9 +747,11 @@ def main(argv=None):
     elif a.cmd == "export":
         print(dict(export(a.split, a.arms.split(","), a.file)))
     elif a.cmd == "ingest":
-        print(ingest(a.split, a.file, a.label, pathlib.Path(a.out), a.drafts), "cevap puanlandi")
+        print(ingest(a.split, a.file, a.label, pathlib.Path(a.out), a.drafts, a.returns), "cevap puanlandi")
     elif a.cmd == "export-review":
         print(dict(export_review(a.split, a.drafts, a.file, tuple(a.arms.split(",")))))
+    elif a.cmd == "export-return":
+        print(export_return(a.split, a.drafts, a.finals, a.file))
     elif a.cmd == "paired":
         print(paired(a.model, a.split))
     else:
