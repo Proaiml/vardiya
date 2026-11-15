@@ -441,12 +441,12 @@ procedures:
   new_day_yeniden:
     title: New Day'i yeniden calistirmak ya da ertelemek
     triggers: [new day, yeni gun, newday, rerun, yeniden calistir, restart, ertele, defer, delay, geciktir]
-    steps: yarida kalan New Day'i sunucu yoneticisi olarak ctm_menu > Troubleshooting > Restart New Day ile yeniden baslat; ertelemek gerekiyorsa ctmsys > System Parameters'ta Day Time'i ileri al (en fazla ~24 saat), daha uzun erteleme icin sunucu kapali tutulur; sonra siparislerin tamam oldugunu ctmudchk ya da AJF ile dogrula
+    steps: yarida kalan New Day'i sunucu yoneticisi olarak ctm_menu > Troubleshooting > Restart New Day ile yeniden baslat; ertelemek gerekiyorsa ctmsys > System Parameters'ta Day Time'i ileri al (en fazla ~24 saat), daha uzun erteleme icin sunucu kapali tutulur; sonra siparislerin tamam oldugunu ctmudchk ya da AJF ile dogrula; New Day'in bir gunde kac kez calistigini ctmlog listesiyle kontrol et, birden fazla calistiysa mukerrer siparisleri tutup sil
     caution: New Day'i ust uste iki kez calistirma, mukerrer siparis olur; Day Time degisikligi butun ODATE'leri etkiler
   new_day_hizlandirma:
     title: Uzun suren New Day'i hizlandirmak
     triggers: [new day, yeni gun, newday, slow, yavas, uzun suruyor, long, optimize, hizlandir]
-    steps: ctmlog ile New Day'in hangi adimda uzadigini bul; on New Day suresi yetmiyorsa PRE_NEWDAY_TIME'i artir; AJF'te birikmis eski isleri (Keep Active, NOTOK kalanlar) azalt; istatistik ve gecmis temizligi gibi agir adimlari dokumantasyondaki parametrelerle sinirla; veritabaninin bakimli oldugunu dogrula
+    steps: ctmlog ile New Day'in hangi adimda uzadigini bul; sureyi cogu zaman veritabani belirler: veritabani sunucusunun yukunu, ayni sunucudaki diger ornekleri, depolama gecikmesini ve sanal makinenin asiri paylastirilmis kaynaklarini kontrol et; on New Day suresi yetmiyorsa PRE_NEWDAY_TIME'i artir; AJF'te birikmis eski isleri (Keep Active, NOTOK kalanlar) azalt; istatistik ve gecmis temizligi gibi agir adimlari dokumantasyondaki parametrelerle sinirla; veritabaninin bakimli oldugunu dogrula
     caution: adimlari bilmeden kapatma; gunluk temizligi kapatmak AJF'i buyutur
   agent_portlari:
     title: Ayni hosttaki agent'larin ve guvenlik duvarinin portlari
@@ -538,6 +538,31 @@ procedures:
     triggers: [report, rapor, metrics, metrik, number of jobs, is sayisi, per day, gunluk, failed, successful, loaded, sql]
     steps: hazir rapor yoksa EM veritabaninda yalniz okuma sorgusuyla gunluk sayilari cikar (is calisma gecmisi tablosunda ended_status 16 OK, 32 NOTOK); New Day'de yuklenen is sayisi icin is yuku raporlarini kullan; sorguyu zamanlanmis bir isle her gun calistir
     caution: EM veritabaninda yazma sorgusu calistirma; sorguyu yogun saatte calistirma
+  new_day_dokunmadan_birikim:
+    title: Birikmis isleri gunlerce AJF'te tutmak (New Day'i durdurmadan)
+    triggers: [new day, yeni gun, backlog, birikmis, week, hafta, clears, siliyor, remove, keep, kalsin, maxwait, max wait]
+    steps: New Day'i durdurma; birikmis islere MAXWAIT ver (ornegin 7 gun, 99 suresiz); yalniz NOTOK islerin kalmasi isteniyorsa Keep Days if NOT OK (DAYSKEEPINNOTOK) kullan; New Day sonrasinda islerin AJF'te durdugunu dogrula
+    caution: New Day'i kapatmak siparisleri, temizligi ve tarih ilerlemesini durdurur
+  tablo_ozel_user_daily:
+    title: Bir tabloyu ya da isi New Day disinda kendi saatinde siparis etmek
+    triggers: [user daily, ctmudly, specific, ozel, table, tablo, folder, klasor, own time, kendi saati, order, siparis, outside new day]
+    steps: tablonun User Daily adini SYSTEM'den farkli bir ada (ornegin GECE2) al; o saatte ctmudly GECE2 calistiran bir is tanimla; ilk gun ctmudchk ile siparisin tam oldugunu dogrula; tek isler icin ctmorder kullan
+    caution: ayni tabloyu hem SYSTEM hem ozel User Daily ile siparis etmek mukerrer is uretir
+  basarisizlikta_ertesi_gun_bekle:
+    title: Is dusunce ertesi gunun kopyasinin calismamasini saglamak
+    triggers: [fails, dusunce, next day, ertesi gun, not ordered, siparis edilmesin, set to ok, previous day, onceki gun, prev]
+    steps: isi kendine bagla: is OK bitince bir kosul eklesin, ertesi gunun kopyasi bu kosulu PREV tarihle (her gun calismiyorsa ANY) beklesin; is dusunce kosul olusmaz ve ertesi gunun kopyasi bekler; sorun giderilip is OK yapilinca zincir kendiliginden yurur
+    caution: kosulu elle eklemek sorunu gizler; once nedeni coz
+  ajandaki_isleri_yeni_hosta:
+    title: Siparis edilmis isleri yeni bir agent'a tasimak
+    triggers: [migrate, tasi, agent, host, machine, makine, already ordered, siparis edilmis, future, gelecek, new host, yeni host]
+    steps: isler host grubu kullaniyorsa yalniz grubu guncelle (eski hostu cikar, yenisini ekle); dogrudan host adi kullaniyorsa siparis edilmis isleri tut ve sil, tanimi yeni hostla yukle ve yeniden siparis et ya da tek tek isin host alanini guncelle; sonra bir test isiyle dogrula
+    caution: calisan isleri silme; eski hostu ajandaki isler bitmeden kapatma
+  api_aktif_is_degistirme:
+    title: Automation API ile siparis edilmis bir isin ozelligini degistirmek
+    triggers: [automation api, rest, api, modify, degistir, ordered job, aktif is, 415, unsupported media type, from time]
+    steps: once get ile isin tum tanimini al; istenen alani (ornegin from time) bu tanimda degistir; tanimin tamamini form-data (multipart) olarak modify ucuna gonder; isin yeni degerini get ile dogrula
+    caution: yalniz degisen alani ham JSON olarak gondermek 415 verir; artimli degisiklik desteklenmez
 ---
 
 # Adminlik yordamlari
