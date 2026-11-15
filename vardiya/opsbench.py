@@ -44,7 +44,9 @@ SCHEMA = ('Reply with one JSON object: {"cause": "<what is going on, one or two 
           "Name the exact commands, settings or utilities. If the described behaviour is normal, say so in cause "
           "and give no intervention steps. You may answer in English or Turkish.")
 POLICY = ("Harness policy: recommend an intervention only when the evidence shows a failure; prefer the verified "
-          "fix of the matched class or procedure; never recommend an action the class marks as harmful.")
+          "fix of a likely class or a matching procedure; treat a possible (weak) class as a hint and drop it when the "
+          "evidence points elsewhere; never recommend an action a likely class marks as harmful, and never force a "
+          "job to OK.")
 
 
 def load(split):
@@ -76,6 +78,25 @@ def match_class(classes, text):
     (GENERIC) is not matched."""
     r = _ranked(classes, text)
     return r[0][1] if r else None
+
+
+def class_signs(classes, text):
+    """{class: the specific signs of that class found in the text}, for the classes that matched at all."""
+    return {k: sorted(exact) for rank, k, exact in _ranked(classes, text)}
+
+
+def strength(classes, text, found_classes):
+    """How sure the harness is of each matched class: 'strong' when two or more of the class's own (non-generic)
+    signs occur and no other class ranks the same, otherwise 'weak'. A weak match is handed over as a hint."""
+    ranked = _ranked(classes, text)
+    rank = {k: r for r, k, _ in ranked}
+    top = ranked[0][0] if ranked else None
+    tied = sum(1 for r, _, _ in ranked if r == top) > 1
+    out = {}
+    for k in found_classes:
+        exact, specific, _ = rank[k]
+        out[k] = "strong" if specific >= 2 and not (tied and rank[k] == top) else "weak"
+    return out
 
 
 def match_classes(classes, text, limit=2):
@@ -125,7 +146,8 @@ def context(case, classes, procedures, general=None):
     found = {"class": found_classes[0] if found_classes else None, "classes": found_classes,
              "procedures": match_procedures(procedures, case["prompt"]), "product": product(case["prompt"]),
              "general": match_general(general, case["prompt"], found_classes) if general else [],
-             "os": host_os(case["prompt"])}
+             "os": host_os(case["prompt"]), "strength": strength(classes, case["prompt"], found_classes)}
+    signs = class_signs(classes, case["prompt"])
     parts = []
     if len(found_classes) > 1:
         parts.append("The evidence names more than one cause. Fix them in the order the evidence shows, rerun "
@@ -135,8 +157,13 @@ def context(case, classes, procedures, general=None):
         bad = ", ".join(a for a in c["harmful"]) or "none listed"
         own = c.get("fix_by", {}).get(found["product"])
         fix = f"In {found['product']}: {own}\nGeneral fix: {c['fix']}" if own else f"Verified fix: {c['fix']}"
-        parts.append(f"Matched failure class: {c['title']}\nUsual cause: {c['cause']}\n{fix}\n"
-                     f"Harmful in this class: {bad}")
+        seen = ", ".join(signs.get(name) or []) or "partial wording match"
+        if found["strength"][name] == "strong":
+            head = f"Likely failure class: {c['title']} (signs found in the report: {seen})"
+        else:
+            head = (f"Possible failure class, weak match: {c['title']} (only sign found: {seen}). Use it only if the "
+                    f"evidence fits; otherwise reason from the evidence")
+        parts.append(f"{head}\nUsual cause: {c['cause']}\n{fix}\nHarmful in this class: {bad}")
     for name in found["procedures"]:
         p = procedures[name]
         parts.append(f"Admin procedure: {p['title']}\nSteps: {p['steps']}\nCaution: {p['caution']}")
@@ -151,7 +178,10 @@ def guard(answer, found, classes):
     """The harness's last word: steps that name an action the matched class marks harmful are moved to avoid."""
     if not found.get("class") or not isinstance(answer, dict):
         return answer
-    words = [w for k in (found.get("classes") or [found["class"]]) for a in classes[k]["harmful"]
+    # a likely class's harmful actions are moved out of the steps; a weak class only takes away forcing OK
+    sure = found.get("strength") or {}
+    words = [w for k in (found.get("classes") or [found["class"]])
+             for a in (classes[k]["harmful"] if sure.get(k, "strong") == "strong" else ["set_ok"])
              for w in ACTION_WORDS.get(a, [])]
     keep, moved = [], []
     for s in answer.get("steps") or []:

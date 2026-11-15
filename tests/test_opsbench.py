@@ -75,6 +75,21 @@ class HarnessSide(unittest.TestCase):
         self.assertTrue(found["general"])
         self.assertIn("General server skill", ctx)
 
+    def test_weak_class_is_a_hint_not_a_verdict(self):
+        strong = {"id": "s", "class": "disk", "prompt": "Job failed: No space left on device, /data is 100% full (ENOSPC)"}
+        ctx, found = opsbench.context(strong, self.classes, self.procs)
+        self.assertEqual(found["strength"].get("disk"), "strong")
+        self.assertIn("Likely failure class", ctx)
+        weak = {"id": "w", "class": "x", "prompt": "Isimiz bu gece bir kez daha 137 ile bitti, neden olabilir?"}
+        ctx, found = opsbench.context(weak, self.classes, self.procs)
+        if found["class"]:
+            self.assertEqual(found["strength"][found["class"]], "weak")
+            self.assertIn("weak match", ctx)
+        # a weak class does not take its harmful actions out of the answer, only forcing OK
+        out = opsbench.guard({"cause": "c", "steps": ["rerun the job", "set ok the job"]},
+                             {"class": "sinyal", "classes": ["sinyal"], "strength": {"sinyal": "weak"}}, self.classes)
+        self.assertEqual(out["steps"], ["rerun the job"])
+
     def test_dev_cases_are_well_formed(self):
         for c in opsbench.load("dev"):
             self.assertIn(c["track"], {"olay", "bilgi", "olaysiz"})
