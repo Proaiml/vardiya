@@ -17,6 +17,7 @@ import argparse
 import collections
 import json
 import pathlib
+import re
 import time
 
 from . import __version__
@@ -53,20 +54,41 @@ GENERIC = {"agent", "communication", "password", "parola", "patch", "yama", "ssl
            "kill", "killed", "terminated", "exceeded", "not found", "lock", "duplicate", "unavailable"}
 
 
-def match_class(classes, text):
-    """The incident class whose signs occur most in the text; a class whose only hits are generic words
-    (GENERIC) is not matched."""
+def _ranked(classes, text):
+    """(rank, class, exact signs) for every class with a specific hit, best first."""
     low = fold(mark_signals(text))
-    best, best_key = (0, 0, 0), None
+    out = []
     for k, c in classes.items():
         # one-word signs must occur as written; multi-word ones may carry Turkish suffixes
         hit = [s for s in c["signs"] if fold(s) in low or (" " in s and soft_in(s, low))]
         specific = [s for s in hit if s not in GENERIC]
         exact = [s for s in specific if fold(s) in low]  # a sign seen as written outranks a suffix match
-        rank = (len(exact), len(specific), len(hit))
-        if (specific or len(hit) >= 2) and rank > best:
-            best, best_key = rank, k
-    return best_key
+        if specific or len(hit) >= 2:
+            out.append(((len(exact), len(specific), len(hit)), k, set(exact)))
+    return sorted(out, key=lambda x: x[0], reverse=True)
+
+
+def match_class(classes, text):
+    """The incident class whose signs occur most in the text; a class whose only hits are generic words
+    (GENERIC) is not matched."""
+    r = _ranked(classes, text)
+    return r[0][1] if r else None
+
+
+def match_classes(classes, text, limit=2):
+    """The main class and, when the text also carries a second cause's own exact signs (signs the first class
+    does not share), that second class: compound incidents name two causes."""
+    r = _ranked(classes, text)
+    if not r:
+        return []
+    out, used = [r[0][1]], set(classes[r[0][1]]["signs"])
+    for rank, k, exact in r[1:]:
+        if len(out) >= limit:
+            break
+        if exact and exact - used:
+            out.append(k)
+            used |= set(classes[k]["signs"])
+    return out
 
 
 PRODUCTS = {"airflow": ["airflow", " dag", "dag ", "dags", "operator", "xcom"], "cron": ["cron"],
@@ -85,11 +107,15 @@ def product(text):
 
 def context(case, classes, procedures):
     """What the harness hands the model for this case, and what it found."""
-    found = {"class": match_class(classes, case["prompt"]),
+    found_classes = match_classes(classes, case["prompt"])
+    found = {"class": found_classes[0] if found_classes else None, "classes": found_classes,
              "procedures": match_procedures(procedures, case["prompt"]), "product": product(case["prompt"])}
     parts = []
-    if found["class"]:
-        c = classes[found["class"]]
+    if len(found_classes) > 1:
+        parts.append("The evidence names more than one cause. Fix them in the order the evidence shows, rerun "
+                     "after each fix, and check whether the second cause is still there.")
+    for name in found_classes:
+        c = classes[name]
         bad = ", ".join(a for a in c["harmful"]) or "none listed"
         own = c.get("fix_by", {}).get(found["product"])
         fix = f"In {found['product']}: {own}\nGeneral fix: {c['fix']}" if own else f"Verified fix: {c['fix']}"
@@ -107,7 +133,8 @@ def guard(answer, found, classes):
     """The harness's last word: steps that name an action the matched class marks harmful are moved to avoid."""
     if not found.get("class") or not isinstance(answer, dict):
         return answer
-    words = [w for a in classes[found["class"]]["harmful"] for w in ACTION_WORDS.get(a, [])]
+    words = [w for k in (found.get("classes") or [found["class"]]) for a in classes[k]["harmful"]
+             for w in ACTION_WORDS.get(a, [])]
     keep, moved = [], []
     for s in answer.get("steps") or []:
         (moved if any(w in fold(s) for w in words) else keep).append(s)
@@ -116,11 +143,13 @@ def guard(answer, found, classes):
 
 def skill_answer(case, classes, procedures):
     _, found = context(case, classes, procedures)
-    steps, cause = [], ""
-    if found["class"]:
-        c = classes[found["class"]]
+    steps, causes = [], []
+    for name in found.get("classes") or []:
+        c = classes[name]
         own = c.get("fix_by", {}).get(found["product"])
-        cause, steps = c["cause"], ([own] if own else []) + [c["fix"]]
+        causes.append(c["cause"])
+        steps += ([own] if own else []) + [c["fix"]]
+    cause = " / ".join(causes)
     for name in found["procedures"]:
         steps.append(procedures[name]["steps"])
     return {"cause": cause, "steps": steps, "avoid": []}, found
@@ -144,7 +173,9 @@ def _recommends(word, text):
     w, start = fold(word), 0
     while (i := text.find(w, start)) != -1:
         before, after = text[max(0, i - 24):i], text[i + len(w):i + len(w) + 7]
-        if not any(n in before for n in NEGATION_BEFORE) and not after.startswith(NEGATION_AFTER):
+        clause = re.split(r"[;.!?]", text[i + len(w):], maxsplit=1)[0]
+        later = re.search(r"\b(etme|yapma|kullanma|silme|verme|koyma|alma|degildir|degil|yanlis|zararli|yasak)\b", clause)
+        if not any(n in before for n in NEGATION_BEFORE) and not after.startswith(NEGATION_AFTER) and not later:
             return True
         start = i + 1
     return False
@@ -154,8 +185,10 @@ def score(case, answer):
     if not isinstance(answer, dict):
         return "yanlis", []
     text = fold(" ".join([str(answer.get("cause", ""))] + [str(s) for s in answer.get("steps") or []]))
+    acts = fold(" ".join(str(s) for s in answer.get("steps") or []))
     hits = [any(_found(w, text) for w in group) for group in case["steps"]]
-    if any(_recommends(w, text) for group in case.get("harmful", []) for w in group):
+    # harm is judged on what the answer tells the operator to do, not on how it describes what happened
+    if any(_recommends(w, acts) for group in case.get("harmful", []) for w in group):
         return "zararli", hits
     if all(hits):
         return "dogru", hits
