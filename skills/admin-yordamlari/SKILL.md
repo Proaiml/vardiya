@@ -633,6 +633,166 @@ procedures:
     triggers: [calendar, takvim, yearly, yillik, update, guncelle, automate, otomatik, next year, gelecek yil, automation api, json]
     steps: takvimleri Automation API ile JSON olarak tanimla; yilin tatil listesinden JSON'u ureten bir betik yaz; ctm deploy ile yukle; yukleme sonrasi takvimlerin sunucuyla senkron oldugunu ve forecast'in dogru gunleri verdigini kontrol et
     caution: uretimde ilk kez test ortaminda denemeden toplu takvim yukleme
+  bekleme_nedeni_bulma:
+    title: Bekleyen isin neden baslamadigini bulmak (Why)
+    triggers: [neden bekliyor, why, waiting info, ctmwhy, baslamiyor, not starting, wait condition, wait time, wait host, wait resource, wait confirmation, bekliyor]
+    steps: izleme ekraninda isin Waiting Info (Why) bilgisini ac ya da sunucuda ctmwhy <orderid> calistir; nedeni ayir: eksik kosul (hangi oncul, hangi tarih), nicel ya da kontrol kaynagi, zaman penceresi (From, Until, saat dilimi), onay bekliyor (Confirm), tutulmus (Hold), host ya da agent erisilemez, is yuku politikasi, host kisitlamasi; her neden icin kaynagina git (oncul neden bitmedi, kaynagi kim tutuyor, agent neden kapali); neden giderilince isin kendiliginden basladigini dogrula
+    caution: bekleme nedenini bulmadan kosulu elle ekleyerek ya da Run Now ile isi baslatma; eksik oncul verisi olmadan calisan is yanlis sonuc uretir
+  bilesen_baslatma_sirasi:
+    title: Zamanlayici bilesenlerini dogru sirayla durdurmak ve baslatmak
+    triggers: [start order, baslatma sirasi, shutdown order, kapatma sirasi, start_ctm, shut_ctm, start_ca, shut_ca, start-ag, shut-ag, reboot, yeniden baslatma sonrasi, bakim sonrasi, after maintenance]
+    steps: kapatirken once uygulama sonra veritabani: zamanlayici sunucusunda shut_ctm, sonra shut_ca, en son veritabani; baslatirken tersi: once veritabani, sonra start_ca (Configuration Agent), sonra start_ctm; yonetim sunucusunda (EM) once veritabani ve Configuration Agent, sonra diger bilesenler (adlandirma servisi, CMS, GUI sunucusu, gecit, web sunucusu) CCM'den ya da Configuration Agent'in istenen durumuyla; agent'ta shut-ag ve start-ag; her adimdan sonra durumu dogrula (shctm, shagent, CCM'de yesil); komut adlari surume gore degisebilir, kendi surumunun belgesinden dogrula
+    caution: veritabani acilmadan uygulamayi baslatma; yuksek erisilebilir kurulumda bilesenleri iki dugumde birden elle baslatma
+  sunucu_saglik_kontrolu:
+    title: Zamanlayici sunucusunun (Control-M/Server) sagligini komut satirindan kontrol etmek
+    triggers: [server health, sunucu sagligi, saglik kontrolu, shctm, ctm_menu, ctmpsm, ctmlog, ctmdbspace, processes, surecler, is the server up, sunucu ayakta mi]
+    steps: shctm ile sunucu sureclerinin calistigini gor; ctm_menu ile ana menuden durum ve Troubleshooting seceneklerine bak; veritabani alanini kontrol et (ctmdbspace ya da DBUStatus); ctmlog ile son saatin sistem iletilerini listele; bir agent'a ctm_diag_comm ile iletisimi sina; AJF'teki is sayisini ve New Day'in bittigini dogrula; disk ve bellek icin genel sunucu kontrollerini yap
+    caution: sagligi yalniz surec listesine bakarak onaylama; gecit ve agent iletisimini de sina
+  agent_erisim_adimlari:
+    title: Agent Unavailable oldugunda adim adim teshis
+    triggers: [agent unavailable, agent erisilemiyor, agent kapali, ag_diag_comm, ctm_diag_comm, ag_ping, shagent, authorized servers, yetkili sunucular, agent down, host unavailable]
+    steps: sunucudan ctm_diag_comm <agent> ile hangi yonun koptugunu gor; agent hostunda shagent ile sureclerin calistigini, ag_diag_comm ile agent'in gordugu sunucu adini, portlari ve yetkili sunucu listesini kontrol et; yetkili sunucu listesinde zamanlayici sunucusunun (ve yuksek erisilebilirlikte iki dugumun) adi olmali; iki yonde ad cozumlemesini ve portlari sina (sunucudan agent'a ve agent'tan sunucuya); agent gunlugune (proclog) bak; gerekiyorsa agent'i start-ag ile baslat; CCM'de Available oldugunu ve bir test isinin calistigini dogrula
+    caution: nedeni bulmadan agent'i silip yeniden tanimlama; guvenlik duvarini toptan acma
+  tanim_surumu_geri_alma:
+    title: Is taniminin onceki surumunu karsilastirmak ve geri yuklemek
+    triggers: [version history, surum gecmisi, previous version, onceki surum, restore, geri yukle, who changed, kim degistirdi, tanim degisti, definition changed, compare versions, dun degistirildi]
+    steps: planlama ekraninda klasorun ya da isin surum gecmisini ac; son calisan surumle guncel surumu karsilastir ve neyin degistigini (komut, host, kullanici, takvim, kosul) bul; denetim kaydindan kimin ne zaman degistirdigine bak; gerekiyorsa onceki surumu geri yukle ve yukle (check in); AJF'te siparis edilmis isler eski ya da bozuk tanimla durur, onlari tutup yeniden siparis et ya da aktif isi duzelt; bir test calismasiyla dogrula
+    caution: degisikligi kimin neden yaptigini ogrenmeden kalici geri alma; ayni anda baska degisiklik ekleme
+  kosul_komutlari:
+    title: Kosullari komut satirindan listelemek, eklemek ve silmek
+    triggers: [ctmcontb, kosul ekle, kosul sil, add condition, delete condition, list conditions, kosullari listele, manual condition, elle kosul]
+    steps: ctmcontb -LIST "<ad deseni>" "<tarih>" ile var olan kosullari gor (tarih MMDD, ODAT ya da STAT; joker * kullanilabilir); eksik kosulun neden olusmadigini bul (oncul calismadi mi, baska tarihle mi olustu); gercekten gerekiyorsa ctmcontb -ADD <ad> <tarih> ile ekle, yanlis kosulu ctmcontb -DELETE <ad> <tarih> ile sil; islemi denetim kaydina not et
+    caution: oncul isin urettigi veriyi dogrulamadan kosulu elle ekleme; New Day sirasinda komut reddedilebilir, yeniden dene
+  siparis_ve_zorlama:
+    title: Order ile Force farki ve isi dogru tarihle siparis etmek
+    triggers: [ctmorder, force, siparis et, zorla, scheduling criteria, zamanlama olcutu, not ordered, siparis edilmedi, ad hoc, elle siparis]
+    steps: Order isin zamanlama olcutlerini (takvim, gun, tarih) denetler, uymuyorsa siparis etmez; Force olcutleri yok sayar; elle siparis ederken ODATE'i ardillarin bekledigi tarihle ayni ver; ctmorder -FOLDER <klasor> -NAME <is> -ODATE <yyyymmdd> -FORCE y; SMART klasorun alt klasoru icin -INTO_FOLDER_ORDERID; once tutulmus (hold) siparis edip kontrol ettikten sonra serbest birak; AJF'te ayni isin baska kopyasi olmadigini dogrula
+    caution: 'All Jobs' ile butun klasoru yanlislikla siparis etme; ayni isi iki kez zorlama (mukerrer calisma)
+  calistiran_kullanici_tanimi:
+    title: Isi calistiran kullaniciyi (Run As) ve parolasini tanimlamak
+    triggers: [run as, calistiran kullanici, job owner, is sahibi, ctmsetown, ctmpwd, owner authentication, kimlik dogrulama ayarlari, logon domain, user not defined, kullanici tanimli degil]
+    steps: CCM'de Run As kullanicilarinda (ya da sunucuda ctmsetown ile) kullaniciyi ve hostu tanimla; host adi CCM'deki agent adiyla birebir ayni olmali; Windows'ta alan adini (ALAN\kullanici) ve agent'in Logon Domain ile Logon As User ayarini dogrula; parola yerine anahtar kullanilacaksa anahtari tanimla; tanimi Test ile dogrula ve bir test isi calistir; parola donusunde bu kaydi da guncelle
+    caution: parolayi is tanimina ya da betige yazma; sorunu agent'i yonetici ya da root calistirarak gecistirme
+  em_yetki_sorunlari:
+    title: Kullanicinin isleri gorememesi ya da islem yapamamasi (yetkilendirme)
+    triggers: [authorization, yetkilendirme, not authorized, yetkisi yok, cannot see, goremiyor, privilege, ctmsec, full security, tam guvenlik]
+    steps: EM'de kullanicinin rollerini ve rolun yetkilerini ac: Privileges (hangi ekran), Folders (hangi klasorde tanim), Active (izlemede hangi isleri gorur ve hangi eylemi yapar), Run As kullanicilari, Services; izleme ekraninda gorunum filtresinin (viewpoint) isi disarida birakmadigini kontrol et; sunucuda tam guvenlik (ctmsys ile Full Security) aciksa kullanicinin ctmsec'te de tanimli oldugunu dogrula; degisiklikten sonra kullanici yeniden oturum acsin
+    caution: sorunu cozmek icin kullaniciya yonetici rolu verme; yalniz eksik olan yetkiyi ekle
+  baglanti_profili_yonetimi:
+    title: Eklenti (plug-in) baglanti profillerini ve is tiplerini yonetmek
+    triggers: [connection profile, baglanti profili, plug-in, plugin, eklenti, ctmgetcm, application type, is tipi gorunmuyor, job type missing, centralized connection profile, merkezi profil]
+    steps: is tipi listede yoksa sunucuda ctmgetcm -HOST <agent> -APPLTYPE "*" -ACTION GET ile agent'taki eklentileri yeniden okut; baglanti profilini CCM'de ac ve Test ile dogrula; merkezi profil (sunucuda tutulur) ile yerel profil (agent'ta) farkini bil, is tanimindaki profil adi hedefte de olmali; parola ya da sertifika degistiyse profili guncelle; eklenti surumunun agent surumuyle uyumunu kontrol et
+    caution: profili silip yeniden yaratmadan once onu kullanan isleri listele
+  aapi_izleme_komutlari:
+    title: Automation API ile isleri izlemek ve mudahale etmek
+    triggers: [automation api, ctm run, ctm config, ctm session, ctm env, jobs:status, job:output, job:log, komut satirindan izleme, rest api, aapi]
+    steps: ortami tanimla (ctm env add <ad> <adres> <kullanici> ve ctm env set); durum icin ctm run jobs:status::get -s "jobname=<ad>&status=Ended Not OK"; cikti ve gunluk icin ctm run job:output::get <isId> ve ctm run job:log::get <isId> (isId sunucu:orderid bicimindedir); mudahale icin ctm run job::hold, ::free, ::rerun, ::kill; agent durumu icin ctm config server:agents::get <sunucu> ve ctm config server:agent::ping <sunucu> <agent>; tanim icin ctm build ile dogrula, ctm deploy ile yukle
+    caution: parolayi komut satirina yazma, ortam tanimini ya da jetonu kullan; uretimde deploy'dan once build ile dogrula
+  sla_servis_riski:
+    title: SLA servisinin (Batch Impact Manager) gecikme riskini cozmek
+    triggers: [sla management, bim, batch impact manager, sla servisi, at risk, will be late, gecikecek, must complete by, service is late, servis gecikti, problematic jobs]
+    steps: Service Monitor'de servisi ac ve sorunlu isler listesine bak; gecikmenin kaynagini bul: gec baslayan oncul, ortalamadan uzun suren is, kaynak ya da host bekleyen is, dusen is; kritik yoldaki isi one al (oncelik ver, kaynak ac, bekleyen onculu cozumle); yeni ya da istatistigi olmayan islerde tahmin yanlis olabilir, istatistigi ve servis tanimindaki teslim saatini dogrula; is sahiplerine tahmini bitis saatini bildir
+    caution: servisi yesile cevirmek icin isleri basarili sayma ya da servis tanimindan cikarma
+  istatistik_ve_sure:
+    title: Isin gecmis calisma surelerini ve ortalamasini gormek
+    triggers: [statistics, istatistik, average runtime, ortalama sure, ctmruninf, ctmjsa, run history, calisma gecmisi, exectime, normalden uzun, longer than usual]
+    steps: isin gecmis calismalarini EM'de Statistics ile ya da sunucuda ctmruninf ile listele; ortalama sureyle bugunku sureyi ve veri hacmini karsilastir; istatistikler New Day'de derlenir (ctmjsa), yeni islerin istatistigi yoktur; sureye bagli uyarilari (EXECTIME) ortalamaya gore yuzdeyle tanimla
+    caution: tek bir uzun calismaya bakarak zaman asimini buyutme
+  gecikme_bildirimleri:
+    title: Gec baslayan, gec biten ya da uzun suren isler icin bildirim kurmak
+    triggers: [late submission, late completion, latesub, late_sub, latecomp, late_comp, exectime, gec basladi, gec bitti, uzun suren is, running long, not started by, baslamadiysa haber]
+    steps: is tanimindaki bildirim (Shout, Notification) bolumunde uc kural kullan: belirli saate kadar baslamadiysa (Late Submission), belirli saate kadar bitmediyse (Late Completion), ortalamadan belirli yuzde ya da dakika uzun surduyse (Execution Time); hedefi (e-posta, uyari ekrani, izleme araci) ve onceligi sec; saat dilimli islerde saatleri isin saat dilimine gore ver; bir test ile dogrula
+    caution: her is icin ayni genel saati yazma; kritik zincirlerde SLA servisi kullan
+  host_kisitlamalari:
+    title: Bir hostta ayni anda calisan is sayisini ve yuku sinirlamak
+    triggers: [host restrictions, host kisitlamasi, max concurrent jobs, eszamanli is siniri, too many jobs on host, hostta cok is, cpu utilization, overloaded agent, agent asiri yuklu]
+    steps: CCM'de zamanlayici sunucusunun host kisitlamalarinda host ya da host grubu icin en fazla eszamanli is sayisini ve CPU kullanim esigini tanimla; sinir dolunca isler bekler ve bekleme nedeni host kisitlamasi gorunur; daha ince ayar icin hosta ozel nicel kaynak kullan; yuku host grubuyla birden fazla agent'a dagit
+    caution: siniri kaldirarak ya da cok buyuterek sunucuyu bogma
+  aktif_is_ayrinti_komut:
+    title: Aktif bir isin ayrintisini, gunlugunu ve ciktisini komut satirindan almak
+    triggers: [ctmpsm, listdetails, listsysout, ctmlog, listord, orderid, komut satirindan cikti, job log command line, sysout command line, is gunlugu komut]
+    steps: ctmpsm -LISTALL ile aktif isleri ve orderid'leri listele; ctmpsm -LISTDETAILS <orderid> ile isin ayrintisini, ctmpsm -LISTSYSOUT <orderid> ile ciktilarini gor; ctmlog listord <orderid> "*" ile ise ait gunluk satirlarini al; ctmwhy <orderid> ile bekleme nedenini sor
+    caution: aktif isi komut satirindan degistirmeden once orderid'in dogru ise ait oldugunu dogrula
+  parametre_nerede:
+    title: Bir ayarin nerede tutuldugunu ve nasil gecerli oldugunu bulmak
+    triggers: [system parameter, sistem parametresi, config.dat, ctmsys, ctmagcfg, ctmwincfg, where is the parameter, parametre nerede, takes effect, gecerli olmasi, recycle, yeniden okut]
+    steps: ayarin katmanini belirle: zamanlayici sunucusu genel ayarlari ctmsys ve CCM sistem parametreleri, sunucunun dosya ayarlari data dizinindeki config.dat, yonetim sunucusu ayarlari CCM'de EM sistem parametreleri, agent ayarlari ctmagcfg (Windows'a ozel olanlar ctmwincfg); degisiklikten once eski degeri kaydet; parametrenin ne zaman gecerli olacagini belgeden kontrol et (bazilari aninda, bazilari ilgili bilesen yeniden baslatilinca); degisikligi bir test ile dogrula
+    caution: config.dat'i yedeksiz degistirme; belgelenmemis parametreyi destek yonlendirmesi olmadan ekleme
+  ortamlar_arasi_tanim_tasima:
+    title: Is tanimlarini test ortamindan uretime tasimak
+    triggers: [promote, uretime al, test to prod, ortamlar arasi, exportdeffolder, deffolder, deploy descriptor, import definitions, tanim tasima, migrate jobs]
+    steps: tanimlari disa aktar (XML icin exportdeffolder ve deffolder, JSON icin Automation API); ortama ozgu degerleri donustur (host ve host grubu, calistiran kullanici, baglanti profili, kaynak ve kosul adlari; Automation API'de deploy descriptor); hedefte takvimlerin, kaynaklarin, kullanicilarin ve profillerin var oldugunu dogrula; once ctm build ya da test yuklemesiyle dogrula, sonra yukle; ilk siparisi tutulmus yapip kontrol et
+    caution: uretim klasorunun uzerine yedeksiz yazma; test hostlarini gosteren tanimi uretime tasima
+  yukseltme_oncesi_kontrol:
+    title: Surum yukseltmeden once yapilacak kontroller ve dogru sira
+    triggers: [before upgrade, yukseltmeden once, upgrade plan, yukseltme plani, compatibility, uyumluluk, pre-check, on kontrol, upgrade order, yukseltme sirasi, hangi sirayla]
+    steps: uyumluluk tablosundan isletim sistemi, veritabani ve Java surumlerini dogrula; sira: once yonetim sunucusu (EM), sonra zamanlayici sunucusu, en son agent'lar (EM sunucudan, sunucu agent'tan eski olamaz); veritabanlarini yedekle ve tanimlari disa aktar; test ortaminda prova yap ve suresini olc; disk alanini ve acik hatalari kontrol et; bakim penceresinde kritik isleri tut; yukseltmeden sonra bilesenleri, agent iletisimini ve ornek isleri dogrula; geri donus planini (yedekten donus) hazir tut
+    caution: uretimde provasiz yukseltme; yedek almadan baslama; agent'lari sunucudan once yukseltme
+  uyari_ekrani_yonetimi:
+    title: Uyari ekraninda biriken uyarilari yonetmek
+    triggers: [alerts window, uyari ekrani, alert manager, handled, islendi, too many alerts, cok fazla uyari, alert storm, uyari firtinasi]
+    steps: uyarilari kaynagina gore grupla (ayni is, ayni host, ayni ileti); kok nedeni bir olan firtinada once nedeni coz; islenen uyarilari Handled olarak isaretle ve not dus; tekrarlayan gereksiz uyarilarin kuralini (isin bildirim tanimi ya da genel uyari parametresi) duzelt; uyari saklama suresini kontrol et
+    caution: uyarilari okumadan toplu kapatma; kritik uyariyi gurultu icinde kaybetme
+  autosys_hold_ice_farki:
+    needs: [autosys, autorep, sendevent, jil]
+    title: AutoSys'te ON_HOLD ile ON_ICE farki ve dogru kullanimi
+    triggers: [autosys, on_hold, on_ice, on hold, on ice, off_hold, off_ice, job_on_ice, job_on_hold, sendevent, skip a job, isi atla]
+    steps: ON_HOLD isi durdurur ve ona bagli ardillar bekler; OFF_HOLD yapilinca baslama kosullari saglanmissa is hemen calisir; ON_ICE isi akistan cikarir, ona bagli ardillar kosulu saglanmis sayar ve devam eder; OFF_ICE yapilinca is baslama kosullari yeniden olusana kadar calismaz; bir isi atlayip zincirin surmesi isteniyorsa ON_ICE, zincirin beklemesi isteniyorsa ON_HOLD kullan; sendevent -E JOB_ON_HOLD -J <is> ya da JOB_ON_ICE; durumu autorep -J <is> ile dogrula
+    caution: zincirin beklemesi gerekirken ON_ICE kullanma, ardillar eksik veriyle calisir
+  autosys_bagimlilik_teshisi:
+    needs: [autosys, autorep, sendevent, jil, job_depends]
+    title: AutoSys'te isin neden baslamadigini bulmak
+    triggers: [autosys, job_depends, autorep, autostatus, autosyslog, not starting, baslamiyor, starting conditions, baslama kosullari, activated, chk_auto_up, autoping]
+    steps: autorep -J <is> -d ile son calismayi ve durumu, autorep -J <is> -q ile tanimi gor; job_depends -c -J <is> ile baslama kosullarinin hangisinin saglanmadigini bul; kutu (box) icindeyse kutunun durumuna bak (kutu calismiyorsa icindeki is baslamaz); makine icin autorep -M <makine> ve autoping -m <makine>; zamanlayici ve uygulama sunucusu icin chk_auto_up; olay gunlugu icin autosyslog -e, isin agent gunlugu icin autosyslog -J <is>; gerekiyorsa sendevent -E FORCE_STARTJOB -J <is> ile baslat
+    caution: kosul neden saglanmadi bulunmadan FORCE_STARTJOB kullanma; CHANGE_STATUS ile durumu elle basarili yapma
+  airflow_kuyrukta_takili:
+    needs: [airflow, dag]
+    title: Airflow'da gorevlerin queued ya da scheduled durumunda takili kalmasi
+    triggers: [airflow, queued, scheduled, stuck, takili, kuyrukta, no slots, pool, executor, celery, worker, zombie, scheduler heartbeat]
+    steps: zamanlayicinin calistigini dogrula (airflow jobs check --job-type SchedulerJob ve arayuzdeki kalp atisi uyarisi); calistiriciya bak: Celery'de worker'lar ayakta mi ve kuyruk adi eslesiyor mu, Kubernetes'te pod'lar olusuyor mu; havuzu kontrol et (airflow pools list, bos slot var mi); sinirlara bak (parallelism, max_active_tasks_per_dag, max_active_runs_per_dag); ice aktarma hatalari icin airflow dags list-import-errors; meta veritabani icin airflow db check; takili kalan gorevleri neden giderildikten sonra temizle (clear) ki yeniden zamanlansin
+    caution: nedeni bulmadan meta veritabanini sifirlama; gorevleri basarili isaretleyerek gecme
+  airflow_baglanti_ve_sifreleme:
+    needs: [airflow, dag]
+    title: Airflow baglantilarinin cozulememesi ve Fernet anahtari
+    triggers: [fernet, invalidtoken, invalid token, could not decrypt, secrets backend, conn_id, connection not found, airflow connections]
+    steps: baglantiyi sorgula (airflow connections get <conn_id>); 'InvalidToken' ya da sifre cozme hatasi varsa butun bilesenlerde (web sunucusu, zamanlayici, worker) ayni fernet_key kullanildigini dogrula; anahtar degistiyse eski anahtarla birlikte verip airflow rotate-fernet-key ile donustur; baglanti bulunamiyorsa conn_id yazimini ve gizli bilgi arka ucunu (secrets backend) kontrol et; baglantiyi arayuzdeki Test ile ya da kucuk bir gorevle sina
+    caution: fernet anahtarini yedeksiz degistirme, kayitli baglanti ve degiskenler cozulemez olur
+  slurm_bekleme_nedeni:
+    needs: [slurm, sbatch, squeue, sacct]
+    title: Slurm'de isin neden kuyrukta bekledigini bulmak
+    triggers: [slurm, squeue, pending, bekliyor, reason, priority, resources, qos, reqnodenotavail, assocgrp, partitiontimelimit, jobheld, sprio, sshare, scontrol]
+    steps: squeue -j <isno> -o "%i %T %r" ile bekleme nedenini (Reason) oku; Priority ya da Resources ise sira ve bos kaynak bekliyordur (squeue --start ile tahmini baslama, sprio ile oncelik bilesenleri); QOS ya da Assoc ile baslayan nedenler kota sinirini gosterir (sacctmgr show qos, sshare); ReqNodeNotAvail ise istenen dugum kapali ya da rezerve (sinfo -R); PartitionTimeLimit ise sure istegi bolumun sinirini asiyor; JobHeldUser ya da JobHeldAdmin ise scontrol release <isno>; Dependency ise bagli oldugu isin durumuna bak; scontrol show job <isno> ile butun alanlari gor
+    caution: kotayi asmak icin isi baska hesapla gonderme; yonetici tuttuysa nedenini sormadan serbest birakma
+  slurm_is_dustu:
+    needs: [slurm, sbatch, squeue, sacct]
+    title: Slurm'de dusen isin nedenini bulmak (bellek, sure, dugum)
+    triggers: [slurm, sacct, out_of_memory, oom, timeout, node_fail, cancelled, failed, exit code, maxrss, seff, requeue, time limit]
+    steps: sacct -j <isno> --format=JobID,State,ExitCode,Elapsed,Timelimit,MaxRSS,ReqMem,NodeList ile durumu ve kaynak kullanimini al; OUT_OF_MEMORY ise --mem ya da --mem-per-cpu istegini MaxRSS'e gore artir; TIMEOUT ise --time istegini artir ya da isi kontrol noktali yap; NODE_FAIL ise dugum sorunudur, isi scontrol requeue <isno> ile yeniden kuyruga al ve dugumu yoneticiye bildir; CANCELLED ise kimin iptal ettigine bak; FAILED ise cikis kodunu ve isin cikti dosyasini (slurm-<isno>.out) incele; seff <isno> ile verimlilik ozetini gor
+    caution: bellek ya da sure istegini gereksiz buyutme, kuyrukta bekleme uzar
+  cron_ust_uste_ve_yaz_saati:
+    needs: [cron, crontab]
+    title: cron'da ust uste binen calismalar ve yaz saati gecisi
+    triggers: [cron, crontab, overlap, ust uste, flock, lock file, kilit dosyasi, dst, yaz saati, daylight, twice, iki kez calisti, skipped, atlandi]
+    steps: ust uste binmeyi kilitle onle: komutu flock -n /var/lock/<ad>.lock <komut> ile calistir, onceki bitmediyse yenisi baslamaz; yaz saati gecisinde saat ileri alinirken atlanan saat araligindaki isler calismaz, geri alinirken tekrarlanan araliktakiler iki kez calisabilir; kritik isleri bu araliga (cogu yerde 02:00-04:00) koyma ya da sunucuyu UTC'de tut; kacan calismayi /var/log/cron ya da journalctl -u cron ile dogrula ve gerekiyorsa elle calistir
+    caution: kilit dosyasini elle silip calisan kopyanin ustune yenisini baslatma
+  gorev_zamanlayici_sonuc_kodlari:
+    needs: [task scheduler, gorev zamanlayici, schtasks, scheduled task, zamanlanmis gorev]
+    title: Windows Gorev Zamanlayici'da son calisma sonucunu okumak
+    triggers: [task scheduler, gorev zamanlayici, last run result, son calisma sonucu, 0x1, 0x41301, 0x41303, 0x41306, 0x800710e0, 0x8007052e, 0x800704dd, schtasks, scheduled task, zamanlanmis gorev]
+    steps: Get-ScheduledTaskInfo -TaskName <ad> ile son sonucu ve saatleri al; 0x0 basarili; 0x1 betik ya da program hata dondu (cogu zaman yanlis yol ya da 'Start in' dizini bos); 0x2 dosya bulunamadi; 0x41301 hala calisiyor; 0x41303 henuz hic calismadi; 0x41306 kullanici sonlandirdi; 0x8007052E kullanici adi ya da parola yanlis (parola degismis); 0x800710E0 istek reddedildi (cogu zaman 'yalniz kullanici oturum acikken calistir' ya da guc kosulu); 0x800704DD kullanici oturum acmamis; gorevin ayarlarini kontrol et: oturum acik olsun olmasin calistir, en yuksek ayricaliklar, Start in, 'su sureden uzun calisirsa durdur', 'zaten calisiyorsa yeni kopya baslatma'; gecmisi (History) ac
+    caution: gorevi etkilesimli oturuma bagimli birakma; parolasi degisen hesabin gorevlerini guncellemeyi unutma
+  js7_emir_durumlari:
+    needs: [js7, jobscheduler, joc]
+    title: JS7'de emirlerin (order) durumunu okumak ve basarisiz emri surdurmek
+    triggers: [js7, jobscheduler, joc, order, emir, failed order, suspended, blocked, resume, daily plan, gunluk plan, controller, deploy]
+    steps: JOC Cockpit'te emrin durumunu ve bulundugu adimi ac; Failed ise isin gunlugunden nedeni bul, duzelt ve emri kaldigi yerden surdur (Resume) ya da iptal et (Cancel); Blocked cogu zaman agent'a ulasilamadigini gosterir, agent durumunu kontrol et; Suspended elle durdurulmustur, surdur; emir hic olusmadiysa gunluk plani ve takvimi kontrol et; tanim degisikliginden sonra dagitim (Deploy) yapildigini dogrula
+    caution: nedeni gidermeden basarisiz emri ust uste surdurme
+  rundeck_calistirma_hatalari:
+    needs: [rundeck]
+    title: Rundeck'te isin dugumde calismamasi
+    triggers: [rundeck, no matched nodes, node filter, dugum filtresi, key storage, acl, authentication failure, ssh, execution failed, resource model]
+    steps: calistirma gunlugunde hatanin hangi adimda ve hangi dugumde oldugunu bul; 'No matched nodes' ise dugum filtresini ve kaynak modelinin guncelligini kontrol et; kimlik hatasinda Key Storage'daki anahtarin yolunu, dugumun kullanici ve anahtar tanimini ve dugume elle ssh ile baglanilabildigini sina; yetki hatasinda ACL ilkesini kontrol et; adimi tek dugumde yeniden dene
+    caution: sorunu cozmek icin herkese acik ACL yazma; anahtari is tanimina gomme
 ---
 
 # Adminlik yordamlari
@@ -644,5 +804,6 @@ Her yordam bir genellestirilmis adminlik yetenegidir: tek bir soruya degil, bir 
 | `triggers` | Istekte gecince bu yordami getiren sozcukler; en az iki tanesi gecmelidir |
 | `steps` | Dogru adimlar, sirasiyla |
 | `caution` | Bu iste zararli ya da yanlis olan yollar |
+| `needs` | Varsa, istekte bu sozcuklerden biri gecmeden yordam eslesmez (baska bir zamanlayiciya ozgu yordamlar) |
 
 Kaynak: BMC toplulugunun en cok okunan bilgi makaleleri (gelistirme tarafi). Metin kendi sozcuklerimizle yazildi.

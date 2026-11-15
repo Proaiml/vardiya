@@ -211,8 +211,9 @@ def load_procedures(directory):
             triggers = [str(t).lower() for t in (p.get("triggers") if isinstance(p.get("triggers"), list) else []) if t]
             if len(triggers) < 2 or not p.get("steps"):
                 continue
+            needs = [str(x).lower() for x in (p.get("needs") if isinstance(p.get("needs"), list) else []) if x]
             out[name] = {"title": str(p.get("title", name)), "triggers": triggers, "steps": str(p["steps"]),
-                         "caution": str(p.get("caution", "")), "skill": m.get("name")}
+                         "caution": str(p.get("caution", "")), "needs": needs, "skill": m.get("name")}
     return out
 
 
@@ -234,8 +235,9 @@ def soft_in(phrase, text):
 
 def match_procedures(procedures, text, need=2, limit=2):
     """The procedures whose triggers occur in the text, best first; a procedure needs `need` hits."""
-    scored = sorted(((sum(soft_in(t, text) for t in p["triggers"]), name) for name, p in procedures.items()),
-                    reverse=True)
+    # a procedure with `needs` belongs to one product: it is considered only when the text names that product
+    scored = sorted(((sum(soft_in(t, text) for t in p["triggers"]), name) for name, p in procedures.items()
+                     if not p.get("needs") or any(soft_in(n, text) for n in p["needs"])), reverse=True)
     return [name for hits, name in scored if hits >= need][:limit]
 
 

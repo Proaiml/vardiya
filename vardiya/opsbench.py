@@ -11,6 +11,13 @@
              the order learned from correctly solved development cases adds
     skillc, harnessc   general skills and chains, without the graph model's first guess (vardiya/gnn.py); the plain
              skill and harness arms add that guess: what a fast trained pre-diagnosis adds for the language model
+    usta     the agent's own protocol, two model calls: (1) the model drafts an answer with no help, exactly as in
+             `ham`; (2) the harness hands back the draft with its review sheet (candidate causes, verified fixes,
+             procedures, server checks, the order that solved similar cases) and the answer contract, and the model
+             writes the final answer; (3) the harness moves harmful steps to `avoid` and restores every draft step
+             the review neither kept nor explicitly dropped. The harness may add knowledge and remove harm; it may
+             not silently lose what the model already knew, so the final answer is never thinner than the draft.
+    usta0    the same protocol with the answer contract only, no review sheet: what the protocol alone adds
 
 Scoring is deterministic: every `steps` group of the case needs one of its synonyms in the answer's cause or
 steps; a `harmful` synonym there makes the answer harmful. What the answer lists under `avoid` is a warning and
@@ -136,6 +143,8 @@ def product(text):
 def general_text(g, os_name):
     """One general skill as the harness hands it over: the read-only check and the fix for the host's OS."""
     rows = [f"General server skill: {g['title']}"]
+    if not os_name and g["check"]["unix"] == g["check"]["windows"]:
+        os_name = "unix"  # a product-level skill: the same text for both, shown once
     for o in [os_name] if os_name else ["unix", "windows"]:
         if g["check"][o] and not g["check"][o].startswith("(uygulanmaz"):
             rows.append(f"Check on {o} (read-only): {g['check'][o]}")
@@ -177,6 +186,10 @@ def context(case, classes, procedures, general=None, chains=None, hint=None):
             found["chain"] = [r for r in chains[name]["order"] if ref_title(r, classes, procedures, general)]
             break
     signs = class_signs(classes, case["prompt"])
+    agreed = {k for k, _ in (hint or {}).get("class", [])[:2]}
+    for name in found_classes:
+        if name in agreed:
+            found["strength"][name] = "strong"  # two independent matchers agree
     parts = []
     if len(found_classes) > 1:
         parts.append("The evidence names more than one cause. Fix them in the order the evidence shows, rerun "
@@ -297,6 +310,71 @@ def ask(model, case, ctx=None):
     return model.ask_json([{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}])
 
 
+CONTRACT = (
+    "Final answer contract:" + "\n"
+    "1. cause: the mechanism in one or two sentences; name the component, setting, limit or account involved. If two "
+    "causes interact, name both and which one to fix first." + "\n"
+    "2. steps, in the order you would do them: (a) how to confirm the cause, read-only, with the exact command, log, "
+    "screen or query; (b) the fix in the product's own terms: the exact parameter, option, command or configuration key "
+    "and where it lives; (c) the alternative when that fix is not possible; (d) restart or rerun, and how to verify it "
+    "worked; (e) what keeps it from recurring." + "\n"
+    "3. avoid: the shortcuts that look tempting in this situation." + "\n"
+    "If the report describes expected behaviour and not a failure, say so plainly, name the check that confirms it and "
+    "recommend no intervention.")
+REVIEW_SCHEMA = ('Reply with one JSON object: {"cause": "...", "steps": ["...", ...], "avoid": ["...", ...], '
+                 '"dropped": [{"step": "<a draft step you removed>", "why": "<reason>"}]}. No other text.')
+USTA_ARMS = ("usta", "usta0")
+
+
+def review_prompt(case, draft, sheet=None):
+    """Stage 2 of the Usta protocol: the model's own draft comes back with the harness's review sheet."""
+    rows = [case["prompt"], "", "Your draft answer (written without help):", json.dumps(draft, ensure_ascii=False)]
+    if sheet:
+        rows += ["", "Review sheet from the harness (candidates found by matching the report against solved cases and "
+                     "runbooks; a candidate can be wrong):", sheet]
+    rows += ["", "Now write the final answer.",
+             '- Keep every step of your draft. You may remove a draft step only when it is wrong or harmful for this '
+             'case; list each removed step under "dropped" with the reason.']
+    if sheet:
+        rows.append("- Add from the review sheet what applies to THIS report (the evidence in the report must support "
+                    "it); ignore candidates that do not fit.")
+    rows += ["- Complete the answer to the contract below; add the concrete commands, parameters and checks you left "
+             "out of the draft.", "", CONTRACT, "", REVIEW_SCHEMA]
+    return "\n".join(rows)
+
+
+def _tokens(text):
+    return set(re.findall(r"[a-z0-9_.%$/:-]{4,}", fold(str(text))))
+
+
+def merge(draft, final, found, classes):
+    """The harness's last word on a reviewed answer. A draft step that the final answer neither kept (60% of its
+    words) nor listed under `dropped` is restored at the end; then the guard moves harmful steps to `avoid`."""
+    draft = draft if isinstance(draft, dict) else {}
+    final = final if isinstance(final, dict) else {}
+    steps = [str(x) for x in final.get("steps") or []]
+    kept = _tokens(" ".join(steps + [str(final.get("cause", ""))]))
+    gone = _tokens(" ".join(str(d.get("step", "")) if isinstance(d, dict) else str(d) for d in final.get("dropped") or []))
+    restored = []
+    for step in draft.get("steps") or []:
+        words = _tokens(step)
+        if words and len(words & kept) / len(words) < 0.6 and len(words & gone) / len(words) < 0.6:
+            restored.append(str(step))
+    out = {"cause": str(final.get("cause") or draft.get("cause") or ""), "steps": steps + restored,
+           "avoid": list(final.get("avoid") or draft.get("avoid") or [])}
+    if found:
+        out = guard(out, found, classes)
+    out["restored"] = len(restored)
+    return out
+
+
+def ask_usta(model, case, sheet):
+    draft = ask(model, case)
+    final = model.ask_json([{"role": "system", "content": SYSTEM},
+                            {"role": "user", "content": review_prompt(case, draft, sheet)}])
+    return draft, final
+
+
 SKILL_ARMS = ("skill", "skillc", "skillg", "skill0")
 HARNESS_ARMS = ("harness", "harnessc", "harnessg", "harness0")
 
@@ -311,7 +389,7 @@ def arm_skills(arm, general, chains):
 
 
 def uses_gnn(arm):
-    return arm in ("skill", "harness")
+    return arm in ("skill", "harness", "usta")
 
 
 def gnn_hints(split, arms):
@@ -352,6 +430,12 @@ def run(split, arms, model_spec=None, out=OUT, limit=None):
                 answer, found = skill_answer(case, classes, procedures, gen, ch, hint)
             elif model is None:
                 continue
+            elif arm in USTA_ARMS:
+                sheet = None
+                if arm == "usta":
+                    sheet, found = context(case, classes, procedures, general, chains, hint)
+                draft, final = ask_usta(model, case, sheet)
+                answer = merge(draft, final, found, classes)
             elif arm == "ham":
                 answer = ask(model, case)
             else:
@@ -391,11 +475,38 @@ def export(split, arms, path, seed_split=True):
     return collections.Counter(r["arm"] for r in rows)
 
 
-def ingest(split, path, label, out=OUT):
+def read_answers(path):
+    rows = [json.loads(x) for x in pathlib.Path(path).read_text(encoding="utf-8").splitlines() if x.strip()]
+    return {r["id"]: r.get("answer") for r in rows if r.get("id")}
+
+
+def export_review(split, drafts_path, path, arms=USTA_ARMS):
+    """Stage 2 prompts for an outside model: every case with a draft gets its own draft back, with the review sheet
+    (`usta`) or with the contract only (`usta0`). Cases are dealt to the arms after sorting by the draft's verdict
+    and the incident class, so both arms start from the same mix of solved and unsolved drafts."""
+    classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
+    chains, drafts = load_chains(SKILLS), read_answers(drafts_path)
+    hints = gnn_hints(split, arms)
+    cases = [c for c in load(split) if c["id"] in drafts]
+    cases.sort(key=lambda c: (score(c, drafts[c["id"]])[0], c["class"], c["id"]))
+    rows = []
+    for i, case in enumerate(cases):
+        arm = arms[i % len(arms)]
+        sheet = context(case, classes, procedures, general, chains, hints.get(case["id"]))[0] if arm == "usta" else None
+        rows.append({"id": case["id"], "arm": arm, "system": SYSTEM,
+                     "prompt": review_prompt(case, drafts[case["id"]], sheet)})
+    rows.sort(key=lambda r: r["id"])  # the file order says nothing about the arm or the draft's verdict
+    pathlib.Path(path).write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    return collections.Counter(r["arm"] for r in rows)
+
+
+def ingest(split, path, label, out=OUT, drafts_path=None):
     """Score answers an outside model wrote ({"id", "arm", "answer": {cause, steps, avoid}} per line).
     The harness arms get the same guard as in `run`."""
     classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
     chains = load_chains(SKILLS)
+    drafts = read_answers(drafts_path) if drafts_path else {}
+    hints = gnn_hints(split, ["usta"]) if drafts_path else {}
     cases = {c["id"]: c for c in load(split)}
     n = 0
     for line in pathlib.Path(path).read_text(encoding="utf-8").splitlines():
@@ -403,16 +514,24 @@ def ingest(split, path, label, out=OUT):
             continue
         a = json.loads(line)
         case, arm, answer = cases.get(a.get("id")), a.get("arm"), a.get("answer")
-        if not case or arm not in ("ham",) + HARNESS_ARMS:
+        if not case or arm not in ("ham",) + HARNESS_ARMS + USTA_ARMS:
             continue
-        found = None
-        if arm != "ham":
+        found, extra = None, {}
+        if arm in USTA_ARMS:
+            draft = drafts.get(case["id"])
+            if draft is None:
+                continue
+            if arm == "usta":
+                _, found = context(case, classes, procedures, general, chains, hints.get(case["id"]))
+            answer = merge(draft, answer, found, classes)
+            extra = {"draft_verdict": score(case, draft)[0], "restored": answer.get("restored", 0)}
+        elif arm != "ham":
             _, found = context(case, classes, procedures, *arm_skills(arm, general, chains))
             answer = guard(answer, found, classes)
         verdict, hits = score(case, answer)
         row = {"id": case["id"], "split": split, "track": case["track"], "class": case["class"],
                "scheduler": case["scheduler"], "arm": arm, "model": label, "verdict": verdict, "hits": hits,
-               "found": found, "answer": answer, "seconds": None, "version": __version__}
+               "found": found, "answer": answer, "seconds": None, "version": __version__, **extra}
         with out.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         n += 1
@@ -429,6 +548,26 @@ def report(out=OUT, split=None):
     for (sp, arm, m), c in sorted(table.items()):
         n = sum(c.values())
         lines.append(f"| {sp} | {arm} | {m} | {n} | {c['dogru']} | {c['yarim']} | {c['yanlis']} | {c['zararli']} |")
+    return "\n".join(lines)
+
+
+def paired(model, split=None, out=OUT):
+    """Draft against final answer on the same cases, for the Usta arms of one model: what the protocol changed."""
+    rows = [json.loads(x) for x in out.read_text(encoding="utf-8").splitlines() if x.strip()]
+    rows = [r for r in rows if r["arm"] in USTA_ARMS and r["model"] == model and split in (None, r["split"])]
+    latest = {(r["id"], r["arm"]): r for r in rows}  # a later ingest of the same case replaces the earlier one
+    lines = ["| Kol | Vaka | Taslak dogru | Son dogru | Duzelen | Bozulan | Taslak zararli | Son zararli | Geri konan adim |",
+             "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+    for arm in USTA_ARMS:
+        rs = [r for (_, a), r in latest.items() if a == arm]
+        if not rs:
+            continue
+        d = [r["draft_verdict"] for r in rs]
+        f = [r["verdict"] for r in rs]
+        up = sum(a != "dogru" and b == "dogru" for a, b in zip(d, f))
+        down = sum(a == "dogru" and b != "dogru" for a, b in zip(d, f))
+        lines.append(f"| {arm} | {len(rs)} | {d.count('dogru')} | {f.count('dogru')} | {up} | {down} | "
+                     f"{d.count('zararli')} | {f.count('zararli')} | {sum(r.get('restored', 0) for r in rs)} |")
     return "\n".join(lines)
 
 
@@ -452,13 +591,26 @@ def main(argv=None):
     i.add_argument("--split", default="test")
     i.add_argument("--file", required=True)
     i.add_argument("--label", required=True)
+    i.add_argument("--drafts", help="stage 1 answers; needed to score the usta arms")
     i.add_argument("--out", default=str(OUT))
+    v = sub.add_parser("export-review", help="stage 2 of the Usta protocol for an outside model")
+    v.add_argument("--split", default="test")
+    v.add_argument("--drafts", required=True)
+    v.add_argument("--file", required=True)
+    v.add_argument("--arms", default="usta,usta0")
+    q = sub.add_parser("paired", help="draft against final answer for the usta arms")
+    q.add_argument("--model", required=True)
+    q.add_argument("--split")
     a = ap.parse_args(argv)
     if a.cmd == "run":
         run(a.split, a.arms.split(","), a.model, pathlib.Path(a.out), a.limit)
     elif a.cmd == "export":
         print(dict(export(a.split, a.arms.split(","), a.file)))
     elif a.cmd == "ingest":
-        print(ingest(a.split, a.file, a.label, pathlib.Path(a.out)), "cevap puanlandi")
+        print(ingest(a.split, a.file, a.label, pathlib.Path(a.out), a.drafts), "cevap puanlandi")
+    elif a.cmd == "export-review":
+        print(dict(export_review(a.split, a.drafts, a.file, tuple(a.arms.split(",")))))
+    elif a.cmd == "paired":
+        print(paired(a.model, a.split))
     else:
         print(report(pathlib.Path(a.out), a.split))

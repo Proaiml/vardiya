@@ -6,3 +6,4 @@ Claude outputs/
 *.egg-info/
 results/agent/
 ornekler/*.local.txt
+results/hub-arsiv/
