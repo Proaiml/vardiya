@@ -278,3 +278,50 @@ olmadığı için genel yetenekler artık bu kolda yalnız salt okuyan kontrol a
 uyuştuktan sonra modelin ya da operatörün işi. Kararın gerekçesi geliştirme vakası; görülmemiş kümelerde sayı düştü
 (test 20 → 15, test2 27 → 25 doğru; zararlı aynı) çünkü puanlama düzeltme sözcüklerini de sayıyordu. Harness
 kolunda model yeteneğin tamamını (kontrol ve düzeltme) görmeye devam ediyor.
+
+## 14. Usta protokolü: harness'lı model yardımsız modeli geçiyor mu (15 Kasım akşamı)
+
+Bölüm 12 ve 13'teki ölçümlerde harness bağlamı güçlü modeli geriye çekiyordu: model notlara tutunup kendi bildiğini
+yazmıyordu. Protokol bu yüzden değişti; ajanın adıyla `usta` kolu:
+
+1. **Taslak.** Model soruyu yardımsız cevaplar (yardımsız kolla aynı).
+2. **Gözden geçirme.** Harness taslağı, gözden geçirme notları (aday nedenler ve güveni, doğrulanmış düzeltme,
+   yordam, salt okuyan sunucu kontrolleri, çözüm sırası, graf modelinin ilk tahmini) ve cevap sözleşmesiyle geri verir.
+3. **Koruma.** Zararlı adımlar `avoid`'a taşınır; modelin sessizce düşürdüğü taslak adımları ve taslaktaki neden geri
+   konur. Model bir adımı ancak `dropped` altında gerekçesiyle çıkarabilir.
+4. **Kapı.** Sözleşmeyi karşılamayan cevap (dörtten az adım, komut ya da parametre yok, doğrulama yok, kaçınılacak yok)
+   eksikleriyle bir kez geri çevrilir; talep masasının eksik şablonu iade etmesi gibi.
+5. **Doğrulanmış notlar.** Harness'in emin olduğu nedenlerde (sınıfın iki kendi belirtisi, ya da kural eşleyici ile graf
+   modelinin uyumu) sınıfın doğrulanmış düzeltmesi ve ilk salt okuyan kontrol cevaba harness adına eklenir.
+
+Ölçüm eşlidir: aynı vakada modelin taslağı ile son cevap karşılaştırılır (`ops export-review`, `export-return`,
+`ingest --drafts --returns`, `paired`). Model: hydrogen (KRON-A2, dosya üzerinden).
+
+**Test kümesi (106 vaka; A2'nin hiç görmediği), geliştirme geri bildirimi olarak kullanıldı.** Protokolün kapı ve not
+adımları bu kümenin ilk sonucu görüldükten sonra eklendi; bu yüzden bu sayılar temiz ölçüm değildir.
+
+| Kol | Vaka | Taslak doğru | Son doğru | Düzelen | Bozulan | Zararlı (taslak → son) |
+| --- | --- | --- | --- | --- | --- | --- |
+| usta (notlarla) | 53 | 30 | 33 | 3 | 0 | 0 → 0 |
+| usta0 (yalnız sözleşme ve kapı) | 53 | 29 | 36 | 7 | 0 | 1 → 0 |
+
+**test3 (60 zor, görülmemiş vaka; KRON-A1 yazdı, içeriğine bakılmadan), temiz ölçüm.**
+
+| | Doğru | Yarım | Yanlış | Zararlı | Adım grubu isabeti |
+| --- | --- | --- | --- | --- | --- |
+| Yardımsız hydrogen (taslak) | 11 (%18) | 42 | 6 | 1 | %66 |
+| Usta (son cevap) | 28 (%47) | 27 | 1 | 4 | %85 |
+
+18 vaka düzeldi, 1 vaka bozuldu. Control-M vakalarında 6 → 18 (28 vaka), diğer zamanlayıcılarda 5 → 10 (32 vaka),
+birleşik vakalarda 4 → 9 (19 vaka). Harness'in kendi notları çıkarılınca son cevap 16 doğru: kazancın 5'i gözden
+geçirme ve kapıdan, 12'si doğrulanmış notlardan geliyor.
+
+**Zararlı sayısı 1'den 4'e çıktı; dürüst okuma.** Dördünün eşleşen ifadesine bakıldı (yalnız ifade ve çevresi):
+biri taslakta da vardı (düzeltmeden sonra "rerun"); biri koşullu bir öneri ("gerçekten takılıysa KILLJOB"); ikisi
+vakada zararlı diye yazılmış çıplak bir ürün terimi ("user daily") ve harness notundaki bir uyarının sonucu
+("...yeniden çalıştırma, mükerrer sipariş olur"). Yani üçü sözcük eşleşmesi; yine de sayıdan düşülmedi. Çıkan iki iş:
+puanlayıcının "X yapma, Y olur" kalıbını uyarı sayması, ve notların sınıfın bütün düzeltme metni yerine raporla ilgili
+cümlelerini taşıması. İkisi de test3 görüldükten sonra yapılacağı için yeni bir temiz küme ister.
+
+Sınırlar: tek model, tek koşu, 60 vaka; cevaplar dosya üzerinden bir ajandan alındı (iki ya da üç tur). Puanlama
+sözcük gruplarına bakar; daha eksiksiz cevap daha çok grup tutturur, harness'in sözleşmesi tam da bunu zorlar.

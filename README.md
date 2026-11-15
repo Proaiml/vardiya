@@ -23,7 +23,7 @@ Durum: isler emulatorde ya da yerel JS7 laboratuvarinda durur; uretim ortami ici
 ## Calistirma
 
 ```
-python -m unittest discover -s tests        # 110 test
+python -m unittest discover -s tests        # 128 test
 python -m vardiya bench                     # iki is kolu icin senaryo x kol matrisi (betik kollar)
 python -m vardiya bench --only talep        # yalnizca talep karsilama
 python -m vardiya fuzz -n 3000              # guvenlik hatti: rastgele ajan ve bozuk talep, ham vs harness
@@ -33,6 +33,7 @@ python -m vardiya olay run --split test --model ollama:qwen3:8b   # olay bench'i
 python -m vardiya ops run --split test --arms skill,ham,harness --model ollama:qwen3:8b   # ops bench: forumlardaki gercek admin sorunlari (docs/07)
 python -m vardiya ops run --split test --arms skill,skill0        # genel sunucu yetenekleriyle ve onlarsiz (ablasyon)
 python -m vardiya ops export --split test --file istem.jsonl      # dosyadan cevaplayan bir ajan icin istemler; sonra ops ingest
+python -m vardiya ops paired --model hydrogen-a2               # Usta protokolu: ayni vakada taslak ve son cevap (docs/07 Bolum 14)
 python -m vardiya web                       # operasyon konsolu: talepler, olaylar, kok neden: http://127.0.0.1:8765
 python -m vardiya run partial-load-001      # tek ariza vakasi, operator raporu
 ```
