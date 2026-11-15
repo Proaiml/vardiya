@@ -343,6 +343,21 @@ procedures:
     triggers: [start_ca, yapilandirma ajani, configuration agent, acilmiyor, does not start, baslamiyor, ca gunlugu, thread, is parcacik]
     steps: proclog'daki CA gunlugune bak; is parcaciklarinin kalkmasini beklerken sure doluyorsa shut_ca ile durdur, sunucunun data dizinindeki config.dat'a THREAD_STATE_RETRY_SLEEP 1000 satirini ekle (HA'da etkin dugumde) ve start_ca ile yeniden baslat; CCM'de CA'nin gorundugunu dogrula
     caution: config.dat'i yedeksiz degistirme
+  mft_pgp_cozme:
+    title: Dosya aktariminda PGP sifre cozmenin zaman asimina dusmesi ya da parolayi tekrar sormasi
+    triggers: [gnupg, gpg, pgp, sifre cozme, decrypt, decryption, zaman asimi, timeout, passphrase, parola soruluyor, pinentry]
+    steps: GnuPG surumune bak (2.1 ve sonrasi parolayi pinentry ile sorar); gpg-agent.conf dosyasina (yoksa olustur) allow-loopback-pinentry satirini ekle; MFT'nin PGP sablon komutuna --pinentry-mode loopback ekle; gpg-agent'i yeniden baslat ve test aktarimiyla dogrula
+    caution: sifrelemeyi kaldirarak ya da parolayi duz metin dosyada herkese acik birakarak cozme
+  sap_eski_durum_dosyalari:
+    title: SAP islerinin Unknown kalmasi, gecikmesi ya da coktan bitmis islerin hala izlenmesi
+    triggers: [sap, unknown, gecikiyor, delayed, coktan bitmis, already finished, izleniyor, tracked, tracking, executing, status]
+    steps: agent'in ctm/status dizinindeki en eski durum dosyalarindan SAP is adlarini al; SAP'te (SM37) bu islerin bittigini dogrula; agent'i durdur; yalniz SAP'te bittigi dogrulanan islerin durum dosyalarini kaldir; agent'i baslat ve izlemenin normale dondugunu kontrol et
+    caution: tum durum dosyalarini toptan silme; hala calisan islerin izi kaybolur
+  gomulu_betik_degisken:
+    title: Gomulu betikli (embedded script) iste Control-M degiskeni kullanmak
+    triggers: [gomulu betik, embedded script, embedded, degisken, variable, autoedit, cozulmuyor, not resolved, odate]
+    steps: gomulu betigin icinde %%degisken dogrudan cozulmez; is taniminda %%PARM1=%%$ODATE gibi bir parametre tanimla; betikte bu degeri parametre olarak oku ($1 ya da %1); test isiyle dogrula
+    caution: degeri betige sabit yazarak gecistirme
   zos_executing_temizlik:
     title: z/OS'ta bitmis ama Executing gorunen isi AJF'ten temizlemek
     triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
@@ -443,6 +458,41 @@ procedures:
     triggers: [audit, denetim, login, giris, who, kim, report, rapor, condition, kosul]
     steps: CCM'de EM sistem parametrelerinde denetimi (auditing) ac; Reporting Facility'de Audit kategorisinde Custom Audit raporu olustur ve islem tipine (Login User, kosul ekleme/silme) gore filtrele
     caution: denetim kapaliyken gecmise donuk bilgi yoktur; denetimi kalici acik tut
+  gecit_durum_izleme:
+    title: Yonetim sunucusu gecidinin Disconnected ya da No Sync olmasini izleyip haber vermek
+    triggers: [gateway, gecit, disconnected, no sync, monitor, izle, alert, uyari, life_check, notification]
+    steps: EM sahibi hesabiyla em ctl -mcs -C Gateway -all -cmdstr LIFE_CHECK komutunu calistiran kucuk bir betik yaz; durum Connected degilse e-posta ya da izleme aracina haber ver; betigi Control-M disindan da bagimsiz zamanla (izlenen sistemin kendisi dusebilir)
+    caution: izleyiciyi yalniz izlenen zamanlayicinin icine koyma
+  gecit_portu:
+    title: Gecidin dinledigi portu sabitlemek (guvenlik duvari arkasi)
+    triggers: [gateway, gecit, port, firewall, guvenlik duvari, hostportlist, static, sabit, listen, dinle]
+    steps: CCM'de EM sistem parametrelerinin Advanced bolumunde gtw tipindeki HostPortList parametresine sabit port ya da aralik ver; guvenlik duvarinda yalniz o portlari actir; gecidi yeniden baslat ve baglantiyi dogrula
+    caution: araligi gereksiz genis tutma
+  yamada_kapatma_sirasi:
+    title: Yuksek erisilebilir ya da dagitik kurulumda yama ve fix pack uygularken surecleri kapatma sirasi
+    triggers: [fix pack, fixpack, patch, yama, upgrade, yukselt, high availability, distributed, dagitik, shut down, kapat]
+    steps: once ikincil ya da dagitik dugumlerin Configuration Agent'larini, sonra birincil EM ve sunucu bilesenlerini kapat; yamayi birincide uygula, sonra ikincilde; birincili baslatip saglikli oldugunu dogrula, en son ikincilleri baslat
+    caution: iki dugumu ayni anda farkli surumlerde calistirma; yamadan once yedek al
+  kalip_politika_cli:
+    title: Is yuku politikasini komut satirindan acip kapatmak
+    triggers: [workload policy, is yuku politikasi, workload, policy, activate, deactivate, cli, komut satiri]
+    steps: EM cli yardimcisini -WORKLOAD_ACTIVATE <politika adi> Y ya da N ile calistir (9.0.00 FP1 ve sonrasi); degisikligi CCM'de ya da izleme ekraninda dogrula; gerekiyorsa bunu zamanlanmis bir ise koy
+    caution: politikayi kapatmak bekleyen isleri birden saliverir; kaynak ve hedef sistemlerin yukunu dusun
+  dr_gecisi:
+    title: Zamanlayici sunucusunu felaket kurtarma (DR) sitesine gecirmek ve geri almak
+    triggers: [disaster recovery, felaket, dr, failover, failback, site, oracle, mssql, replication, replikasyon]
+    steps: once veritabaninin DR tarafina kopyalandigini ve ana sitede hicbir sunucu bileseninin calismadigini dogrula; DR sunucusunun veritabani baglanti ayarlarini kopya veritabanina gosterecek sekilde guncelle; DR'de sunucuyu baslat, agent'larin yeni sunucuya baglandigini ve EM'nin onu gordugunu dogrula; geri donuste ayni adimlari ters sirayla uygula
+    caution: iki sitenin sunucusunu ayni anda calistirma; veritabani ayni anda iki yerden yazilirsa bozulur
+  agent_gmsa:
+    title: Windows agent servisini grup yonetimli servis hesabiyla (gMSA) calistirmak
+    triggers: [gmsa, group managed service account, servis hesabi, service account, windows, agent, parola donusu]
+    steps: agent 9.0.22 ya da ustu olmali; AD yoneticisi gMSA hesabini olusturup hosta yetki versin (Install-ADServiceAccount, Test-ADServiceAccount); agent servisinin Log On hesabini gMSA olarak ayarla (parola alani bos); gerekli kullanici haklarini ver ve servisi yeniden baslat
+    caution: eski surumde gMSA kullanmaya calisma; servis acilmaz
+  nfs_destegi:
+    title: Zamanlayici bilesenlerini ag dosya sistemine kurmak
+    triggers: [nfs, gpfs, cifs, smb, network file system, ag dosya sistemi, shared, paylasim, install]
+    steps: urun yalniz NFS surum 3'u (surume gore kismen ya da tam) destekler; GPFS ve CIFS/SMB uzerine kurulum desteklenmez; kurulum ve calisma dizinlerini yerel diske koy, paylasimi yalniz veri icin kullan
+    caution: desteklenmeyen dosya sisteminde gecici dosya ve kilit sorunlari cikar
 ---
 
 # Adminlik yordamlari
