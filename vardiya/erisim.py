@@ -22,6 +22,16 @@ import subprocess
 from .opsworld import WRITE
 
 SAFE_ARG = re.compile(r"^[A-Za-z0-9_.:/@%+=-]{1,200}$")
+# arguments with their own shape; everything else must match SAFE_ARG (no spaces, quotes, ; | & $ ` or braces)
+ARG_PATTERNS = {
+    "pid": re.compile(r"^[0-9]{1,10}$"),
+    "port": re.compile(r"^[0-9]{1,5}$"),
+    "path": re.compile(r"^[A-Za-z0-9_.:/@%+=\\-]{1,200}$"),  # Windows paths carry backslashes
+    "key": re.compile(r"^HK(LM|CU):\\[A-Za-z0-9_.\\-]{1,200}$"),
+    "log": re.compile(r"^(System|Application|Security)$"),
+    "start_type": re.compile(r"^(Automatic|Manual|Disabled)$"),
+    "owner": re.compile(r"^[A-Za-z0-9_.-]{1,64}(:[A-Za-z0-9_.-]{1,64})?$"),
+}
 
 # verb -> {os: template}. {x} are checked arguments; {secret:name} is resolved on the host from the vault.
 COMMANDS = {
@@ -48,7 +58,56 @@ COMMANDS = {
     "cert_info": {"unix": "openssl x509 -enddate -noout -in {path}"},
     "resource_status": {"server": "ecaqrtab LIST {resource}"},
 }
-LEVELS = {**WRITE, **{v: 0 for v in COMMANDS if v not in WRITE}}
+
+# General server skills (skills/genel-yetenekler): product-independent reads, and a few writes with their own level.
+GENERAL = {
+    "proc_list": {"unix": "ps -eo pid,ppid,user,stat,etime,pcpu,pmem,cmd --sort=-pcpu | head -25",
+                  "windows": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 25 Id,ProcessName,CPU,WS"},
+    "proc_info": {"unix": "ps -o pid,ppid,user,stat,etime,cmd -p {pid}; cat /proc/{pid}/limits",
+                  "windows": "Get-CimInstance Win32_Process | Where-Object ProcessId -eq {pid} | "
+                             "Select-Object ProcessId,ParentProcessId,CommandLine,CreationDate"},
+    "port_owner": {"unix": "ss -ltnp | grep ':{port} '",
+                   "windows": "Get-NetTCPConnection -LocalPort {port} | Select-Object LocalAddress,State,OwningProcess"},
+    "net_test": {"unix": "nc -vz -w 5 {target} {port}", "windows": "Test-NetConnection {target} -Port {port}"},
+    "dns_lookup": {"unix": "getent hosts {name}; hostname -f", "windows": "Resolve-DnsName {name}; hostname"},
+    "cert_remote": {"unix": "openssl s_client -connect {target}:{port} -servername {target} </dev/null 2>/dev/null"
+                            " | openssl x509 -noout -subject -issuer -enddate"},
+    "registry_read": {"windows": "Get-ItemProperty -Path '{key}'"},
+    "event_log": {"windows": "Get-WinEvent -LogName {log} -MaxEvents 200 | Where-Object LevelDisplayName -in "
+                             "'Error','Warning' | Select-Object -First 50 TimeCreated,ProviderName,Id,Message"},
+    "service_config": {"unix": "systemctl show {service} -p ExecStart,User,LimitNOFILE,ActiveState,UnitFileState",
+                       "windows": "Get-CimInstance Win32_Service | Where-Object Name -eq '{service}' | "
+                                  "Select-Object Name,State,StartMode,StartName,PathName"},
+    "file_acl": {"unix": "namei -l {path}; getfacl -p {path}", "windows": "icacls '{path}'"},
+    "time_status": {"unix": "timedatectl; chronyc tracking", "windows": "w32tm /query /status; tzutil /g"},
+    "user_status": {"unix": "chage -l {user}; id {user}",
+                    "windows": "Get-LocalUser -Name {user} | Select-Object Name,Enabled,PasswordExpires,PasswordLastSet"},
+    "user_rights": {"windows": "secedit /export /cfg $env:TEMP\\vardiya-ur.inf /areas USER_RIGHTS | Out-Null; "
+                               "Select-String -Path $env:TEMP\\vardiya-ur.inf -Pattern "
+                               "'SeBatchLogonRight|SeServiceLogonRight|SeAssignPrimaryTokenPrivilege'"},
+    "disk_top": {"unix": "du -xh --max-depth=1 {path} 2>/dev/null | sort -h | tail -15",
+                 "windows": "Get-ChildItem -Path '{path}' -Recurse -File -ErrorAction SilentlyContinue | "
+                            "Sort-Object Length -Descending | Select-Object -First 15 FullName,Length,LastWriteTime"},
+    "oom_log": {"unix": "dmesg -T | grep -i -E 'killed process|out of memory' | tail -20"},
+    "mounts": {"unix": "mount | grep -E 'nfs|cifs'; df -h", "windows": "Get-SmbMapping; Get-PSDrive -PSProvider FileSystem"},
+    "sched_tasks": {"unix": "crontab -l -u {user}; systemctl list-timers --all --no-pager",
+                    "windows": "Get-ScheduledTask | Where-Object State -ne 'Disabled' | Select-Object TaskPath,TaskName,State"},
+    "recent_changes": {"unix": "rpm -qa --last 2>/dev/null | head -20 || tail -50 /var/log/dpkg.log",
+                       "windows": "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 15"},
+    # writes
+    "process_term": {"unix": "kill -TERM {pid}", "windows": "Stop-Process -Id {pid}"},
+    "process_kill": {"unix": "kill -KILL {pid}", "windows": "Stop-Process -Id {pid} -Force"},
+    "file_chown": {"unix": "chown {owner} -- {path}"},
+    "time_resync": {"unix": "chronyc makestep", "windows": "w32tm /resync"},
+    "service_start_type": {"unix": "systemctl enable {service}", "windows": "Set-Service -Name {service} -StartupType {start_type}"},
+    "registry_set": {"windows": "$b = Join-Path $env:TEMP ('vardiya-' + (Get-Date -Format yyyyMMddHHmmss) + '.reg'); "
+                                "reg export ('{key}' -replace ':','') $b /y | Out-Null; "
+                                "Set-ItemProperty -Path '{key}' -Name {name} -Value {value}"},
+}
+COMMANDS.update(GENERAL)
+GENERAL_WRITE = {"process_term": 3, "process_kill": 4, "file_chown": 3, "time_resync": 3, "service_start_type": 3,
+                 "registry_set": 4}  # a registry write always backs the key up first, and needs a person's approval
+LEVELS = {**WRITE, **GENERAL_WRITE, **{v: 0 for v in COMMANDS if v not in WRITE and v not in GENERAL_WRITE}}
 NEVER = {"job_set_ok", "disable_ssl", "pool_increase"}  # verbs the harness does not run on a real site
 
 
@@ -74,7 +133,7 @@ class Access:
         if verb not in COMMANDS:
             raise Refused(f"{verb}: izin listesinde yok")
         for k, v in args.items():
-            if not SAFE_ARG.match(str(v)):
+            if not ARG_PATTERNS.get(k, SAFE_ARG).match(str(v)):
                 raise Refused(f"{k}: izin verilmeyen karakter ya da uzunluk")
         if LEVELS.get(verb, 0) >= 4 and f"{verb}:{host}" not in self.approvals:
             raise Refused(f"{verb}: duzey 4, insan onayi gerekli")
@@ -84,7 +143,10 @@ class Access:
             raise Refused(f"{verb}: {kind} icin komut tanimli degil")
         text = re.sub(r"\{secret:(\w+)\}", lambda m: f"$(vault-get {m.group(1)})" if kind == "unix" else
                       f"(Get-Secret -Name {m.group(1)} -AsPlainText)", kinds[kind])
-        line = text.format(**{"agent_user": self.inv.get(host, {}).get("agent_user", "ctmag"), "path": "/", **args})
+        try:
+            line = text.format(**{"agent_user": self.inv.get(host, {}).get("agent_user", "ctmag"), "path": "/", **args})
+        except KeyError as e:
+            raise Refused(f"{verb}: eksik arguman {e}") from None
         if kind in ("api", "server"):
             return ["ssh", self.inv.get("_server", {}).get("address", "ctm-server"), "--", line]
         h = self.inv[host]

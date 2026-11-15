@@ -239,7 +239,56 @@ def match_procedures(procedures, text, need=2, limit=2):
     return [name for hits, name in scored if hits >= need][:limit]
 
 
-_FOLD = str.maketrans("çğıöşüÇĞİÖŞÜâîû", "cgiosuCGIOSUaiu")
+def load_general_skills(directory):
+    """Product-independent server skills from `kind: general_skills` skills:
+    {name: {title, classes, triggers, check: {unix, windows}, fix: {unix, windows}, caution}}.
+    A skill with fewer than two triggers or no read-only check is refused."""
+    out = {}
+    for path in sorted(pathlib.Path(directory).glob("*/SKILL.md")):
+        if _kind(path) != "general_skills":
+            continue
+        m = parse_yaml(path.read_text(encoding="utf-8").split("---", 2)[1])
+        for name, g in (m.get("skills") or {}).items():
+            if not isinstance(g, dict):
+                continue
+            triggers = [str(t).lower() for t in (g.get("triggers") if isinstance(g.get("triggers"), list) else []) if t]
+            check = {o: str(g.get(f"check_{o}", "")) for o in ("unix", "windows")}
+            if len(triggers) < 2 or not any(v and not v.startswith("(uygulanmaz") for v in check.values()):
+                continue
+            classes = g.get("classes") if isinstance(g.get("classes"), list) else []
+            out[name] = {"title": str(g.get("title", name)), "classes": [str(c) for c in classes],
+                         "triggers": triggers, "check": check,
+                         "fix": {o: str(g.get(f"fix_{o}", "")) for o in ("unix", "windows")},
+                         "caution": str(g.get("caution", "")), "skill": m.get("name")}
+    return out
+
+
+WINDOWS_WORDS = ("windows", "powershell", ".bat", ".ps1", ".cmd", "registry", "kayit defteri", "winrm", "secpol",
+                 "event viewer", "c:\\", "net use", "unc", "iis", "mssql", "sqlcmd", "logon as", "log on as")
+UNIX_WORDS = ("linux", "unix", "aix", "solaris", "hp-ux", "rhel", "ubuntu", "bash", "ksh", "/etc/", "/var/",
+              "systemd", "systemctl", "cron", "ulimit", "chmod", "chown", "ssh", "nfs", "kubernetes", "slurm")
+
+
+def host_os(text):
+    """'windows', 'unix' or None (both) from the words of the text."""
+    low = fold(text)
+    w, u = sum(x in low for x in WINDOWS_WORDS), sum(x in low for x in UNIX_WORDS)
+    return "windows" if w > u else "unix" if u > w else None
+
+
+def match_general(general, text, found_classes=(), limit=3):
+    """General skills for a case: those bound to the matched incident classes (first class first), then those
+    whose own triggers occur in the text (two hits). The bound ones rank by their trigger hits in the text."""
+    hits = {name: sum(soft_in(t, text) for t in g["triggers"]) for name, g in general.items()}
+    out = []
+    for c in found_classes:
+        bound = sorted((n for n, g in general.items() if c in g["classes"]), key=lambda n: -hits[n])
+        out += [n for n in bound[:2] if n not in out]
+    out += [n for n, h in sorted(hits.items(), key=lambda x: -x[1]) if h >= 2 and n not in out]
+    return out[:limit]
+
+
+_FOLD =str.maketrans("çğıöşüÇĞİÖŞÜâîû", "cgiosuCGIOSUaiu")
 
 
 def fold(text):

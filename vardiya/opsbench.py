@@ -5,6 +5,8 @@
              actions), the matching admin procedures and the policy; the harness drops any step that its own
              class marks as harmful before the answer is scored
     skill    no model: the matched skills' own text is the answer (how much the skills alone already cover)
+    skill0, harness0   the same arms without the general server skills (skills/genel-yetenekler): the ablation
+             that shows what the product-independent OS skills add
 
 Scoring is deterministic: every `steps` group of the case needs one of its synonyms in the answer's cause or
 steps; a `harmful` synonym there makes the answer harmful. What the answer lists under `avoid` is a warning and
@@ -23,7 +25,8 @@ import time
 from . import __version__
 from .gateway import connect
 from .graph import mark_signals
-from .skills import fold, load_incident_classes, load_procedures, match_procedures, soft_in
+from .skills import (fold, host_os, load_general_skills, load_incident_classes, load_procedures, match_general,
+                     match_procedures, soft_in)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CASES = ROOT / "bench" / "ops"
@@ -105,11 +108,24 @@ def product(text):
     return best[1] if best[0] else None
 
 
-def context(case, classes, procedures):
+def general_text(g, os_name):
+    """One general skill as the harness hands it over: the read-only check and the fix for the host's OS."""
+    rows = [f"General server skill: {g['title']}"]
+    for o in [os_name] if os_name else ["unix", "windows"]:
+        if g["check"][o] and not g["check"][o].startswith("(uygulanmaz"):
+            rows.append(f"Check on {o} (read-only): {g['check'][o]}")
+            rows.append(f"Fix on {o}: {g['fix'][o]}")
+    rows.append(f"Caution: {g['caution']}")
+    return "\n".join(rows)
+
+
+def context(case, classes, procedures, general=None):
     """What the harness hands the model for this case, and what it found."""
     found_classes = match_classes(classes, case["prompt"])
     found = {"class": found_classes[0] if found_classes else None, "classes": found_classes,
-             "procedures": match_procedures(procedures, case["prompt"]), "product": product(case["prompt"])}
+             "procedures": match_procedures(procedures, case["prompt"]), "product": product(case["prompt"]),
+             "general": match_general(general, case["prompt"], found_classes) if general else [],
+             "os": host_os(case["prompt"])}
     parts = []
     if len(found_classes) > 1:
         parts.append("The evidence names more than one cause. Fix them in the order the evidence shows, rerun "
@@ -124,6 +140,8 @@ def context(case, classes, procedures):
     for name in found["procedures"]:
         p = procedures[name]
         parts.append(f"Admin procedure: {p['title']}\nSteps: {p['steps']}\nCaution: {p['caution']}")
+    for name in found["general"]:
+        parts.append(general_text(general[name], found["os"]))
     if not parts:
         parts.append("No known failure class or procedure matched; reason from the evidence only.")
     return "\n\n".join(parts + [POLICY]), found
@@ -141,8 +159,8 @@ def guard(answer, found, classes):
     return {**answer, "steps": keep, "avoid": list(answer.get("avoid") or []) + moved}
 
 
-def skill_answer(case, classes, procedures):
-    _, found = context(case, classes, procedures)
+def skill_answer(case, classes, procedures, general=None):
+    _, found = context(case, classes, procedures, general)
     steps, causes = [], []
     for name in found.get("classes") or []:
         c = classes[name]
@@ -152,6 +170,11 @@ def skill_answer(case, classes, procedures):
     cause = " / ".join(causes)
     for name in found["procedures"]:
         steps.append(procedures[name]["steps"])
+    for name in found["general"]:
+        g = general[name]
+        for o in [found["os"]] if found["os"] else ["unix", "windows"]:
+            if g["check"][o] and not g["check"][o].startswith("(uygulanmaz"):
+                steps += [g["check"][o], g["fix"][o]]
     return {"cause": cause, "steps": steps, "avoid": []}, found
 
 
@@ -201,14 +224,14 @@ def ask(model, case, ctx=None):
 
 
 def run(split, arms, model_spec=None, out=OUT, limit=None):
-    classes, procedures = load_incident_classes(SKILLS), load_procedures(SKILLS)
+    classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
     model = connect(model_spec) if model_spec else None
     done = set()
     if out.exists():
         keep = []
         for line in out.read_text(encoding="utf-8").splitlines():
             r = json.loads(line)
-            if r["arm"] == "skill" and r["split"] == split and "skill" in arms:
+            if r["arm"] in ("skill", "skill0") and r["split"] == split and r["arm"] in arms:
                 continue  # the skill arm has no model and takes no time: always score it against the current skills
             keep.append(line)
             done.add((r["id"], r["arm"], r.get("model")))
@@ -216,18 +239,19 @@ def run(split, arms, model_spec=None, out=OUT, limit=None):
     out.parent.mkdir(parents=True, exist_ok=True)
     for case in load(split)[:limit]:
         for arm in arms:
-            key = (case["id"], arm, None if arm == "skill" else model_spec)
+            key = (case["id"], arm, None if arm in ("skill", "skill0") else model_spec)
             if key in done:
                 continue
             t0, found = time.time(), None
-            if arm == "skill":
-                answer, found = skill_answer(case, classes, procedures)
+            gen = {} if arm.endswith("0") else general
+            if arm in ("skill", "skill0"):
+                answer, found = skill_answer(case, classes, procedures, gen)
             elif model is None:
                 continue
             elif arm == "ham":
                 answer = ask(model, case)
             else:
-                ctx, found = context(case, classes, procedures)
+                ctx, found = context(case, classes, procedures, gen)
                 answer = guard(ask(model, case, ctx), found, classes)
             verdict, hits = score(case, answer)
             row = {"id": case["id"], "split": split, "track": case["track"], "class": case["class"],
@@ -236,6 +260,55 @@ def run(split, arms, model_spec=None, out=OUT, limit=None):
             with out.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
             print(f"{case['id']:<34} {arm:<8} {verdict}")
+
+
+def export(split, arms, path, seed_split=True):
+    """Prompts for an outside model (an agent that answers from a file instead of an API).
+
+    Each case goes to ONE arm only (alternating inside each incident class), so an agent never sees the same
+    case twice with and without help. The file carries the prompt the arm would send, never the expected steps."""
+    classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
+    rows = []
+    # sorted by class, then dealt round-robin: every arm gets about the same number and mix of classes
+    for i, case in enumerate(sorted(load(split), key=lambda c: (c["class"], c["id"]))):
+        arm = arms[i % len(arms)] if seed_split else arms[0]
+        if arm == "ham":
+            ctx = None
+        else:
+            ctx, _ = context(case, classes, procedures, {} if arm.endswith("0") else general)
+        user = case["prompt"] + ("\n\n" + ctx if ctx else "") + "\n\n" + SCHEMA
+        rows.append({"id": case["id"], "arm": arm, "system": SYSTEM, "prompt": user})
+    # arms in the order given: an agent answers every unaided case before it sees any harness text
+    rows.sort(key=lambda r: arms.index(r["arm"]))
+    pathlib.Path(path).write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    return collections.Counter(r["arm"] for r in rows)
+
+
+def ingest(split, path, label, out=OUT):
+    """Score answers an outside model wrote ({"id", "arm", "answer": {cause, steps, avoid}} per line).
+    The harness arms get the same guard as in `run`."""
+    classes, procedures, general = load_incident_classes(SKILLS), load_procedures(SKILLS), load_general_skills(SKILLS)
+    cases = {c["id"]: c for c in load(split)}
+    n = 0
+    for line in pathlib.Path(path).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        a = json.loads(line)
+        case, arm, answer = cases.get(a.get("id")), a.get("arm"), a.get("answer")
+        if not case or arm not in ("ham", "harness", "harness0"):
+            continue
+        found = None
+        if arm != "ham":
+            _, found = context(case, classes, procedures, {} if arm == "harness0" else general)
+            answer = guard(answer, found, classes)
+        verdict, hits = score(case, answer)
+        row = {"id": case["id"], "split": split, "track": case["track"], "class": case["class"],
+               "scheduler": case["scheduler"], "arm": arm, "model": label, "verdict": verdict, "hits": hits,
+               "found": found, "answer": answer, "seconds": None, "version": __version__}
+        with out.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        n += 1
+    return n
 
 
 def report(out=OUT, split=None):
@@ -263,8 +336,21 @@ def main(argv=None):
     p = sub.add_parser("report")
     p.add_argument("--split")
     p.add_argument("--out", default=str(OUT))
+    e = sub.add_parser("export", help="prompts for an outside model, one arm per case")
+    e.add_argument("--split", default="test")
+    e.add_argument("--arms", default="harness,harness0")
+    e.add_argument("--file", required=True)
+    i = sub.add_parser("ingest", help="score an outside model's answers")
+    i.add_argument("--split", default="test")
+    i.add_argument("--file", required=True)
+    i.add_argument("--label", required=True)
+    i.add_argument("--out", default=str(OUT))
     a = ap.parse_args(argv)
     if a.cmd == "run":
         run(a.split, a.arms.split(","), a.model, pathlib.Path(a.out), a.limit)
+    elif a.cmd == "export":
+        print(dict(export(a.split, a.arms.split(","), a.file)))
+    elif a.cmd == "ingest":
+        print(ingest(a.split, a.file, a.label, pathlib.Path(a.out)), "cevap puanlandi")
     else:
         print(report(pathlib.Path(a.out), a.split))

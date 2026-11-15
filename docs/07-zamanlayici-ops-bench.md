@@ -169,3 +169,44 @@ harness kolları).
 
 Sıradaki: kalan geliştirme makalelerini okumaya devam (yaklaşık 1.470, 40 saniyede bir sayfayla yaklaşık 16 saat);
 BMC'nin test tarafından da vaka yazdırmak (ayrı ajan, tarayıcı boşken); GPU boşalınca ham ve harness kollarını koşmak.
+
+## 12. BMC tur 2 ve genel sunucu yetenekleri (15 Kasım)
+
+**BMC tur 2.** En çok okunan geliştirme makalelerinin ilk ~100'ü okundu (sayfa başına 40 sn, iframe ile; panel
+gizliyken tarayıcı zamanlayıcıları kısıyor). Çıkanlar kendi sözcüklerimizle 37 geliştirme vakası, ~35 yordam ve 15
+sınıfa yeni belirti oldu. Öğrenilen: yönetici sorunu hata metnini kopyalamadan anlatıyor; yalnız hata metnine bağlı
+belirti kaçırıyor, anlatım sözcükleriyle tetiklenen yordam gerekiyor. Beceri kolu artık her koşuda güncel becerilerle
+yeniden puanlanıyor (önbellek yalnız modelli kollarda).
+
+**Genel yetenekler** (`skills/genel-yetenekler`, 27 yetenek). Ürünün altındaki işletim sistemi katmanı: süreç ve
+görev yöneticisi, servisler, disk, bellek ve OOM, ağ ve port, DNS, SSH, WinRM ve PowerShell Remoting, kayıt
+defteri, Windows kullanıcı hakları ve olay kimlikleri, dosya izinleri ve ACL, ortam farkı, işletim sistemi
+sınırları, sertifika ve Java güven deposu, saat ve saat dilimi, günlükler, kilitler, işletim sisteminin kendi
+zamanlayıcıları, sürüm ve yamalar, paylaşımlar, aktarım bütünlüğü, veritabanı istemcisi, yeniden başlatıp doğrulama.
+Her biri Unix ve Windows için yalnız okuyan teşhis komutu, düzeltme yolu ve kaçınılacakları taşır; bağlı olduğu olay
+sınıfları vardır. Harness bir sınıf eşleşince ona bağlı genel yetenekleri, anlatımda iki tetikleyici geçince de
+kendiliğinden eşleşenleri (en çok 3) ajana verir; hostun işletim sistemini metinden çıkarıp yalnız o tarafın
+komutlarını gösterir. Erişim katmanına aynı yeteneklerin komutları eklendi (`docs/08`).
+
+**Ablasyon (beceri kolu, model yok).** `skill0` genel yetenekler olmadan, `skill` onlarla:
+
+| Bölüm | skill0 doğru | skill doğru | zararlı |
+| --- | --- | --- | --- |
+| dev (161) | 159 | 159 | 0 / 0 |
+| test (128, bakılmadan) | 9 | 17 | 1 / 1 |
+
+Dürüst not: aynı sayıda **rastgele** seçilmiş genel yetenek de testte 16 doğru veriyor. Yani model olmayan kolda
+artış, yetenek metninin getirdiği genel işletim sistemi sözcüklerinden geliyor; doğru yeteneği seçmenin değerini bu
+kol ölçemez. Genel yeteneklerin gerçek katkısı model kolunda ölçülür: `harness` (genel yeteneklerle) ile `harness0`
+(onlarsız), aynı model.
+
+**Dış modelle ilk test.** GPU beklenmeden, bir ajan modeli dosyadan cevaplayabilsin diye `ops export` ve `ops ingest`
+eklendi. Her test vakası yalnız bir kola gider (sınıfa göre sıralanıp dönüşümlü: ham 43, harness0 43, harness 42; üç
+grubun beceri-kolu zorluğu eşit: 2, 3, 4 doğru). Ajan önce bütün yardımsız vakaları, sonra harness0'ı, en son
+harness'ı cevaplar; böylece yardım metni yardımsız cevaplara sızmaz. Cevaplar harness kolunda aynı guard'dan geçip
+puanlanır.
+
+```
+python -m vardiya ops export --split test --arms ham,harness0,harness --file <istem.jsonl>
+python -m vardiya ops ingest --split test --file <cevaplar.jsonl> --label <ajan adi>
+```

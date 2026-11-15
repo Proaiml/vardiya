@@ -99,3 +99,16 @@ Dürüst sınırlar:
 
     python -m vardiya ops eylem --split test --seeds 50 --arms kod,saf
     python -m vardiya ops eylem --split test --arms ham,harness --model ollama:qwen3:8b
+
+### Genel sunucu yetenekleri (15 Kasım)
+
+`GENERAL` sözlüğü, `skills/genel-yetenekler` içindeki yeteneklerin komutlarıdır. Okuma (düzey 0): süreç listesi ve
+ayrıntısı, portu tutan süreç, bağlantı sınaması, DNS, uzak sertifika, kayıt defteri okuma, olay günlüğü, servis
+yapılandırması, dosya ACL'i, saat durumu, kullanıcı durumu, Windows kullanıcı hakları, en büyük dizinler, OOM
+kayıtları, bağlamalar, işletim sistemi zamanlayıcısı, son yamalar. Yazma: süreci kibarca durdurma, sahiplik, saat
+eşitleme, servis başlama tipi (düzey 3); süreci zorla öldürme ve kayıt defteri yazma (düzey 4, insan onayı). Kayıt
+defteri yazması her zaman önce anahtarı `reg export` ile yedekler. Argümanların her birinin kendi biçimi vardır (pid
+yalnız rakam, port en çok 5 rakam, kayıt yolu `HKLM:\...`, günlük adı yalnız System/Application/Security); eksik
+argüman varsayılanla doldurulmaz, reddedilir. Hostun işletim sistemi için komutu olmayan fiil (Unix'te kayıt defteri
+gibi) tahmin edilmez, reddedilir.
+

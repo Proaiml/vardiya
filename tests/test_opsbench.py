@@ -63,6 +63,18 @@ class HarnessSide(unittest.TestCase):
                     self.assertIsInstance(g, list, c["id"])
                     self.assertTrue(all(isinstance(w, str) and (len(w) > 1 or not w.isalpha()) for w in g), c["id"])
 
+    def test_general_skills_follow_the_class_and_the_host_os(self):
+        from vardiya.skills import host_os, load_general_skills, match_general
+        general = load_general_skills(opsbench.SKILLS)
+        self.assertGreaterEqual(len(general), 25)
+        self.assertIn("disk_alani", match_general(general, "No space left on device", ["disk"]))
+        self.assertIn("kayit_defteri", match_general(general, "registry anahtarini HKLM altinda okuyalim", []))
+        self.assertEqual(host_os("Windows agent'ta PowerShell betigi"), "windows")
+        self.assertEqual(host_os("Linux sunucuda cron isi"), "unix")
+        ctx, found = opsbench.context(CASE, self.classes, self.procs, general)
+        self.assertTrue(found["general"])
+        self.assertIn("General server skill", ctx)
+
     def test_dev_cases_are_well_formed(self):
         for c in opsbench.load("dev"):
             self.assertIn(c["track"], {"olay", "bilgi", "olaysiz"})
