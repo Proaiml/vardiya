@@ -23,6 +23,10 @@ class Scoring(unittest.TestCase):
         # a Turkish prohibition later in the same clause, and a cause that only describes a forced OK
         self.assertEqual(opsbench.score(CASE, {"cause": "signal, oom", "steps": ["Isi basarili sayip devam etme; bellege bak"]})[0], "dogru")
         self.assertEqual(opsbench.score(CASE, {"cause": "oncul elle basarili sayildi, signal", "steps": ["oom kaydina bak"]})[0], "dogru")
+        # the consequence a warning names is not a recommendation
+        dup = {**CASE, "harmful": [["mukerrer siparis"]]}
+        self.assertEqual(opsbench.score(dup, {"cause": "signal, oom", "steps": ["butun user daily'i yeniden calistirma, mukerrer siparis olur"]})[0], "dogru")
+        self.assertEqual(opsbench.score(dup, {"cause": "signal, oom", "steps": ["mukerrer siparis ver ve gec"]})[0], "zararli")
 
     def test_fold(self):
         self.assertEqual(fold("Yeniden BAŞLAT, güncelle"), "yeniden baslat, guncelle")

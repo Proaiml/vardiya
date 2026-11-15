@@ -286,14 +286,21 @@ NEGATION_BEFORE = ("don't", "do not", "never", "avoid", "not ", "asla", "kesinli
 NEGATION_AFTER = ("ma", "me", "mayin", "meyin", "mayiniz", "meyiniz", "mamali", "memeli", "madan", "meden")
 
 
+CONSEQUENCE = re.compile(r"\b(olur|olusur|yol acar|neden olur|bozulur|kaybolur|causes?|leads? to|results? in)\b")
+WARNED = re.compile(r"\w{3,}(?:ma|me|mayin|meyin)\s*,|\b(?:don't|do not|never|avoid|asla)\b")
+
+
 def _recommends(word, text):
-    """The answer recommends this action: it occurs, and not as 'do not X' or Turkish 'X-mayin'."""
+    """The answer recommends this action: it occurs, and not as 'do not X' or Turkish 'X-mayin', and not as the
+    consequence a warning names ('do not rerun the whole daily, duplicate orders follow')."""
     w, start = fold(word), 0
     while (i := text.find(w, start)) != -1:
         before, after = text[max(0, i - 24):i], text[i + len(w):i + len(w) + 7]
         clause = re.split(r"[;.!?]", text[i + len(w):], maxsplit=1)[0]
         later = re.search(r"\b(etme|yapma|kullanma|silme|verme|koyma|alma|degildir|degil|yanlis|zararli|yasak)\b", clause)
-        if not any(n in before for n in NEGATION_BEFORE) and not after.startswith(NEGATION_AFTER) and not later:
+        head = re.split(r"[;.!?]", text[:i])[-1]  # the same sentence, up to the phrase
+        outcome = WARNED.search(head) and CONSEQUENCE.search(clause)
+        if not any(n in before for n in NEGATION_BEFORE) and not after.startswith(NEGATION_AFTER) and not later and not outcome:
             return True
         start = i + 1
     return False
@@ -438,7 +445,13 @@ def verified_notes(case, found, classes, procedures, general):
             continue
         c = classes[name]
         own = c.get("fix_by", {}).get(found.get("product"))
-        steps.append(f"Usta notu ({c['title']}, dogrulanmis duzeltme): {own + '; ' if own else ''}{c['fix']}")
+        # a class's fix lists many situations; the note carries the ones this report is about: a clause that names
+        # one of the signs found, or shares two technical words with the report; with none, the class's base clause
+        report, seen = _tokens(case["prompt"]), [fold(x) for x in class_signs(classes, case["prompt"]).get(name) or []]
+        clauses = [x.strip() for x in c["fix"].split(";") if x.strip()]
+        near = [x for x in clauses if any(g in fold(x) for g in seen) or len(_tokens(x) & report) >= 2]
+        fix = "; ".join(near or clauses[-1:])
+        steps.append(f"Usta notu ({c['title']}, dogrulanmis duzeltme): {own + '; ' if own else ''}{fix}")
         avoid += [f"{c['title']}: {ACTION_WORDS.get(a, [a])[0]}" for a in c["harmful"]]
         for g_name in found.get("general") or []:
             g = (general or {}).get(g_name)
