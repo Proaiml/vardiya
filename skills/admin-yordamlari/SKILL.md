@@ -358,6 +358,21 @@ procedures:
     triggers: [gomulu betik, embedded script, embedded, degisken, variable, autoedit, cozulmuyor, not resolved, odate]
     steps: gomulu betigin icinde %%degisken dogrudan cozulmez; is taniminda %%PARM1=%%$ODATE gibi bir parametre tanimla; betikte bu degeri parametre olarak oku ($1 ya da %1); test isiyle dogrula
     caution: degeri betige sabit yazarak gecistirme
+  dongusel_hata_sonrasi:
+    title: Dongusel isin NOTOK'tan sonra bir sonraki aralikta yeniden calismaya donmesi
+    triggers: [dongusel, cyclic, notok, yeniden calismaya, sonraki aralik, next interval, stopcycl, stop cyclic, cyclic_rerun]
+    steps: bu urunun varsayilan davranisidir; sunucu genelinde config.dat'taki CYCLIC_RERUN parametresi NOTOK'tan sonra dongunun surup surmeyecegini belirler (z/OS'ta da ayni ad); is bazinda istenmiyorsa On NOTOK icin Stop Cyclic tanimla
+    caution: genel parametreyi degistirmek butun dongusel isleri etkiler; once kac isin etkilenecegini listele
+  dongusel_bagimli_is:
+    title: Gunde birden fazla calisan oncul ve ardilda ardilin yalniz bir kez calismasi
+    triggers: [gunde iki kez, twice a day, birden fazla, bagimli, dependent, bir kez tetikleniyor, only once, dongusel, cyclic, kosul, condition]
+    steps: ilk calismada uretilen kosul ardilin ilk calismasinda tuketilir ve ikinci kez uretilmez; iki isi ayni dongusel aralikla tanimla; ardil her calismadan sonra kosulu silsin (DO COND -) ve oncul her calismada kosulu yeniden eklesin; bir test gunuyle iki calismayi dogrula
+    caution: ardili her gun elle calistirarak gecistirme
+  logon_as_user_haklari:
+    title: Logon As User acildiktan sonra islerin log ve cikti olusturamadan dusmesi
+    triggers: [logon as user, log on as user, fix pack, parola tanimladik, log, cikti olusturamadan, job failed, fork failure, windows agent]
+    steps: kullanicinin parolasinin CCM ya da ctmpwd ile tanimli oldugunu dogrula; kullaniciya Yerel Guvenlik Ilkesi'nde 'log on as a batch job' ve 'replace a process level token' haklarini ver; agent servisini yeniden baslat ve bir test isiyle dogrula
+    caution: kullaniciyi yerel yoneticiler grubuna ekleyerek gecistirme
   zos_executing_temizlik:
     title: z/OS'ta bitmis ama Executing gorunen isi AJF'ten temizlemek
     triggers: [z/os, zos, mainframe, executing, ctmcajf, ajf, jes2, stuck]
@@ -493,6 +508,36 @@ procedures:
     triggers: [nfs, gpfs, cifs, smb, network file system, ag dosya sistemi, shared, paylasim, install]
     steps: urun yalniz NFS surum 3'u (surume gore kismen ya da tam) destekler; GPFS ve CIFS/SMB uzerine kurulum desteklenmez; kurulum ve calisma dizinlerini yerel diske koy, paylasimi yalniz veri icin kullan
     caution: desteklenmeyen dosya sisteminde gecici dosya ve kilit sorunlari cikar
+  yeniden_deneme_tasarimi:
+    title: Dusen isi belirli bir saatte, gecikmeyle ya da sinirli sayida yeniden calistirmak
+    triggers: [rerun, yeniden calistir, retry, tekrar dene, failed, dustu, dusunce, delay, gecikme, specific time, belirli saat, bir kez daha, kopya, cyclic, dongusel]
+    steps: belirli saatte yeniden deneme icin isi o saatlerde (ornegin 21:00 ve 23:00) dongusel tanimla ve OK bitince On/Do ile Stop Cyclic yap; gecikmeli ve sinirli deneme icin is tanimindaki rerun ayarini kullan (sondan itibaren aralik, en cok N deneme; deneme sayisina ilk calisma dahil degildir); dongusel isin hata sonrasi hemen tekrar denemesini istemiyorsan Actions'taki NOTOK yeniden calistirma adimini kaldir, dongusellik kalir
+    caution: birbirini tetikleyen On/Do kurallari (OK'ta rerun, NOTOK'ta OK say) beklenmeyen dongulere yol acar; isi OK sayarak uyari bastirma
+  hata_sayisina_gore_uyari:
+    title: Ilk hatalarda sessiz kalip yalniz N'inci hatada ya da son denemede uyari vermek
+    triggers: [alert, uyari, mail, e-posta, failure count, hata sayisi, second failure, ikinci hata, fourth, runcount, last run, son calisma, only when]
+    steps: isin On/Do bolumunde hata sayisi (number of failures) N'e esitken ya da RUNCOUNT son denemeye esit ve is NOTOK iken shout ya da mail tanimla; sayac is OK bitince sifirlanir; genel uyari parametresini kapatmak yerine is bazinda cozumu tercih et
+    caution: 'alert on abend' parametresini genel olarak kapatmak butun islerin otomatik uyarisini kaldirir; tek is icin genel ayari degistirme
+  smart_klasor_toplu_bildirim:
+    title: SMART klasordeki dusen isler icin tek bir toplu e-posta gondermek
+    triggers: [smart folder, smart klasor, smart table, single email, tek e-posta, toplu, all failed jobs, dusen isler, folder, klasor, notify]
+    steps: klasordeki her isin On NOTOK'unda is adini klasor ya da global degiskene ekle (ornegin %%\HATALI=%%\HATALI. %%JOBNAME); klasorun kendi On/Do'sunda klasor bitince bu degiskeni iceren tek e-posta gonder; klasor bitiminde degiskeni sifirla
+    caution: her is icin ayri mail tanimlayip toplu bildirimle birlikte cift bildirim uretme
+  karsilikli_dislama:
+    title: Bir grup is calisirken baska bir grubun baslamamasini saglamak
+    triggers: [must not start, baslamamali, while running, calisirken, mutual, exclusive, ozel, shared, paylasimli, control resource, kontrol kaynagi, ayni anda]
+    steps: ortak bir kontrol kaynagi tanimla; aynı anda calisabilecek isler (A grubu) bu kaynagi Shared kipinde, onlar calisirken baslamamasi gereken isler (B grubu) Exclusive kipinde istesin; B, hicbir A kaynagi tutmazken baslar; davranisi bir test siparisiyle dogrula
+    caution: bunu betikle kosul ekleyip silerek kurmak yarim kalan islerde kosulu asili birakir; urunun kaynak mekanizmasini kullan
+  hata_sonrasi_bekletme:
+    title: Bir is dusunce ona bagli islerin bir sonraki gune de gecmemesi icin kilit birakmak
+    triggers: [control resource, kontrol kaynagi, not released, birakilmasin, fails, dusunce, hold, block, engelle, no date, stat]
+    steps: kontrol kaynagi is bitince her durumda birakilir, bu ise yaramaz; bunun yerine tarihsiz (No Date, z/OS'ta STAT) bir kosul kullan: is OK bitince kosulu eklesin, NOTOK bitince silsin; bagli isler bu kosulu beklesin; sorun giderilince kosulu elle ekle
+    caution: tarihsiz kosulu elle eklemeyi unutmak zinciri gunlerce durdurur; bunu bildirimle birlikte kur
+  em_metrik_sorgulari:
+    title: Gunluk basarili, basarisiz ve yuklenen is sayilarini raporlamak
+    triggers: [report, rapor, metrics, metrik, number of jobs, is sayisi, per day, gunluk, failed, successful, loaded, sql]
+    steps: hazir rapor yoksa EM veritabaninda yalniz okuma sorgusuyla gunluk sayilari cikar (is calisma gecmisi tablosunda ended_status 16 OK, 32 NOTOK); New Day'de yuklenen is sayisi icin is yuku raporlarini kullan; sorguyu zamanlanmis bir isle her gun calistir
+    caution: EM veritabaninda yazma sorgusu calistirma; sorguyu yogun saatte calistirma
 ---
 
 # Adminlik yordamlari
