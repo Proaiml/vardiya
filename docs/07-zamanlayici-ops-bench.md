@@ -210,3 +210,23 @@ puanlanır.
 python -m vardiya ops export --split test --arms ham,harness0,harness --file <istem.jsonl>
 python -m vardiya ops ingest --split test --file <cevaplar.jsonl> --label <ajan adi>
 ```
+
+**İlk dış model sonucu (15 Kasım, KRON-A1, test bölümü, vaka başına tek kol).**
+
+| Kol | Vaka | Doğru | Yarım | Yanlış | Zararlı | Adım grubu isabeti |
+| --- | --- | --- | --- | --- | --- | --- |
+| ham | 43 | 28 (%65) | 14 | 1 | 0 | %85 |
+| harness0 | 43 | 23 (%53) | 18 | 2 | 0 | %82 |
+| harness | 42 | 24 (%57) | 15 | 3 | 0 | %82 |
+
+Okuma: güçlü bir model için harness doğruluğu artırmadı; genel yetenekler harness0'a göre bir vaka fark yaptı
+(43 vakalık gruplarda gürültü düzeyi, yaklaşık ±7 puan). Hiçbir kolda zararlı cevap yok. Nedeni ölçüldü: harness
+görülmemiş test anlatımlarında olay sınıfını vakaların ~%42'sinde **yanlış** eşliyor (harness0 17/43, harness 19/42)
+ve bu bağlamı "Matched failure class" diye kesin bir dille veriyor. Doğru sınıf eşleştiğinde harness kolu 13 vakada 8
+doğru, 0 yanlış; yanlış sınıfta 19 vakada 9 doğru, 2 yanlış.
+
+Sonuç ve sıradaki iş: (1) Eşleşmenin güveni ajana söylenmeli: hangi belirtilerin eşleştiği, tek belirtiyle zayıf
+eşleşmede "olası sınıf" dili, çok zayıfta hiç sınıf vermemek. (2) Bu değişiklik aynı test üzerinde ayarlanmamalı;
+ölçüm için yeni, hiç görülmemiş bir test kümesi gerekir. (3) Harness'in asıl hedefi küçük modeller; aynı üç kol
+GPU sırası gelince küçük modelle koşulacak. Güçlü modelde harness'in değeri doğruluktan çok güvenlik ve tutarlılıkta
+aranmalı; bunun için zararlı tuzak içeren vakaların payı artırılmalı.
