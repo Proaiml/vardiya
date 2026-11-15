@@ -83,10 +83,11 @@ def mine(answers, cases, index, min_share=0.3):
             for i, ref in enumerate(chain):
                 pos[ref].append(i / max(1, len(chain) - 1))
                 count[ref] += 1
-        keep = [r for r, c in count.items() if c >= 2 and c / len(lists) >= min_share] or \
-               [r for r, _ in count.most_common(2)]
-        order = sorted(keep, key=lambda r: sum(pos[r]) / len(pos[r]))[:5]
-        chains[cls] = {"order": order, "support": len(lists)}
+        # a step enters the chain only when at least two correct solutions took it; a class with no such step gets
+        # no chain (one solution is an anecdote, not an order)
+        keep = [r for r, c in count.items() if c >= 2 and c / len(lists) >= min_share]
+        if keep:
+            chains[cls] = {"order": sorted(keep, key=lambda r: sum(pos[r]) / len(pos[r]))[:5], "support": len(lists)}
     return chains, gaps, used
 
 

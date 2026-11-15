@@ -78,6 +78,7 @@ class GraphModel:
         for i, d in enumerate(docs):
             for w, c in collections.Counter(d).items():
                 B[i, self.vocab[w]] = (1 + math.log(c)) * idf[self.vocab[w]]
+        self.B, self.n_doc = B, n_doc  # kept for the trainable GCN (vardiya/gnn_torch.py)
         # A + I = [[I, B], [B^T, I]], symmetric normalised into blocks; the word-word block is never formed
         # (it would be vocab x vocab): two hops for the documents expand to doc-sized products only.
         dd, dw = B.sum(1) + 1, B.sum(0) + 1

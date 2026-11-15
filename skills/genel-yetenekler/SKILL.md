@@ -228,6 +228,15 @@ skills:
     fix_unix: yalniz okuma sorgulari; kilit, alan ve parametre degisikligini DBA yapar
     fix_windows: ayni
     caution: uretim veritabaninda elle UPDATE, DELETE ya da oturum oldurme yapma
+  etkilesimli_betik:
+    title: Kullanicidan girdi bekledigi icin takilan betigi bulmak (zamanlayicida klavye yoktur)
+    classes: [takili, sessiz]
+    triggers: [hangs, takili, executing, read-host, pause, prompt, input, girdi, interactive, etkilesimli, press any key, y/n, password prompt]
+    check_unix: is ciktisinin son satirlarina bak (soru mu soruyor); betikte read, select, passwd, ssh ya da sudo parola sorgusu var mi; ps -o pid,stat,wchan -p <pid> ile surec okuma bekliyor mu; ls -l /proc/<pid>/fd/0
+    check_windows: betikte Read-Host, Pause, Get-Credential, choice, set /p var mi; is ciktisinin sonunda 'Press any key' ya da onay sorusu var mi; Get-CimInstance Win32_Process ile surecin hala yasadigini dogrula
+    fix_unix: etkilesimi kaldir: girdiyi parametreyle ya da dosyayla ver, ssh icin -o BatchMode=yes ve anahtar, sudo icin parolasiz kural; betigi stdin </dev/null ile calistir ki girdi beklerse hemen hata versin
+    fix_windows: Read-Host ve Pause'u kaldir, degerleri parametreyle ver; PowerShell'i -NonInteractive ile cagir; onay isteyen komutlara -Confirm:$false ya da /y ver; asili sureci sonlandirip isi yeniden calistir
+    caution: takili isi OK sayma; parolayi betige acik yazarak etkilesimi kaldirma
   windows_olay_kimlikleri:
     title: Windows olay kimliklerinden sorunun turunu cikarmak
     classes: [windows_yetki, host, parola, yama]
