@@ -30,6 +30,8 @@ def kos(model, araclar, talep, usta=None, ek_baglam="", max_adim=MAX_ADIM, max_s
     t0 = time.time()
     system = ROL + "\n\n" + EL_KITABI + (("\n\n" + ek_baglam) if ek_baglam else "")
     ilk = "## Talep\n" + talep
+    if max_adim < MAX_ADIM:          # a crisis budget is told up front, to every arm alike
+        ilk += f"\n\nBu is acil: en cok {max_adim} adimin var (bitir adimi dahil). Adimlarini buna gore sec."
     if usta is not None:
         system += "\n\n" + usta.KURALLAR
         ilk += "\n\n" + usta.baslangic(talep)
@@ -57,7 +59,8 @@ def kos(model, araclar, talep, usta=None, ek_baglam="", max_adim=MAX_ADIM, max_s
             gunluk(adim, eylem)
         if eylem["arac"] == "bitir":
             rapor = str(eylem.get("rapor", ""))
-            ret = usta.bitis(rapor, eylem) if usta is not None else None
+            # on the last step there is nothing left to send back to: the gate cannot ask for more work
+            ret = usta.bitis(rapor, eylem) if usta is not None and adim < max_adim else None
             if ret is None:
                 bitis = "bitir"
                 break

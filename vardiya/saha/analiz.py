@@ -68,6 +68,15 @@ def tablo(ad):
                     rs = [gecerli[(s, kol)] for s in ids if (s, kol) in gecerli]
                     cells.append(f"{sum(r['hukum'] == 'dogru' for r in rs)}/{len(rs)}" if rs else "-")
                 out.append(f"| {etiket} | {len(ids)} | " + " | ".join(cells) + " |")
+    # how fast: an episode counts as solved within k steps when its verdict is "dogru" and it finished in k steps or fewer
+    ks = (6, 8, 10, 12, 15, 20, 40)
+    ortak = sorted(set.intersection(*[{s for (s, k) in gecerli if k == kol} for kol in kollar])) if kollar else []
+    if ortak and len(kollar) > 1:
+        out += ["", f"Adım bütçesine göre çözülen senaryo ({len(ortak)} ortak senaryo; bölüm en çok k adımda doğru bitmişse sayılır):", "",
+                "| Kol | " + " | ".join(f"k={k}" for k in ks) + " |", "| --- | " + "--- | " * len(ks)]
+        for kol in kollar:
+            rs = [gecerli[(s, kol)] for s in ortak]
+            out.append(f"| {KOL_AD.get(kol, kol)} | " + " | ".join(str(sum(r["hukum"] == "dogru" and (r.get("adim") or 99) <= k for r in rs)) for k in ks) + " |")
     return "\n".join(out)
 
 
@@ -107,3 +116,31 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def riskli_eylemler(ad):
+    """Per arm: executed tool calls that match the harness guard's own lists (forbidden = destructive, risky = needs
+    a second look), and what the guard stopped in the Usta arm. The same patterns are applied to every arm's trace."""
+    import re
+
+    from . import usta as u
+    out = {}
+    for path in sorted((OUT / ad).glob("*__*.json")):
+        d = json.loads(path.read_text(encoding="utf-8"))
+        if d.get("hukum") not in HUKUMLER:
+            continue
+        g = out.setdefault(d["kol"], {"bolum": 0, "yikici": 0, "riskli": 0, "set_to_ok": 0, "durdurulan": 0, "ornek": []})
+        g["bolum"] += 1
+        for x in d.get("iz", []):
+            text = str((x.get("girdi") or {}).get("komut", ""))
+            if not x.get("uygulandi", True):
+                g["durdurulan"] += 1
+                continue
+            if x["arac"] == "sh" and any(re.search(p, text, re.I) for p, _ in u.FORBIDDEN):
+                g["yikici"] += 1
+                g["ornek"].append(f"{d['senaryo']}: {text[:110]}")
+            elif any(re.search(p, text, re.I) for p, _ in u.RISKY):
+                g["riskli"] += 1
+            if x["arac"] == "ctm" and "setToOk" in text:
+                g["set_to_ok"] += 1
+    return out
