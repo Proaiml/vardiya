@@ -1,50 +1,62 @@
 # İlerleme (baş işçi)
 
-Son güncelleme: 16 Kasım 2026, 13:20
+Son güncelleme: 16 Kasım 2026, 14:25
 
-## ENGEL: Gemini kotası doldu
+## Model kotası
 
-Antigravity, `gemini-3.8-flash-*` ve `gemini-4-hydrogen-*` için "Individual quota reached ... Resets in 125h39m"
-döndürüyor (yaklaşık 21 Kasım 18:50'ye kadar). Yaklaşık 13:00'ten beri `test-flash-low` (lab 2) ve
-`dev-hydrogen-high` (lab 3) koşularındaki her bölüm `kurulamadi` olarak yazılıyor; bunlar hüküm değil, kota açılınca
-`--atla` ile doldurulacak.
+- `gemini-3.8-flash-*`, `gemini-4-hydrogen-*`: kapalı (16 Kasım ~13:00, 21 Kasım'da açılır). `dev-flash-low` tam;
+  `test-flash-low`, `dev-hydrogen-high` kısmi; geçerli bölümler kısmi sonuç olarak duruyor, kalanı 21 Kasım'dan sonra
+  `--atla` ile tamamlanır.
+- `gemini-4-argon-low`: 13:36'da kapandı (`test-argon-low` yalnızca 3 `kurulamadi` satırı; sonuç yok).
+- Açık: `gpt-oss-120b-medium` (zayıf model, ana ölçüm), `claude-sonnet-5-5-low` (güçlü model yerine).
+- Koşucu artık art arda 3 kota hatasında kendini durduruyor (çıkış 5); kuyruk betiği her işten önce modeli tek
+  çağrıyla yokluyor.
 
-Kotası açık olanlar (16 Kasım 13:15 yoklaması): `gpt-oss-120b-medium`, `gemini-4-argon-low`, `claude-sonnet-5-5-low`.
+## Laboratuvarlar ve kuyruk
 
-Karar gereken: hafif model ve hydrogen ölçümleri (Aşama 1'in iki modeli, Aşama 2'nin tamamı) ya kotanın açılmasını
-bekler ya da başka bir modelle yapılır (örneğin `gemini-4-argon-low` güçlü model yerine). Karar gelene kadar
-gpt-oss ile ilerliyorum; Aşama 3'teki harness ayarını da gpt-oss ile yapacağım.
-
-## Not: yanlış adrese gelmiş olabilecek mesaj
-
-13:25 civarı bana "senaryo kaynağını değiştir, `kaynak` alanı ekle; `usta.py`, `skills/`, `tests/test_saha.py`
-okuma" diye bir mesaj geldi. Bu, senaryo yazarına yönelik görünüyor (ben harness'i yazan tarafım ve senaryo
-yazmıyorum). Ben senaryo yazmadım ve yazmayacağım; mesajın senaryo yazarına iletildiğinden emin olun. Sızıntıya
-karşı: zor kümenin kaynakları (`bench/ops/dev.jsonl`, opsworld, sabgen, forum taslakları) gizli yarıyı da
-besleyeceği için harness'i bu kaynaklara bakarak değil, yalnızca `zor-dev` senaryolarındaki bulgularla ayarlıyorum.
-
-## Laboratuvarlar
-
-| Lab | Şimdi | Sırada (kuyruk betiği) |
+| Lab | Kod | Sıra |
 | --- | --- | --- |
-| 1 | `dev-gpt-oss` (orkestratörün koşusu) | aynı koşunun boşluk doldurma geçişleri |
-| 2 | `test-flash-low` kota hatalarıyla bitiyor | `test-gpt-oss --parca 1/2` |
-| 3 | `dev-hydrogen-high` kota hatalarıyla bitiyor | `test-gpt-oss --parca 2/2` |
-| 4 | ayrılmış (senaryo yazarı) | - |
+| 1 | donuk (`saha-donuk-1b`) | `test-gpt-oss` 1/2, sonra 2/2 boşlukları, sonra `test-gpt-oss-b10` 1/2 |
+| 2 | donuk | `test-gpt-oss-b10` 2/2, sonra `test-sonnet-low` (30 senaryo, yalin+usta) |
+| 3 | geliştirme (ana depo) | ajan sunucuları yeni denetçiyle yeniden kuruluyor, sonra `zor-dev-gpt-oss` (usta, yalin) |
+| 4 | senaryo yazarı | - |
+| 5 | katalog ajanı | - |
 
-Kuyruk günlüğü: `results/saha/durum/kuyruk.log`. Dondurulmuş harness ile yapılan koşular ayrı bir çalışma kopyasından
-(`C:/D/projeler/vardiya-donuk1`, commit e632004: `saha-donuk-1` + bütçe değişiklikleri + yalnızca koşucu/analiz) koşuyor,
-`SAHA_SONUC` ile ana kanıt dizinine yazıyor; ana depodaki `usta.py` geliştirmesi onları etkilemiyor.
+Kuyruk günlüğü: `results/saha/durum/kuyruk.log`. Donuk koşular `C:/D/projeler/vardiya-donuk1` çalışma kopyasından
+(etiket `saha-donuk-1b` = `saha-donuk-1` + bütçe değişiklikleri + yalnızca koşucu ve analiz) koşup `SAHA_SONUC` ile
+ana kanıt dizinine yazıyor; harness geliştirmesi onları etkilemiyor.
+
+## Ara sonuçlar (donuk harness, gpt-oss, test kümesinin bir kısmı)
+
+Doğruluk farkı ilk kez görünüyor: bütçesiz yardımsız 7/12, Usta 7/11 ama zararlı 2'ye 0; 10 adım bütçesinde
+yardımsız 1/8, Usta 4/6. Kesin tablolar koşular bitince.
 
 ## Yapılanlar
 
-- Durum okundu; kota sorunu bulundu.
-- `analiz.py`: bütçe tablosu (`--butce`) ve uygulanan riskli eylem tablosu.
-- Usta geliştirmesi başladı (commit d85bc4a, henüz etiketlenmedi): kalabalık sitede kesilen durum/tanım okuması düzeltildi,
-  talep kapsamı ve olay zinciri, kapsam dışı ve elle olay koruması, kabul listesi.
+- `analiz.py`: bütçe tablosu (`--butce`), uygulanan riskli eylem tablosu.
+- Usta geliştirmesi (henüz etiketlenmedi): kalabalık sitede kesilen durum/tanım okuması düzeltildi (harness
+  kesimsiz okuyor); talep kapsamı (kesin: ad verilmiş ya da "diğerleri konu dışı" denmiş; tahmin: yalnızca sıralama);
+  olay zinciri (bekleyen iş <- olayı veren iş, klasörler arası); kapsam dışı klasöre ve veren işi başarısız olayı elle
+  eklemeye ikinci açık çağrı; kabul listesi (ayrı model çağrısı, bitiş kapısında madde madde); profil hesabı ile uzak
+  yolun hesabı uyuşmazlığı; başka işlerin kullandığı profilin hesabını değiştirme; aynı hesabı kullanan diğer
+  profiller; tanım taleplerinde sunucudaki standart belgesi.
+- Ajan servisi: ajan sunucularında PID 1 artık denetçi (`lab/saha/agent/bin/ajan-denetci`), ajan `ctmag
+  start|stop|restart|status` ile durup başlatılabiliyor; neden servis günlüğünde ve ajanın kendi günlüklerinde. El
+  kitabı ve `ajan-yok` kartı güncellendi. Lab kopyaları boşaldıkça ajan sunucuları yeniden kuruluyor.
+- Windows: `/dev/kvm` Docker içinde var; `lab/saha/windows` taslağı yazıldı (Windows Server 2022 deneme, WinRM,
+  CtmAgent hizmeti) ama RAM yetmediği ve öncelik düştüğü için durduruldu; sınırlara yazılacak.
 
 ## Sırada
 
-- Aşama 1: `test-gpt-oss` (90 bölüm), `dev-gpt-oss` tamamlanır.
-- Aşama 2: kriz bütçesi; kota kararına göre.
-- Aşama 3: `bench/saha/zor-dev/` henüz yok.
+1. Müdahale vitrini: kanıttan Türkçe kayıt üreten betik, web sayfası, `docs/13-mudahale-gunlugu.md`.
+2. zor-dev (ve gelince katalog-dev) ile ayar; ajan servisi senaryoları (geliştirme).
+3. `saha-donuk-2` etiketi; zor-test, katalog-test, test kümesi yeni etiketle.
+4. Rapor (docs/09 Sonuçlar, Bench'ler arası ilişki), README, devir notu, yayın hazırlığı.
+
+## Senaryo yazarına not
+
+Ajan sunucularında artık ajan servisi durdurulup başlatılabiliyor (`ctmag`, bkz. `lab/saha/agent/bin/ctmag`).
+"Ajan durdu, nedenini bul ve başlat" türü gizli senaryolar yazılabilir: kurulumda `{"sh": {"host": "ajan2", "cmd":
+"ctmag stop bakim"}}` ya da ayarı bozup durdurmak; kontrolde `{"sh": {"host": "ajan2", "cmd": "ctmag status", "rc": 0}}`.
+Bunun için o lab kopyasının ajan sunucularının yeni denetçiyle yeniden kurulmuş olması gerekir:
+`SAHA_PROJE=... SAHA_PORT_JOC=... SAHA_AG=... docker compose -p <proje> -f lab/saha/docker-compose.yml up -d ajan1 ajan2`.
