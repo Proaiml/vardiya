@@ -202,7 +202,7 @@ def main(argv=None):
     ad = a.ad or (f"dogrula-{a.split}" if a.cmd == "dogrula" else f"{a.split}-{re.sub(r'[^A-Za-z0-9.]+', '-', a.model)}")
     done = ozet(ad) if getattr(a, "atla", False) else {}
     kollar = ["bos", "referans"] if a.cmd == "dogrula" else a.kollar.split(",")
-    kotu = 0
+    kotu = kota = 0
     for s in senaryolar:
         for kol in kollar:
             if dur.exists():
@@ -215,6 +215,12 @@ def main(argv=None):
             k = bolum(lab, ctm, s, kol, getattr(a, "model", None), max_adim=getattr(a, "max_adim", ajan.MAX_ADIM),
                       gunluk=lambda n, e: print(f"    {n:>2} {e.get('arac')}: {str(e.get('komut') or e.get('rapor') or '')[:110]}", flush=True))
             yaz(ad, k)
+            # a closed model quota turns every further episode into 'kurulamadi': stop instead of burning the lab
+            kota = kota + 1 if re.search(r"quota|RESOURCE_EXHAUSTED", str(k.get("hata", ""))) else 0
+            if kota >= 3:
+                print("model kotasi kapali (art arda 3 bolum); kosu durduruldu.", flush=True)
+                kilit.unlink(missing_ok=True)
+                return 5
             beklenen = {"bos": k["hukum"] != "dogru", "referans": k["hukum"] == "dogru"}.get(kol, True)
             kotu += not beklenen
             print(f"{'  ' if beklenen else '!!'} {s['id']:<34} {kol:<9} {k['hukum']:<12} {k.get('tutan', '-')}/{k.get('toplam', '-')} "
