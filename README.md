@@ -165,7 +165,8 @@ python -m vardiya web --port 8780                              # "Canlı saha" s
 
 Apache License 2.0 (`LICENSE`, `NOTICE`). Laboratuvardaki bütün hesaplar ve parolalar (`Mft-2026-Ilk`,
 `Mft-2026-Kasim`, `saha-yonetici` gibi) yalnızca bu laboratuvara özgü uydurma değerlerdir; gerçek bir sisteme ait
-değildir. Vardiya, BMC Software ile bağlantılı değildir.
+değildir. Bazı senaryo dosyalarına gömülü SSH özel anahtarları laboratuvarın kendi SFTP konteyneri için üretilmiştir ve
+başka hiçbir şeyi açmaz. Vardiya, BMC Software ile bağlantılı değildir.
 
 ## English summary
 
@@ -405,6 +406,7 @@ python -m vardiya web --port 8780                              # "Canli saha" ve
 
 Yerel modellerde `VARDIYA_NUM_CTX` baglam penceresini belirler (olcumlerde 24576). Laboratuvardaki butun hesaplar ve
 parolalar (`Mft-2026-Ilk` gibi) yalnizca bu laboratuvara ozgu uydurma degerlerdir; gercek bir sisteme ait degildir.
+Senaryolara gomulu SSH ozel anahtarlari laboratuvarin kendi SFTP konteyneri icin uretilmistir; baska hicbir seyi acmaz.
 
 ## Scheduler Admin Bench
 

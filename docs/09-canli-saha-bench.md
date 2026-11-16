@@ -264,6 +264,9 @@ basamakta da doğru yoktu.
 
 ### Sınırlar ve ölçülmeyenler
 
+- **Gizli kümeler artık açık.** Test, zor test ve katalog test kümeleri 16 Kasım ölçümlerine kadar harness'i
+  geliştirenlerden gizliydi. Depo yayımlandığından beri herkese açıklar; bundan sonraki harness sürümleri bu kümeleri
+  görülmemiş diye sunamaz. Yeni bir gizli küme gerekir.
 - **Kota.** Bütün barındırılan modellerin kotası gün içinde kapandı: flash ve hydrogen ~13:00 (21 Kasım'da açılır),
   argon 13:36, sonnet 15:19, gpt-oss 15:20 (akşam açıldı). Güçlü model verisi flash ve hydrogen'in sabah verisidir;
   21 Kasım'dan sonra `--atla` ile tamamlanacak. Argon ve sonnet kullanılabilir sonuç vermedi.
