@@ -574,7 +574,7 @@ def _aft_kilitli(s):
        etiket=["profil:dest"])
 def _aft_yanlis_hesap(s):
     u, ad = s.hesap["kullanici"], s.hesap["profil"]
-    yanlis = s.rng.choice([u + "1", u[:-1] + "r", u + "_", "x" + u])
+    yanlis = s.rng.choice([u + "1", u[:-1] + "x", u + "_", "x" + u])
     s.profil_boz(ad, User=yanlis)
     s.hata(s.c["gonder"])
     s.cozum.append(r_ctm("deploy", {ad: std_profil(ad)}))
