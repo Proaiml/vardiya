@@ -18,8 +18,7 @@ import time
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 OUT = pathlib.Path(os.environ["SAHA_SONUC"]) if os.environ.get("SAHA_SONUC") else ROOT / "results" / "saha"
 BENCH = ROOT / "bench" / "saha" / "erken"
-LABLAR = [("vardiya-saha", "http://127.0.0.1:27446"), ("vardiya-saha2", "http://127.0.0.1:27447"),
-          ("vardiya-saha3", "http://127.0.0.1:27448")]
+LABLAR = [("vardiya-saha5", "http://127.0.0.1:27450")]      # the coordinator assigned lab 5 to this arm (labs 1-4 belong to others)
 
 
 class Kilit:
@@ -95,11 +94,14 @@ def kur_komutu(a):
     from .ctm import Ctm
     ids = a.id.split(",") if a.id else None
     senaryolar = yukle(a.bolum, ids)
-    lab, kilit = lab_bul(a.ad, tercih=a.lab)
-    try:
-        lab.wait_ready(120)
-        ctm = Ctm(lab)
-        for s in senaryolar:
+    for s in senaryolar:
+        if (OUT / "durum" / "DUR").exists():
+            print("DUR dosyasi goruldu", flush=True)
+            break
+        lab, kilit = lab_bul(a.ad, tercih=a.lab)
+        try:
+            lab.wait_ready(120)
+            ctm = Ctm(lab)
             print(f"== {s['id']}", flush=True)
             t0 = time.time()
             try:
@@ -107,11 +109,8 @@ def kur_komutu(a):
                 print(f"   tamam {time.time() - t0:.0f} sn: {len(gercek['riskler'])} risk, {len(gercek['tuzaklar'])} tuzak", flush=True)
             except Exception as e:  # noqa: BLE001
                 print(f"   KURULAMADI: {type(e).__name__}: {str(e)[:300]}", flush=True)
-            if (OUT / "durum" / "DUR").exists():
-                print("DUR dosyasi goruldu", flush=True)
-                break
-    finally:
-        kilit.birak()
+        finally:
+            kilit.birak()
     return 0
 
 

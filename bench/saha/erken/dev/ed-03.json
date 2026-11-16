@@ -9,10 +9,11 @@
    "is": "ONAYLA",
    "host": "ajan2",
    "hata_kosular": [
-    5,
-    7,
+    4,
     8,
-    9
+    11,
+    13,
+    15
    ],
    "sert_kosu": 23,
    "hata_no": 2

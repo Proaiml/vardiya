@@ -17,10 +17,10 @@
    "is": "CIKAR",
    "host": "ajan1",
    "hata_kosular": [
-    5,
-    6,
-    10,
-    13
+    9,
+    12,
+    14,
+    15
    ],
    "sert_kosu": 20,
    "hata_no": 0

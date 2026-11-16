@@ -114,14 +114,17 @@ def calistir(a):
     senaryolar = yukle(a.bolum, ids)
     modeller = [m for m in a.model.split(",") if m]
     kollar = [k for k in a.kollar.split(",") if k]
-    lab, kilit = lab_bul(a.ad, tercih=a.lab)
-    try:
-        lab.wait_ready(120)
-        ctm = Ctm(lab)
-        for s in senaryolar:
-            sid = s["id"]
-            if a.atla and all((OUT / a.ad / sid / f"{k}__{m.split(':')[-1]}.json").exists() for m in modeller for k in kollar):
-                continue
+    for s in senaryolar:
+        sid = s["id"]
+        if a.atla and all((OUT / a.ad / sid / f"{k}__{m.split(':')[-1]}.json").exists() for m in modeller for k in kollar):
+            continue
+        if (OUT / "durum" / "DUR").exists():
+            print("DUR dosyasi goruldu", flush=True)
+            break
+        lab, kilit = lab_bul(a.ad, tercih=a.lab)          # one site per lock: others get their turn in between
+        try:
+            lab.wait_ready(120)
+            ctm = Ctm(lab)
             print(f"== {sid}", flush=True)
             try:
                 gercek, ctx, snap = site_kur(lab, ctm, s, a.ad, kilit, lambda x: print(x, flush=True))
@@ -133,10 +136,9 @@ def calistir(a):
             kod, birlesik = kod_kolu(snap, gercek, graf, t0)
             yaz(a.ad, sid, "kod.json", kod)
             print("   kod:", {k: (v["skor"]["bulunan"], v["skor"]["risk"], v["skor"]["yanlis"]) for k, v in kod.items()}, flush=True)
-            for m in modeller:
+            for m in list(modeller):
                 for kol in kollar:
                     kilit.yenile(f"{sid} {kol} {m}")
-                    t1 = time.time()
                     try:
                         r = model_kolu(kol, m, lab, ctm, snap, gercek, birlesik, t0, a.max_adim, lambda x: print(x, flush=True))
                     except Exception as e:  # noqa: BLE001
@@ -147,11 +149,8 @@ def calistir(a):
                           f"adim {r['adim']} {r['saniye']:.0f}sn bitis={r['bitis']}" + (" DEGISTI" if r["degisti"] else "") if sk else r.get("hata")), flush=True)
                     if re.search(r"quota|RESOURCE_EXHAUSTED", str(r.get("hata", "")) + str(r.get("bitis", ""))):
                         print("   model kotasi kapali; bu model birakiliyor", flush=True)
-                        modeller = [x for x in modeller if x != m]
+                        modeller.remove(m)
                         break
-            if (OUT / "durum" / "DUR").exists():
-                print("DUR dosyasi goruldu", flush=True)
-                break
-    finally:
-        kilit.birak()
+        finally:
+            kilit.birak()
     return 0

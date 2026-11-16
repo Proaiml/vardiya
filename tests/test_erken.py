@@ -172,3 +172,27 @@ class Graf(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Senaryolar(unittest.TestCase):
+    def test_scenario_files_are_well_formed(self):
+        import json
+        import pathlib
+        from vardiya.saha import erken_sablon
+        kok = pathlib.Path(__file__).resolve().parent.parent / "bench" / "saha" / "erken"
+        for p in list(kok.glob("dev/*.json")) + list(kok.glob("kapali/*.json")):
+            s = json.loads(p.read_text(encoding="utf-8"))
+            names = [(b["klasor"], b["is"]) for b in s["bilesenler"] if "is" in b]
+            self.assertEqual(len(names), len(set(names)), p.name)
+            for b in s["bilesenler"]:
+                self.assertIn(b["tur"], erken_sablon.KOMPONENTLER)
+                erken_sablon.parca(b)       # builds folders, scripts and truth without touching a lab
+
+    def test_dev_covers_every_risk_class_and_a_site_without_risk(self):
+        import json
+        import pathlib
+        kok = pathlib.Path(__file__).resolve().parent.parent / "bench" / "saha" / "erken" / "dev"
+        turler = [b["tur"] for p in kok.glob("*.json") for b in json.loads(p.read_text(encoding="utf-8"))["bilesenler"]]
+        from vardiya.saha import erken_sablon
+        for c in erken_sablon.SINIFLAR:
+            self.assertIn(c, turler)

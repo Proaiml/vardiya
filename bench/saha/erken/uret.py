@@ -19,6 +19,8 @@ KLASORLER = ["SATIS_AKTAR", "FINANS_GUNSONU", "MUHASEBE_KAPANIS", "KREDI_DEGERLE
 ISLER = ["YUKLE", "HAZIRLA", "GONDER", "TOPLA", "ISLE", "HESAPLA", "DAGIT", "KAPAT", "ONAYLA", "CIKAR", "BIRLESTIR", "AKTAR",
          "TARA", "DENETLE", "ESLE", "OZETLE"]
 HOSTLAR = ["ajan1", "ajan2"]
+# failure runs of an intermittent error: it comes back more often and has not stopped when the history ends
+HATA_DESENLERI = [[4, 8, 11, 13, 15], [6, 10, 13, 15], [7, 11, 13, 14, 15], [8, 11, 13, 15], [9, 12, 14, 15], [5, 9, 12, 14]]
 
 # development mixes: (risks, look-alikes)
 DEV = [
@@ -59,7 +61,8 @@ def bilesen(rng, tur, kullanilan, genis=False, host_disk=None):
         gerek = -(-(16 + lft) // her)
         p.update({"taban_sn": taban, "her_kac": her, "limit_sn": taban + gerek - 1})
     elif tur == "tekrarlayan_hata":
-        kosu = sorted(rng.sample(range(4, 16), 4 if not genis else rng.choice([3, 4, 5])))
+        rng.sample(range(4, 16), 4 if not genis else rng.choice([3, 4, 5]))     # kept so that the stream of later draws is unchanged
+        kosu = random.Random(klasor + is_).choice(HATA_DESENLERI)
         p.update({"hata_kosular": kosu, "sert_kosu": 16 + lft, "hata_no": rng.randint(0, 3)})
     elif tur == "kilit_bekleme":
         p.update({"tablo": "satis_gecici", "saat": rng.choice(["01:30", "02:00", "03:00", "23:30"])})
