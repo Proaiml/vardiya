@@ -8,7 +8,8 @@ Son güncelleme: 16 Kasım 2026, 14:45
   `test-flash-low`, `dev-hydrogen-high` kısmi; geçerli bölümler kısmi sonuç olarak duruyor, kalanı 21 Kasım'dan sonra
   `--atla` ile tamamlanır.
 - `gemini-4-argon-low`: 13:36'da kapandı (`test-argon-low` yalnızca 3 `kurulamadi` satırı; sonuç yok).
-- Açık: `gpt-oss-120b-medium` (zayıf model, ana ölçüm), `claude-sonnet-5-5-low` (güçlü model yerine).
+- `claude-sonnet-5-5-low`: 15:19'da kapandı (`test-sonnet-low` birkaç bölüm; tam ölçüm yok).
+- Açık: `gpt-oss-120b-medium` (agy) ve yerel modeller. İkinci model ailesi olarak `ollama:gemma4` kullanılacak.
 - Koşucu artık art arda 3 kota hatasında kendini durduruyor (çıkış 5); kuyruk betiği her işten önce modeli tek
   çağrıyla yokluyor.
 
@@ -22,10 +23,10 @@ döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi
 
 | Lab | Kod | Sıra |
 | --- | --- | --- |
-| 1 | donuk (`saha-donuk-1c`) | `test-gpt-oss` 1/2, `qwen-baglam-deneme` (1 bölüm), `test-qwen3-14b`, `test-gpt-oss-b10` 1/2 |
-| 2 | donuk | `test-gpt-oss-b10` 2/2, sonra `test-sonnet-low` (30 senaryo, yalin+usta) |
+| 1 | donuk (`saha-donuk-1c`) | `qwen-baglam-deneme`, `test-qwen3-14b`, `test-qwen3-14b-b10` (GPU tek lab: 82 C, 11 GB) |
+| 2 | donuk | `test-gpt-oss-b10` 1/2, `test-gpt-oss` 2/2 boşlukları |
+| 4 | geliştirme | `zor-dev-gpt-oss` (ayar turu 1) |
 | 3 | önce donuk, sonra geliştirme | eski `test-gpt-oss` 2/2 süreci (kart kolu dahil) bitince: ajan sunucuları yenilenir, ajan servisi senaryoları doğrulanır, `zor-dev-gpt-oss` |
-| 4 | senaryo yazarı | - |
 | 5 | katalog ajanı | - |
 
 Kuyruk günlüğü: `results/saha/durum/kuyruk.log`. Donuk koşular `C:/D/projeler/vardiya-donuk1` çalışma kopyasından
