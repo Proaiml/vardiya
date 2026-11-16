@@ -570,7 +570,8 @@ class Ctm:
         if "runs" in a and a.get("runs_at") == len(a["orders"]) and a["final"].get(a["orders"][-1]):
             return a["runs"]
         n = len(self._tasks(a))
-        a["runs"], a["runs_at"] = n, len(a["orders"])
+        if n:                                  # the task history trails the order; never cache "no runs yet"
+            a["runs"], a["runs_at"] = n, len(a["orders"])
         return n
 
     def _job(self, job_id):

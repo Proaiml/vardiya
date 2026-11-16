@@ -13,6 +13,7 @@ final report, each check with what was observed on the hosts, and the verdict.
 import argparse
 import datetime
 import json
+import os
 import pathlib
 import re
 import sys
@@ -104,6 +105,10 @@ def bolum(lab, ctm, senaryo, kol, model_spec=None, gunluk=None, max_adim=ajan.MA
     except Exception as e:  # noqa: BLE001
         isler.append({"hata": str(e)[:200]})
     mesajlar = kos.pop("mesajlar", [])
+    if str(kos.get("bitis", "")).startswith("model_hatasi"):
+        # the model service failed mid-episode: an infrastructure failure, not a verdict; the episode is run again
+        kayit["hata"] = kos["bitis"]
+        h = {**h, "hukum": "kurulamadi"}
     kayit.update({"hukum": h["hukum"], "tutan": h["tutan"], "toplam": h["toplam"], "kontroller": h["kontroller"],
                   "zarar": h["zarar"], "isler": isler, "rapor": rapor, "iz": araclar.iz, "denetim": ctm.state.get("log", []),
                   "arac_cagrisi": len(araclar.iz), "saniye": round(time.time() - t0, 1), **kos,
@@ -184,7 +189,11 @@ def main(argv=None):
         return 3
     dur = OUT / "durum" / "DUR"
     lab.wait_ready(120)
-    ctm = Ctm(lab)
+    if os.environ.get("SAHA_AAPI"):          # a real Control-M behind the same tools (see ctm_aapi.py)
+        from .ctm_aapi import CtmAapi
+        ctm = CtmAapi(lab)
+    else:
+        ctm = Ctm(lab)
     ad = a.ad or (f"dogrula-{a.split}" if a.cmd == "dogrula" else f"{a.split}-{re.sub(r'[^A-Za-z0-9.]+', '-', a.model)}")
     done = ozet(ad) if getattr(a, "atla", False) else {}
     kollar = ["bos", "referans"] if a.cmd == "dogrula" else a.kollar.split(",")

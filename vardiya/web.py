@@ -281,6 +281,45 @@ def ops_results():
     return {"rows": rows, "paired": [{"split": s, "arm": a, "model": m, **g} for (s, a, m), g in sorted(paired.items())]}
 
 
+def saha_runs():
+    """Live bench: every run with its verdict counts per arm and the scenario-by-arm matrix."""
+    from .saha import kosu
+    out = []
+    if not kosu.OUT.is_dir():
+        return {"runs": []}
+    for d in sorted(kosu.OUT.iterdir()):
+        if not (d / "ozet.jsonl").is_file() or d.name.startswith("dogrula"):
+            continue
+        rows = kosu.ozet(d.name)
+        arms = {}
+        for (sid, kol), r in rows.items():
+            g = arms.setdefault(kol, {"kol": kol, "model": r.get("model"), "n": 0, "adim": 0, "saniye": 0, **{h: 0 for h in kosu.HUKUMLER}, "kurulamadi": 0})
+            g["n"] += 1
+            g[r["hukum"]] = g.get(r["hukum"], 0) + 1
+            g["adim"] += r.get("adim") or 0
+            g["saniye"] += r.get("saniye") or 0
+        scen = {}
+        for (sid, kol), r in rows.items():
+            scen.setdefault(sid, {"id": sid, "aile": r.get("aile"), "tur": r.get("tur"), "bilesik": r.get("bilesik"), "kollar": {}})["kollar"][kol] =                 {"hukum": r["hukum"], "adim": r.get("adim"), "saniye": r.get("saniye"), "tutan": r.get("tutan"), "toplam": r.get("toplam")}
+        out.append({"ad": d.name, "kollar": sorted(arms.values(), key=lambda g: g["kol"]), "senaryolar": sorted(scen.values(), key=lambda x: x["id"])})
+    return {"runs": out}
+
+
+def saha_episode(ad, senaryo, kol):
+    """The evidence of one episode: ticket, tool calls with their real output, job outputs, checks, verdict."""
+    from .saha import kosu
+    safe = lambda x: bool(x) and all(c.isalnum() or c in "-_." for c in x) and ".." not in x  # noqa: E731
+    if not (safe(ad) and safe(senaryo) and safe(kol)):
+        return None
+    path = kosu.OUT / ad / f"{senaryo}__{kol}.json"
+    if not path.is_file():
+        return None
+    d = json.loads(path.read_text(encoding="utf-8"))
+    for x in d.get("iz", []):
+        x["cikti"] = x.get("cikti", "")[:3000]
+    return d
+
+
 def examples():
     out = [{"name": "Bos sablon", "text": (ROOT / "templates" / "talep-sablonu.txt").read_text(encoding="utf-8")}]
     for p in sorted((ROOT / "ornekler").glob("*.txt")):
@@ -337,6 +376,11 @@ def make_handler(office):
                 return self._send(200, usta_examples())
             if url.path == "/api/ops":
                 return self._send(200, ops_results())
+            if url.path == "/api/saha":
+                return self._send(200, saha_runs())
+            if url.path == "/api/saha/bolum":
+                ep = saha_episode((q.get("ad") or [""])[0], (q.get("senaryo") or [""])[0], (q.get("kol") or [""])[0])
+                return self._send(200 if ep else 404, ep or {"error": "yok"})
             return self._send(404, {"error": "yok"})
 
         def do_POST(self):

@@ -9,6 +9,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import time
 import urllib.error
 import urllib.request
 
@@ -99,19 +100,33 @@ class AgyModel:
     def __init__(self, spec, timeout=420, **_):
         self.spec, self.name, self.timeout, self.calls = spec, spec.partition(":")[2], timeout, 0
         self.think = None
-        self._sent, self._conversation, self.tokens = [], None, 0
+        self._sent, self._conversation, self.tokens, self.retries, self.restarts = [], None, 0, 0, 0
         self._cwd =pathlib.Path(tempfile.gettempdir()).resolve() / "vardiya-agy-bos"
         self._cwd.mkdir(exist_ok=True)
 
+    SUFFIX = ("\n\nThis is a plain-text protocol. You have NO tools and NO functions in this conversation and you cannot run "
+              "anything yourself: never emit a function call or a tool call. Whatever action you choose, write it as ordinary "
+              "text in ONE JSON object and nothing else; a program reads that text and carries the action out for you.")
+
     def chat(self, messages):
         n = len(self._sent)
-        if self._conversation and messages[:n] == self._sent and len(messages) == n + 2 \
-                and messages[n]["role"] == "assistant" and messages[n + 1]["role"] == "user":
-            prompt, extra = messages[-1]["content"], ["--conversation", self._conversation]
-        else:
-            prompt = "\n\n".join(f"[{m['role'].upper()}]\n{m['content']}" for m in messages)
-            extra = []
-        prompt += "\n\nDo not use any tools. Reply with ONE JSON object only, no other text."
+        cont = self._conversation and messages[:n] == self._sent and len(messages) == n + 2 \
+            and messages[n]["role"] == "assistant" and messages[n + 1]["role"] == "user"
+        whole = "\n\n".join(f"[{m['role'].upper()}]\n{m['content']}" for m in messages)
+        try:
+            out = self._send(messages[-1]["content"] if cont else whole, ["--conversation", self._conversation] if cont else [])
+        except urllib.error.URLError:
+            if not cont:
+                raise
+            # The running conversation is stuck (for example the model kept trying a native tool call). Start a
+            # fresh one that carries the whole transcript as text.
+            self.restarts += 1
+            out = self._send(whole, [])
+        self._sent, self._conversation = list(messages), out.get("conversation_id")
+        return out.get("response", "")
+
+    def _send(self, prompt, extra):
+        prompt += self.SUFFIX
         # The prompt travels on the command line (about 32,000 characters at most on Windows). A long one goes
         # in parts within the same conversation; only the answer to the last part counts.
         parts = [prompt[i:i + self.CHUNK] for i in range(0, len(prompt), self.CHUNK)] or [""]
@@ -123,20 +138,31 @@ class AgyModel:
             elif len(parts) > 1:
                 part = f"[PART {k} of {len(parts)}, the last one. Now answer the whole message.]\n\n" + part
             cmd = ["agy", "--model", self.name, "--output-format", "json", "--print-timeout", f"{self.timeout}s"] + extra + ["-p=" + part]
-            try:
-                run = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, encoding="utf-8",
-                                     errors="replace", timeout=self.timeout + 30)
-                out = json.loads(run.stdout.strip().splitlines()[-1])
-            except (subprocess.TimeoutExpired, ValueError, IndexError, OSError) as e:
-                raise urllib.error.URLError(f"agy cagrisi basarisiz: {e}") from None
-            if out.get("status") != "SUCCESS":
-                raise urllib.error.URLError(f"agy durumu: {out.get('status')}")
+            last = None
+            for wait in (0, 6, 20):                # the service fails now and then; a failed turn is sent again
+                if wait:
+                    time.sleep(wait)
+                    self.retries += 1
+                try:
+                    run = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, encoding="utf-8",
+                                         errors="replace", timeout=self.timeout + 30)
+                    out = json.loads(run.stdout.strip().splitlines()[-1])
+                except (subprocess.TimeoutExpired, ValueError, IndexError, OSError) as e:
+                    last = f"agy cagrisi basarisiz: {e}"
+                    continue
+                if out.get("status") == "SUCCESS":
+                    last = None
+                    break
+                last = f"agy durumu: {out.get('status')}: {str(out.get('error'))[:160]}"
+                if "function call" in last and extra:
+                    break                          # retrying inside the same conversation repeats the failure
+            if last:
+                raise urllib.error.URLError(last)
             self.calls += 1
             self.tokens += (out.get("usage") or {}).get("total_tokens", 0)
             if out.get("conversation_id"):
                 extra = ["--conversation", out["conversation_id"]]
-        self._sent, self._conversation = list(messages), out.get("conversation_id")
-        return out.get("response", "")
+        return out
 
     ask_json = None  # filled in below: same repair loop and narrow question as Model
     choose = None

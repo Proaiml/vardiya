@@ -56,6 +56,20 @@ def profile(name, family):
 
 
 # ---------------------------------------------------------------- file transfer
+def _why(err):
+    """The line of an sftp/ssh error output that says what went wrong (the last line is often just "Connection closed")."""
+    lines = [ln.strip() for ln in str(err).splitlines() if ln.strip()]
+    noise = ("Warning: Permanently added", "Connection closed", "sftp>", "Connected to", "Couldn't read packet")
+    real = [ln for ln in lines if not ln.startswith(noise)]
+    if not real:
+        return lines[-1] if lines else "sftp hatasi"
+    if any("REMOTE HOST IDENTIFICATION HAS CHANGED" in ln for ln in real):
+        return "REMOTE HOST IDENTIFICATION HAS CHANGED: " + next((ln for ln in real if "Offending" in ln or "Host key verification failed" in ln), real[-1])
+    if any("UNPROTECTED PRIVATE KEY FILE" in ln for ln in real):
+        return "UNPROTECTED PRIVATE KEY FILE: " + next((ln for ln in real if "Permissions" in ln), real[-1]) + " | " + real[-1]
+    return real[-1]
+
+
 class End:
     """One side of a transfer: the local file system (under the profile's user) or an SFTP account."""
     def __init__(self, cp, name):
@@ -93,7 +107,7 @@ class End:
             return [(n, int(s)) for s, n in rows if fnmatch.fnmatchcase(n, base)], None
         rc, out, err = self._sftp(f"ls -ln {d}\n")
         if rc:
-            return None, (err.strip().splitlines() or ["sftp hatasi"])[-1]
+            return None, _why(err)
         rows = []
         for ln in out.splitlines():
             p = ln.split(None, 8)
@@ -109,7 +123,7 @@ class End:
             rc, _, err = capture(self.user, cmd)
             return rc, err.strip()
         rc, _, err = self._sftp({"rm": f"rm {a}\n", "mv": f"rename {a} {b}\n"}[action])
-        return rc, (err.strip().splitlines() or [""])[-1]
+        return rc, _why(err)
 
 
 def _argv(user, command):
@@ -129,7 +143,7 @@ def copy(src, sname, dst, dpath, ascii_mode):
         else:
             rc, _, err = src._sftp(f"get {sname} {tmp}\n")
             if rc:
-                return rc, "kaynaktan okunamadi: " + (err.strip().splitlines() or ["?"])[-1]
+                return rc, "kaynaktan okunamadi: " + _why(err)
             data = open(tmp, "rb").read()
         if ascii_mode:
             data = data.replace(b"\r\n", b"\n")
@@ -139,7 +153,7 @@ def copy(src, sname, dst, dpath, ascii_mode):
         with open(tmp, "wb") as f:
             f.write(data)
         rc, _, err = dst._sftp(f"put {tmp} {dpath}\n")
-        return rc, ("hedefe yazilamadi: " + (err.strip().splitlines() or ["?"])[-1]) if rc else ""
+        return rc, ("hedefe yazilamadi: " + _why(err)) if rc else ""
     except OSError as e:
         return 1, f"ara dosya yazilamadi: {e}"
     finally:

@@ -268,6 +268,8 @@ ol.steps li:not(:last-child)::after { content: ""; position: absolute; left: 9.5
 .dag .node rect { fill: var(--surface); stroke: var(--border-2); }
 .dag .node.changed rect { fill: var(--info-bg); stroke: var(--accent); }
 .dag .sub { fill: var(--text-3); font-size: 10px; }
+.linkish { background: none; border: 0; padding: 2px 4px; margin: -2px -4px; border-radius: 5px; font: inherit; color: inherit; cursor: pointer; }
+.linkish:hover { background: var(--surface-3); }
 .fam { display: inline-block; min-width: 34px; text-align: center; font-family: var(--mono); font-size: 11.5px; padding: 0 4px; border-radius: 4px; }
 .fam.full { color: var(--good); } .fam.part { color: var(--warning); } .fam.zero { color: var(--critical); }
 .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--surface-3); min-width: 130px; gap: 2px; }
@@ -303,6 +305,7 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
       <div class="group">Ortam ve ölçüm</div>
       <button data-page="ortam"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="3.5" r="2"/><circle cx="12.5" cy="12.5" r="2"/><path d="M5.3 7.1 10.7 4.4M5.3 8.9l5.4 2.7"/></svg>Ortam ve işler</button>
       <button data-page="saglik"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 8h3l1.5-4 3 8 1.5-4h4"/></svg>Tanım sağlığı<span class="count warn" id="nav-health" hidden></span></button>
+      <button data-page="saha"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="4" rx="1"/><rect x="1.5" y="9.5" width="13" height="4" rx="1"/><path d="M4 4.5h.5M4 11.5h.5"/></svg>Canlı saha</button>
       <button data-page="bench"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14.5h12M4 12V8M8 12V3.5M12 12V6"/></svg>Bench sonuçları</button>
     </nav>
     <div class="side-foot" id="side-foot"></div>
@@ -415,6 +418,18 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
         </div>
       </section>
 
+      <section data-page="saha" hidden>
+        <div class="card"><header><h2>Canlı saha bench'i</h2><select id="saha-run" aria-label="Koşu"></select></header>
+          <div class="body">
+            <p class="hint" style="margin-top:0">Her bölüm gerçek ortamda koşar: zamanlayıcı işleri gerçek ajan sunucularında çalıştırır, dosyalar gerçekten aktarılır, veritabanı gerçektir. Hüküm, bölüm sonunda sunuculardan okunan uç duruma göre verilir.</p>
+            <div class="legend"><span><i style="background:var(--good)"></i>Doğru</span><span><i style="background:var(--bar)"></i>Yarım</span><span><i style="background:var(--surface-3);border:1px solid var(--border)"></i>Yanlış</span><span><i style="background:var(--warning)"></i>Sahte yeşil</span><span><i style="background:var(--critical)"></i>Zararlı</span></div>
+            <div class="scroll mt" id="saha-arms"></div>
+            <div class="sect">Senaryo senaryo (hücreye tıklayın: kanıt açılır)</div>
+            <div class="scroll" id="saha-matrix"></div>
+          </div></div>
+        <div class="card mt" id="saha-ep-card" hidden><header><h2 id="saha-ep-title">Bölüm kanıtı</h2><span class="hint" id="saha-ep-meta"></span></header>
+          <div class="body" id="saha-ep"></div></div>
+      </section>
       <section data-page="bench" hidden>
         <div class="card"><header><h2>Zamanlayıcı Ops Bench</h2><span class="hint">forumlardaki gerçek adminlik sorunları</span></header>
           <div class="body">
@@ -491,6 +506,7 @@ $("#theme").onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; s
 const TITLES = {genel:["Genel bakış","Ortamın durumu ve önümüzdeki riskler"], olay:["Olaylar ve kök neden","Yerel hata çizgesinden kanıt, aday nedenler ve geçmişte işe yarayan çözüm"],
   uyari:["Erken uyarılar","Olay olmadan önce: yavaşlayan işler, tekrarlayan hatalar, kalıcı çözülmemiş nedenler"], talep:["Talep masası","Zorunlu şablonla gelen tanım talepleri: denetle, uygula, kaydet ya da gerekçeyle iade et"],
   gecmis:["Talep geçmişi","Bu oturumda işlenen talepler"], defter:["Denetim defteri","Değiştirilemez, özet zincirli kayıt"], ortam:["Ortam ve işler","Tanımlar, bağımlılıklar, takvimler ve bağlantı profilleri"],
+  saha:["Canlı saha","Gerçek zamanlayıcı, gerçek sunucular: yardımsız model ile Usta aynı işte, uç duruma göre hüküm"],
   bench:["Bench sonuçları","Usta'nın ölçümü: gerçek adminlik sorunları ve talep karşılama"],
   rapor:["Raporlar","Haftalık sorulanlar: değişiklikler, Set OK, en uzun süren işler, aylık hatalar"],
   saglik:["Tanım sağlığı","Kontroller yokken girmiş tanımlar: olay olmadan temizlenmek üzere"],
@@ -506,7 +522,7 @@ function go(page) {
   $("#side").classList.remove("open");
   try { localStorage.setItem("vardiya-page", page); } catch (e) {}
   ({ortam: renderSite, gecmis: loadHistory, defter: loadLedger, bench: () => { loadOps(); loadBench(); }, rapor: () => loadReports(), saglik: loadHealth,
-    usta: loadUsta, yetenek: loadCatalog})[page]?.();
+    usta: loadUsta, yetenek: loadCatalog, saha: () => loadSaha()})[page]?.();
   if (page === "olay" && current) pick(current);
 }
 $("#refresh").onclick = () => boot(true);
@@ -886,6 +902,57 @@ async function loadBench(file) {
         <td class="num">${a.calls}</td>${b.families.map(f => { const c = a.families[f]; return c ? `<td><span class="fam ${c[0] === c[1] ? "full" : c[0] ? "part" : "zero"}">${c[0]}/${c[1]}</span></td>` : "<td></td>"; }).join("")}</tr>`; }).join("") + "</tbody>";
 }
 $("#bfile").onchange = e => loadBench(e.target.value);
+
+// ---- live lab bench
+const SAHA_ARM = {yalin: "Yardımsız model", kart: "Model + kart metni", usta: "Usta (harness içinde)", bos: "Kimse dokunmadı", referans: "Örnek çözüm"};
+const SAHA_V = {dogru: ["Doğru", "var(--good)"], yarim: ["Yarım", "var(--bar)"], yanlis: ["Yanlış", "var(--text-4)"], sahte_yesil: ["Sahte yeşil", "var(--warning)"],
+  zararli: ["Zararlı", "var(--critical)"], kurulamadi: ["Kurulamadı", "var(--text-4)"]};
+const SAHA_FAM = {ariza: "Arıza", tanim: "Tanım", yonetim: "Yönetim"}, SAHA_TUR = {aft: "Dosya aktarımı", os: "Komut / betik", db: "Veritabanı", karma: "Karma"};
+let sahaData = null, sahaRun = null;
+const vdot = v => { const [t, c] = SAHA_V[v] || [v, "var(--text-4)"]; return `<span style="display:inline-flex;align-items:center;gap:6px"><i style="width:9px;height:9px;border-radius:50%;background:${c};display:inline-block"></i>${esc(t)}</span>`; };
+async function loadSaha(ad) {
+  sahaData = await api("/api/saha");
+  const runs = sahaData.runs;
+  if (!runs.length) { $("#saha-arms").innerHTML = empty("Koşu yok", "python -m vardiya saha kos --split dev --kollar yalin,usta --model <model>"); $("#saha-matrix").innerHTML = ""; return; }
+  sahaRun = runs.find(r => r.ad === (ad || sahaRun)) || runs[runs.length - 1];
+  $("#saha-run").innerHTML = runs.map(r => `<option${r === sahaRun ? " selected" : ""}>${esc(r.ad)}</option>`).join("");
+  const order = ["yalin", "kart", "usta", "referans", "bos"];
+  const arms = sahaRun.kollar.slice().sort((a, b) => order.indexOf(a.kol) - order.indexOf(b.kol));
+  $("#saha-arms").innerHTML = `<table><thead><tr><th>Kol</th><th>Model</th><th class="num">Senaryo</th><th class="num">Doğru</th><th></th><th class="num">Yarım</th><th class="num">Yanlış</th><th class="num">Sahte yeşil</th><th class="num">Zararlı</th><th class="num">Ort. adım</th><th class="num">Ort. süre</th></tr></thead><tbody>` +
+    arms.map(a => { const p = k => 100 * (a[k] || 0) / a.n;
+      return `<tr><td><b>${esc(SAHA_ARM[a.kol] || a.kol)}</b></td><td class="mono">${esc(a.model || "—")}</td><td class="num">${a.n}</td><td class="num"><b>${a.dogru} (${p("dogru").toFixed(0)}%)</b></td>
+        <td><div class="bar" title="doğru ${a.dogru}, yarım ${a.yarim}, yanlış ${a.yanlis}, sahte yeşil ${a.sahte_yesil}, zararlı ${a.zararli}"><span class="ok" style="width:${p("dogru")}%"></span><span class="half" style="width:${p("yarim")}%"></span><span style="flex:1"></span><span style="width:${p("sahte_yesil")}%;background:var(--warning)"></span><span class="harm" style="width:${p("zararli")}%"></span></div></td>
+        <td class="num">${a.yarim}</td><td class="num">${a.yanlis}</td><td class="num">${a.sahte_yesil ? `<b style="color:var(--warning)">${a.sahte_yesil}</b>` : 0}</td><td class="num">${a.zararli ? `<b style="color:var(--critical)">${a.zararli}</b>` : 0}</td>
+        <td class="num">${(a.adim / a.n).toFixed(1)}</td><td class="num">${(a.saniye / a.n).toFixed(0)} sn</td></tr>`; }).join("") + "</tbody></table>";
+  const cols = arms.map(a => a.kol);
+  $("#saha-matrix").innerHTML = `<table><thead><tr><th>Senaryo</th><th>Aile</th><th>İş tipi</th><th>Neden</th>${cols.map(c => `<th>${esc(SAHA_ARM[c] || c)}</th>`).join("")}</tr></thead><tbody>` +
+    sahaRun.senaryolar.map(x => `<tr><td class="mono">${esc(x.id)}</td><td>${esc(SAHA_FAM[x.aile] || x.aile || "")}</td><td>${esc(SAHA_TUR[x.tur] || x.tur || "")}</td><td>${x.bilesik ? "bileşik" : "tek"}</td>` +
+      cols.map(c => { const k = x.kollar[c]; return k ? `<td><button class="linkish" data-ep="${esc(x.id)}|${esc(c)}" title="${k.tutan ?? "-"}/${k.toplam ?? "-"} kontrol, ${k.adim ?? "-"} adım, ${k.saniye ?? "-"} sn">${vdot(k.hukum)}</button></td>` : "<td>—</td>"; }).join("") + "</tr>").join("") + "</tbody></table>";
+  $("#saha-matrix").querySelectorAll("[data-ep]").forEach(b => b.onclick = () => { const [id, kol] = b.dataset.ep.split("|"); showEpisode(id, kol); });
+}
+$("#saha-run").onchange = e => { $("#saha-ep-card").hidden = true; loadSaha(e.target.value); };
+async function showEpisode(id, kol) {
+  const d = await api(`/api/saha/bolum?ad=${encodeURIComponent(sahaRun.ad)}&senaryo=${encodeURIComponent(id)}&kol=${encodeURIComponent(kol)}`);
+  $("#saha-ep-card").hidden = false;
+  $("#saha-ep-title").innerHTML = `${esc(id)} · ${esc(SAHA_ARM[kol] || kol)} · ${vdot(d.hukum)}`;
+  $("#saha-ep-meta").textContent = `${d.tutan ?? "-"}/${d.toplam ?? "-"} kontrol · ${d.adim ?? "-"} adım · ${d.saniye ?? "-"} sn · ${d.zaman || ""}`;
+  const chk = (list, harm) => (list || []).map(c => `<tr><td style="width:26px">${icon(harm ? (c.tutar ? "crit" : "ok") : (c.tutar ? "ok" : "crit"))}</td><td class="mono">${esc(JSON.stringify(c.kontrol))}</td><td class="mono">${esc(typeof c.gorulen === "string" ? c.gorulen : JSON.stringify(c.gorulen))}</td></tr>`).join("");
+  let h = `<div class="sect" style="margin-top:0">Talep</div><p>${esc(d.talep || "")}</p>`;
+  if (d.kok_neden) h += `<details><summary>Kök neden (ajana gösterilmez)</summary><p>${esc(d.kok_neden)}</p></details>`;
+  if (d.hata) h += `<div class="notice crit">${icon("crit")}<div>${esc(d.hata)}</div></div>`;
+  h += `<div class="sect">Uç durum kontrolleri (sunuculardan okunan değerlerle)</div><div class="scroll"><table><thead><tr><th></th><th>Kontrol</th><th>Görülen</th></tr></thead><tbody>${chk(d.kontroller)}</tbody></table></div>`;
+  if ((d.zarar || []).length) h += `<div class="sect">Zarar kontrolleri (hiçbiri tutmamalı)</div><div class="scroll"><table><tbody>${chk(d.zarar, true)}</tbody></table></div>`;
+  if (d.usta) h += `<div class="sect">Harness'in yaptıkları</div><p class="mono">${esc(Object.entries(d.usta.sayac || {}).filter(e => e[1]).map(e => e[0] + "=" + e[1]).join("  "))}</p>` +
+    ((d.usta.kartlar || []).length ? `<p>Kartlar: ${d.usta.kartlar.map(tag).join(" ")}</p>` : "") +
+    (d.usta.bitis_notlari || []).map(n => `<div class="notice warn">${icon("warn")}<div><b>Bitiş geri çevrildi:</b> ${esc(n.join(" · "))}</div></div>`).join("");
+  h += `<div class="sect">Ajanın adımları (${(d.iz || []).length} araç çağrısı, gerçek çıktılarıyla)</div>` +
+    ((d.iz || []).map(x => `<details class="cand"><summary><span class="mono">${x.n}. ${esc(x.arac)}</span> ${x.uygulandi ? "" : tag("uygulanmadı")} <span class="mono" style="color:var(--text)">${esc(JSON.stringify(x.girdi).slice(0, 150))}</span></summary><pre>${esc(JSON.stringify(x.girdi, null, 1))}</pre><pre>${esc(x.cikti)}</pre></details>`).join("") || empty("Araç çağrısı yok", ""));
+  if (d.rapor) h += `<div class="sect">Ajanın raporu</div><pre>${esc(d.rapor)}</pre>`;
+  if ((d.isler || []).length) h += `<div class="sect">Zamanlayıcının kaydı: bölüm sonunda işler ve son çıktıları</div>` +
+    d.isler.map(j => j.hata ? "" : `<details class="cand"><summary><span class="mono">${esc(j.folder)}/${esc(j.name)}</span> ${tag(j.type)} ${tag(j.host)} <b>${esc(j.status)}</b> · ${j.numberOfRuns} koşu</summary><pre>${esc(j.cikti)}</pre></details>`).join("");
+  $("#saha-ep").innerHTML = h;
+  $("#saha-ep-card").scrollIntoView({behavior: "smooth", block: "start"});
+}
 
 // ---- start
 async function boot(again) {
