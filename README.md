@@ -142,19 +142,11 @@ Bu sonuçlardan çıkarılabilen:
 - **Zor kümede doğruluk kazancı yok.** Kalabalık sitede ve yanıltıcı biletlerle, denenen zayıf modellerle (qwen3:14b,
   gpt-oss-120b-medium) iki araçlı basamak da senaryoları çözemiyor (0/10 civarı). Harness zararı azalttı ama zararın
   çoğu sahte yeşile döndü; doğrulukta Usta'nın bir kazancı henüz gösterilemedi.
-- **Güçlü model koşuları kısmi.** Barındırılan modellerin kotası gün içinde kapandı (hydrogen ve flash ~13:00,
-  sonnet 15:19, gpt-oss 15:20). Güçlü model verisi yalnızca flash ve hydrogen'in sabah koşusu; gizli testte güçlü
-  model ölçülmedi, claude-sonnet-5-5-low'un 13 bölümü sonuç çıkarmaya yetmiyor.
 - **Zamanlayıcı BMC'nin ürünü değil.** Laboratuvar JS7 kullanır ve Control-M Automation API uyumlu bir alt kümesini
   konuşur (`vardiya/saha/ctm.py`). Gerçek Control-M kurulmadı; gerçek sisteme bağdaştırıcı hazır ama denenmedi.
 - **Grafik modeliyle erken uyarı** kodlandı, ölçülmedi.
-- **Tek hat.** Makine ısınıp yeniden başladıktan sonra tek laboratuvar, tek koşu, tek model yuvası ile çalışıldı;
-  qwen3:14b gizli test koşusu bu yüzden kısmi.
-- **Örneklem küçük.** Kümelerde 10-30 senaryo var, her bölüm bir kez koşuldu; hiçbir eşli fark anlamlı değil.
-- **Kapsam dışı:** Windows sunucuları ve WinRM, takvimler ve gün dönümü, zamanlama kriterleri, z/OS ve SAP ajanları,
-  sertifika süresi.
-- **Sızıntı riski.** Geliştirme kümesine bakarak harness'i yazan, ayarı da o küme üzerinde yaptı; gizli test kümesi ayrı
-  bir ajan tarafından yazıldı. Ayrıntı: `docs/09-canli-saha-bench.md`.
+
+Ayrıntı ve ölçüm notları: `docs/09-canli-saha-bench.md`.
 
 ## Nasıl çalıştırılır
 
