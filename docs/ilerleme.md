@@ -9,7 +9,8 @@ Son güncelleme: 16 Kasım 2026, 14:45
   `--atla` ile tamamlanır.
 - `gemini-4-argon-low`: 13:36'da kapandı (`test-argon-low` yalnızca 3 `kurulamadi` satırı; sonuç yok).
 - `claude-sonnet-5-5-low`: 15:19'da kapandı (`test-sonnet-low` birkaç bölüm; tam ölçüm yok).
-- Açık: `gpt-oss-120b-medium` (agy) ve yerel modeller. İkinci model ailesi olarak `ollama:gemma4` kullanılacak.
+- `gpt-oss-120b-medium`: 15:20'de kapandı, yaklaşık 17:30'da açılıyor; o saatte gpt-oss kuyrukları yeniden başlar.
+- Açık: yerel modeller. İkinci model ailesi olarak `ollama:gemma4` kullanılacak.
 - Koşucu artık art arda 3 kota hatasında kendini durduruyor (çıkış 5); kuyruk betiği her işten önce modeli tek
   çağrıyla yokluyor.
 
@@ -25,7 +26,9 @@ döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi
 | --- | --- | --- |
 | 1 | donuk (`saha-donuk-1c`) | `qwen-baglam-deneme`, `test-qwen3-14b`, `test-qwen3-14b-b10` (GPU tek lab: 82 C, 11 GB) |
 | 2 | donuk | `test-gpt-oss-b10` 1/2, `test-gpt-oss` 2/2 boşlukları |
-| 4 | geliştirme | `zor-dev-gpt-oss` (ayar turu 1) |
+| 4 | geliştirme | `zor-dev-qwen3-14b` (ayar turu 1; gpt-oss turu kota ile kesildi) |
+
+Ekran kartı tek istek işliyor (OLLAMA_NUM_PARALLEL 1): lab 1 ve lab 4 aynı qwen3:14b'yi sırayla kullanıyor, toplam hız saatte ~20 bölüm.
 | 3 | önce donuk, sonra geliştirme | eski `test-gpt-oss` 2/2 süreci (kart kolu dahil) bitince: ajan sunucuları yenilenir, ajan servisi senaryoları doğrulanır, `zor-dev-gpt-oss` |
 | 5 | katalog ajanı | - |
 
