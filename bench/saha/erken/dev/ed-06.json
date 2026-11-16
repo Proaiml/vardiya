@@ -1,0 +1,33 @@
+{
+ "id": "ed-06",
+ "bolum": "dev",
+ "gecmis": 16,
+ "bilesenler": [
+  {
+   "tur": "t_disk_durgun",
+   "host": "ajan2",
+   "dolu_kb": 3750
+  },
+  {
+   "tur": "t_oturum",
+   "host": "ajan1",
+   "tablo": "musteri"
+  },
+  {
+   "tur": "t_tek_hata",
+   "klasor": "SUBE_TOPLAMA",
+   "is": "ISLE",
+   "host": "ajan2",
+   "hata_kosu": 8,
+   "hata_no": 1
+  },
+  {
+   "tur": "t_yavas",
+   "klasor": "DENETIM_CIKAR",
+   "is": "DAGIT",
+   "host": "ajan2",
+   "sn": 5,
+   "limit_sn": 40
+  }
+ ]
+}

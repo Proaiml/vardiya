@@ -1,0 +1,45 @@
+{
+ "id": "ed-05",
+ "bolum": "dev",
+ "gecmis": 16,
+ "bilesenler": [
+  {
+   "tur": "hesap_suresi",
+   "klasor": "ARSIV_YENILE",
+   "is": "DAGIT",
+   "host": "ajan1",
+   "rol": "rapor_user",
+   "bitis_saat": 26.5
+  },
+  {
+   "tur": "tekrarlayan_hata",
+   "klasor": "KAMPANYA_HESAP",
+   "is": "CIKAR",
+   "host": "ajan1",
+   "hata_kosular": [
+    5,
+    6,
+    10,
+    13
+   ],
+   "sert_kosu": 20,
+   "hata_no": 0
+  },
+  {
+   "tur": "anahtar_suresi",
+   "klasor": "PERSONEL_AKTAR",
+   "is": "ONAYLA",
+   "host": "ajan1",
+   "hesap": "banka",
+   "bitis_saat": 17.2
+  },
+  {
+   "tur": "t_anahtar_uzak",
+   "klasor": "FATURA_ISLE",
+   "is": "TARA",
+   "host": "ajan1",
+   "hesap": "rapor",
+   "gun": 113
+  }
+ ]
+}

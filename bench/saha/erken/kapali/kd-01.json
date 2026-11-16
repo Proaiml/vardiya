@@ -1,0 +1,65 @@
+{
+ "id": "kd-01",
+ "bolum": "kapali",
+ "gecmis": 16,
+ "bilesenler": [
+  {
+   "tur": "hesap_suresi",
+   "klasor": "BORDRO_HAZIR",
+   "is": "ISLE",
+   "host": "ajan1",
+   "rol": "rapor_user",
+   "bitis_saat": 5.3,
+   "bitis_dk": 5,
+   "kapali": "eylem"
+  },
+  {
+   "tur": "hesap_suresi",
+   "klasor": "DENETIM_CIKAR",
+   "is": "TOPLA",
+   "host": "ajan1",
+   "rol": "etl_user",
+   "bitis_saat": 5.5,
+   "bitis_dk": 5,
+   "kapali": "kontrol"
+  },
+  {
+   "tur": "disk_dolu",
+   "klasor": "HAZINE_ONAY",
+   "is": "DAGIT",
+   "host": "ajan1",
+   "adim_kb": 120,
+   "onceki_kb": 1100,
+   "kapali": "eylem"
+  },
+  {
+   "tur": "disk_dolu",
+   "klasor": "MUHASEBE_KAPANIS",
+   "is": "KAPAT",
+   "host": "ajan2",
+   "adim_kb": 120,
+   "onceki_kb": 1100,
+   "kapali": "kontrol"
+  },
+  {
+   "tur": "anahtar_suresi",
+   "klasor": "STOK_SAYIM",
+   "is": "HAZIRLA",
+   "host": "ajan1",
+   "hesap": "banka",
+   "bitis_saat": 39.2,
+   "bitis_dk": 5,
+   "kapali": "eylem"
+  },
+  {
+   "tur": "anahtar_suresi",
+   "klasor": "FATURA_ISLE",
+   "is": "DENETLE",
+   "host": "ajan1",
+   "hesap": "rapor",
+   "bitis_saat": 10.0,
+   "bitis_dk": 5,
+   "kapali": "kontrol"
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "id": "ed-04",
+ "bolum": "dev",
+ "gecmis": 16,
+ "bilesenler": [
+  {
+   "tur": "kilit_bekleme",
+   "klasor": "MUHASEBE_KAPANIS",
+   "is": "DAGIT",
+   "host": "ajan2",
+   "tablo": "satis_gecici",
+   "saat": "01:30"
+  },
+  {
+   "tur": "disk_dolu",
+   "klasor": "BORDRO_HAZIR",
+   "is": "YUKLE",
+   "host": "ajan2",
+   "adim_kb": 108,
+   "onceki_kb": 2029
+  },
+  {
+   "tur": "t_birikim_durgun",
+   "klasor": "FINANS_GUNSONU",
+   "is": "ESLE",
+   "host": "ajan2",
+   "ekle": 3,
+   "tuket": 3,
+   "baslangic": 22,
+   "sinir": 60
+  },
+  {
+   "tur": "t_yavas",
+   "klasor": "TEDARIK_ALIM",
+   "is": "DENETLE",
+   "host": "ajan2",
+   "sn": 8,
+   "limit_sn": 40
+  }
+ ]
+}

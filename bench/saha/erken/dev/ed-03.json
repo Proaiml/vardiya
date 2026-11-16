@@ -1,0 +1,44 @@
+{
+ "id": "ed-03",
+ "bolum": "dev",
+ "gecmis": 16,
+ "bilesenler": [
+  {
+   "tur": "tekrarlayan_hata",
+   "klasor": "PERSONEL_AKTAR",
+   "is": "ONAYLA",
+   "host": "ajan2",
+   "hata_kosular": [
+    5,
+    7,
+    8,
+    9
+   ],
+   "sert_kosu": 23,
+   "hata_no": 2
+  },
+  {
+   "tur": "birikim",
+   "klasor": "SATIS_AKTAR",
+   "is": "GONDER",
+   "host": "ajan1",
+   "ekle": 5,
+   "tuket": 2,
+   "baslangic": 11,
+   "sinir": 76
+  },
+  {
+   "tur": "t_tek_hata",
+   "klasor": "MUHASEBE_KAPANIS",
+   "is": "YUKLE",
+   "host": "ajan1",
+   "hata_kosu": 4,
+   "hata_no": 0
+  },
+  {
+   "tur": "t_oturum",
+   "host": "ajan2",
+   "tablo": "musteri"
+  }
+ ]
+}

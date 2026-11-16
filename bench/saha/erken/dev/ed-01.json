@@ -1,0 +1,36 @@
+{
+ "id": "ed-01",
+ "bolum": "dev",
+ "gecmis": 16,
+ "bilesenler": [
+  {
+   "tur": "disk_dolu",
+   "klasor": "DENETIM_CIKAR",
+   "is": "ESLE",
+   "host": "ajan2",
+   "adim_kb": 140,
+   "onceki_kb": 852
+  },
+  {
+   "tur": "hesap_suresi",
+   "klasor": "RAPOR_DAGITIM",
+   "is": "OZETLE",
+   "host": "ajan1",
+   "rol": "rapor_user",
+   "bitis_saat": 15.6
+  },
+  {
+   "tur": "t_disk_durgun",
+   "host": "ajan1",
+   "dolu_kb": 3750
+  },
+  {
+   "tur": "t_yavas",
+   "klasor": "PERSONEL_AKTAR",
+   "is": "HESAPLA",
+   "host": "ajan1",
+   "sn": 5,
+   "limit_sn": 40
+  }
+ ]
+}

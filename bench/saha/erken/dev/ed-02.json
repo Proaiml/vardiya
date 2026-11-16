@@ -1,0 +1,32 @@
+{
+ "id": "ed-02",
+ "bolum": "dev",
+ "gecmis": 16,
+ "bilesenler": [
+  {
+   "tur": "anahtar_suresi",
+   "klasor": "FINANS_GUNSONU",
+   "is": "HAZIRLA",
+   "host": "ajan1",
+   "hesap": "banka",
+   "bitis_saat": 26.4
+  },
+  {
+   "tur": "sure_asimi",
+   "klasor": "PERSONEL_AKTAR",
+   "is": "BIRLESTIR",
+   "host": "ajan2",
+   "taban_sn": 1,
+   "her_kac": 2,
+   "limit_sn": 12
+  },
+  {
+   "tur": "t_hesap_uzak",
+   "klasor": "FATURA_ISLE",
+   "is": "OZETLE",
+   "host": "ajan1",
+   "rol": "etl_user",
+   "gun": 103
+  }
+ ]
+}
