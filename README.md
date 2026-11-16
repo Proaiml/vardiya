@@ -1,5 +1,7 @@
 # Vardiya
 
+Türkçe | [English](README.en.md)
+
 > **Harness olmadan bir dil modeli 0 adminlik yapar.** Sunucuya bağlanamaz, işin çıktısını okuyamaz, profili düzeltemez,
 > işi yeniden çalıştıramaz; yalnızca öneri yazar ve sahada hiçbir şey değişmez. Bench'teki her senaryoda bu durumun
 > sonucu aynıdır: **0 doğru**. Aynı model Vardiya'nın içinde gerçek sunuculara bağlanır, arızayı bulur, düzeltir, işi
