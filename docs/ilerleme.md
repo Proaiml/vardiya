@@ -37,7 +37,11 @@ döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi
   ve kabul listesi hatırlatılıyor; olmayan komutlara doğru `deploy` çağrısının örneği veriliyor; kabul listesi her altı
   adımda hatırlatılıyor; bitiş kapısı en çok iki kez geri çeviriyor ve "değiştirmeden raporla" taleplerinde kırmızı
   işleri gerekçe yapmıyor.
-- Şimdi: `zor-dev-qwen-t2` (yalnızca Usta, 10 bölüm, lab 1). Bittiğinde `saha-donuk-2` etiketi, sonra `zor-test` bir kez.
+- Onay turu `zor-dev-qwen-t2` (yalnızca Usta, qwen3:14b): 1 doğru, 1 yarım, 6 sahte yeşil, 2 zararlı, ort. 27 adım
+  (tur 1 Usta: 0 doğru, 3 yarım, 2 sahte yeşil, 5 zararlı, 36.5 adım; tur 1 yardımsız: 0 doğru, 6 zararlı). Zarar azaldı,
+  sahte yeşil arttı; doğruluk farkı yok denecek kadar küçük. Buna rağmen talimat gereği `saha-donuk-2` etiketlendi (17:20).
+- Şimdi: `zor-test` bir kez, iki kol, `saha-donuk-2`; 17:33'ten sonra gpt-oss açıksa onunla (`zor-test-gpt-oss`), değilse
+  qwen3:14b (`zor-test-qwen3-14b`). Ardından rapor.
 
 ## Bellek kuralı (15:40)
 
