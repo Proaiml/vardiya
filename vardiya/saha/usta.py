@@ -81,6 +81,108 @@ def kartlar():
     return json.loads(KARTLAR.read_text(encoding="utf-8"))
 
 
+# ---- scope: which jobs a ticket is about, and what they wait for ------------------------------------------------
+def _is_job(v):
+    return isinstance(v, dict) and str(v.get("Type", "")).startswith("Job:")
+
+
+def olay_grafi(tanimlar):
+    """From deployed definitions: {event: [folder/job that posts it]} and {folder/job: [events it waits for]}.
+    Flow sequences post A-TO-B events like the scheduler does."""
+    veren, bekler = {}, {}
+    for fname, fdef in (tanimlar or {}).items():
+        if not isinstance(fdef, dict):
+            continue
+        for v in fdef.values():
+            if isinstance(v, dict) and v.get("Type") == "Flow":
+                seq = v.get("Sequence") or []
+                for a, b in zip(seq, seq[1:]):
+                    veren.setdefault(f"{a}-TO-{b}", []).append(f"{fname}/{a}")
+                    bekler.setdefault(f"{fname}/{b}", []).append(f"{a}-TO-{b}")
+        for jn, j in fdef.items():
+            if not _is_job(j):
+                continue
+            for e in (j.get("WaitForEvents") or {}).get("Events", []):
+                bekler.setdefault(f"{fname}/{jn}", []).append(e.get("Event"))
+            for e in (j.get("AddEvents") or {}).get("Events", []):
+                veren.setdefault(e.get("Event"), []).append(f"{fname}/{jn}")
+    return veren, bekler
+
+
+def _kokler(text):
+    return [w for w in re.split(r"[^a-z0-9]+", _fold(text)) if len(w) >= 4]
+
+
+def ilgi(talep, ad):
+    """How many name parts of a folder or job (split at _ and -) the ticket mentions, allowing Turkish suffixes
+    (KAPANIS matches 'kapanisini') and the plain-word form of a name ('muhasebe kapanisi')."""
+    words = set(_kokler(talep))
+    n = 0
+    for tok in _kokler(ad.replace("_", " ").replace("-", " ")):
+        if any(w.startswith(tok) or (len(w) >= 5 and tok.startswith(w)) for w in words):
+            n += 1
+    return n
+
+
+def kapsam_hesapla(talep, tanimlar, rows=()):
+    """Folders the ticket is about: those whose name (or a job name in them) the ticket mentions, plus, through the
+    event graph, every folder whose jobs post an event an in-scope job waits for (the root cause may sit upstream in
+    another folder). Empty when the ticket names nothing: then everything counts as in scope."""
+    puan = {}
+    for fname, fdef in (tanimlar or {}).items():
+        p = 2 * ilgi(talep, fname)
+        if isinstance(fdef, dict):
+            p += max([ilgi(talep, jn) for jn, j in fdef.items() if _is_job(j)] or [0])
+        if re.search(rf"\b{re.escape(fname.lower())}\b", talep.lower()):
+            p += 5
+        if p:
+            puan[fname] = p
+    if not puan:
+        return set()
+    top = max(puan.values())
+    kapsam = {f for f, p in puan.items() if p >= (top / 2 if top >= 2 else 1)}
+    return kapsam | yukari_zincir(kapsam, tanimlar)
+
+
+def yukari_zincir(klasorler, tanimlar):
+    """Folders upstream of the given ones through events (transitively)."""
+    veren, bekler = olay_grafi(tanimlar)
+    out, todo = set(), list(klasorler)
+    seen = set(klasorler)
+    while todo:
+        f = todo.pop()
+        for job, evs in bekler.items():
+            if job.split("/")[0] != f:
+                continue
+            for e in evs:
+                for g in veren.get(e, []):
+                    gf = g.split("/")[0]
+                    if gf not in seen:
+                        seen.add(gf)
+                        out.add(gf)
+                        todo.append(gf)
+    return out
+
+
+def bekleme_zinciri(rows, tanimlar, klasorler=None):
+    """Lines like 'A/X bekliyor: EV <- B/Y (Ended Not OK)' for every waiting job (in the given folders), so a
+    wait whose giver sits in another folder or has failed is visible at once."""
+    veren, _ = olay_grafi(tanimlar)
+    durum = {f"{r['folder']}/{r['name']}": r["status"] for r in rows}
+    lines = []
+    for r in rows:
+        if r["status"] != "Wait Condition" or (klasorler and r["folder"] not in klasorler):
+            continue
+        for e in (r.get("waitingFor") or {}).get("events", []):
+            givers = veren.get(e, [])
+            if givers:
+                desc = ", ".join(f"{g} ({durum.get(g, 'aktif degil')})" for g in givers[:3])
+            else:
+                desc = "bu olayi veren tanimli bir is YOK (elle verilen olay ya da eksik tanim)"
+            lines.append(f"- {r['folder']}/{r['name']} bekliyor: {e} <- {desc}")
+    return lines
+
+
 def kart_yazi(k, kisa=False):
     lines = [f"### Kart: {k['baslik']}"]
     for key, title in (("teshis", "Teshis"), ("cozum", "Cozum"), ("dogrula", "Dogrula"), ("yapma", "YAPMA")):
@@ -108,6 +210,8 @@ class Usta:
         self.sayac = {"red": 0, "onay_istendi": 0, "onucus_red": 0, "onucus_uyari": 0, "kart": 0, "takip": 0, "dongu": 0,
                       "bitis_red": 0, "elestiri": 0, "yoklama": 0}
         self.bitis_notlari = []
+        self.kapsam, self.tanimlar, self.dokunulan = set(), {}, set()
+        self.kabul = []
         self.tanim_talebi = bool(re.search(r"tanimla|olustur|yeni (bir )?(is|klasor|akis)|ekle(yin|nsin)?\b|devreye al|kur(un|ulsun)", _fold(talep)))
 
     # ---- reading through the same tools (not recorded as the agent's actions) -----
@@ -122,11 +226,28 @@ class Usta:
         rc, out = self.a.lab.sh(host, cmd, timeout=40)
         return rc, out.strip()
 
+    def _tam(self, line):
+        """A read through the same ctm interface, without the display cut the agent's view has: on a crowded site the
+        status list and the definitions run past the cut, and a cut JSON cannot be parsed. The agent can read the
+        same data in parts (filters, one folder at a time)."""
+        self.sayac["yoklama"] += 1
+        return self.a.ctm.cli(line)
+
     def _statuses(self):
         try:
-            return json.loads(self._ctm("run jobs:status::get")).get("statuses", [])
+            return json.loads(self._tam("run jobs:status::get")).get("statuses", [])
         except ValueError:
             return []
+
+    def _icinde(self, folder):
+        return not self.kapsam or folder in self.kapsam or folder in self.dokunulan
+
+    def _tanimlar(self):
+        try:
+            d = json.loads(self._tam("deploy jobs::get"))
+            return d if isinstance(d, dict) else {}
+        except ValueError:
+            return {}
 
     def _eslesen(self, text, limit=3):
         hits = []
@@ -142,29 +263,53 @@ class Usta:
         parts = ["## DURUM OZETI (harness ortami senin icin okudu)"]
         parts.append("Ajanlar: " + _one_line(self._ctm("config server:agents::get")))
         rows = self._statuses()
+        self.tanimlar = self._tanimlar()
+        self.kapsam = kapsam_hesapla(talep, self.tanimlar, rows)
+        icinde = lambda f: not self.kapsam or f in self.kapsam  # noqa: E731
         seen = ""
+        if self.kapsam:
+            parts.append("Talebin kapsami (harness, talepte gecen adlardan ve olay zincirinden cikardi): " + ", ".join(sorted(self.kapsam))
+                         + ". Kapsam disindaki islere talep istemedikce dokunma; kok neden kapsam disinda bir klasordeyse "
+                         "onu kanitla ve yalnizca o isi duzelt.")
         if rows:
             parts.append("Aktif isler:")
+            disarda = {}
             for r in rows:
+                if not icinde(r["folder"]):
+                    disarda.setdefault(r["folder"], []).append(f"{r['name']}={r['status']}")
+                    continue
                 extra = ""
                 if r.get("waitingFor"):
                     extra = " bekledigi: " + json.dumps(r["waitingFor"], ensure_ascii=False)
                 parts.append(f"- {r['folder']}/{r['name']} [{r['jobId']}] {r['type']} @{r['host']}: {r['status']}{' (hold)' if r.get('held') else ''}"
                              f" kosu={r['numberOfRuns']}{extra}")
-            for r in [x for x in rows if x["status"] == "Ended Not OK"][:3]:
+            if disarda:
+                parts.append("Kapsam disi (yalnizca bilgi): " + "; ".join(f"{f}: {', '.join(v)}" for f, v in sorted(disarda.items())))
+            zincir = bekleme_zinciri(rows, self.tanimlar, self.kapsam or None)
+            if zincir:
+                parts.append("Bekleme zinciri (bekleyen is <- olayi veren is):\n" + "\n".join(zincir[:8]))
+            failed = sorted([x for x in rows if x["status"] == "Ended Not OK"], key=lambda x: not icinde(x["folder"]))
+            for r in failed[:3]:
+                if self.kapsam and not icinde(r["folder"]):
+                    break
                 out = self._ctm(f"run job:output::get {r['jobId']} -s tail=30")
                 seen += out + "\n"
                 parts.append(f"Cikti {r['folder']}/{r['name']} (son satirlar):\n" + _hata_satirlari(out, 14))
-            for r in [x for x in rows if x["status"] == "Executing"][:2]:
+            for r in [x for x in rows if x["status"] == "Executing" and icinde(x["folder"])][:2]:
                 seen += "Executing\n"
-            for r in [x for x in rows if x["status"] in ("Wait Condition", "Wait Host")][:4]:
+            for r in [x for x in rows if x["status"] in ("Wait Condition", "Wait Host") and icinde(x["folder"])][:4]:
                 seen += r["status"] + "\n"
         else:
             parts.append("Aktif is yok.")
-        folders = sorted({r["folder"] for r in rows} | {f for f in self.a.ctm.state["folders"] if re.search(rf"\b{re.escape(f)}\b", talep)})
+        named = {f for f in self.tanimlar if re.search(rf"\b{re.escape(f)}\b", talep)}
+        folders = sorted(named | (self.kapsam or {r["folder"] for r in rows}), key=lambda f: (f not in named, f))
         for f in folders[:3]:
-            d = self._ctm(f'deploy jobs::get -s "folder={f}"')
+            d = json.dumps({f: self.tanimlar[f]}, ensure_ascii=False) if f in self.tanimlar else self._ctm(f'deploy jobs::get -s "folder={f}"')
             parts.append(f"Tanim {f}:\n" + _compact_json(d, 1800))
+        self.kabul = self._kabul_listesi(talep)
+        if self.kabul:
+            parts.append("## Kabul listesi (harness talepten cikardi; bitis kapisi her maddeyi ayri denetler, raporunda her madde icin "
+                         "gordugun kaniti yaz)\n" + "\n".join(f"{i}. {m}" for i, m in enumerate(self.kabul, 1)))
         cards = self._eslesen(seen + "\n" + talep)
         if self.tanim_talebi:
             cards = [k for k in self.kartlar if k["id"] in ("tanim-yeni",)] + cards
@@ -192,6 +337,12 @@ class Usta:
             self.sayac["red"] += 1
             return ("USTA REDDETTI: set to OK isi CALISTIRMADAN yesile ceker; dosya gitmemis, veri yuklenmemis olur ve ardil isler "
                     "eksik veriyle calisir. Talep bunu istemiyor. Kok nedeni duzelt ve isi rerun et (ya da duzeltilmis tanimla yeniden siparis et).")
+        if eylem.get("arac") == "ctm" and "kapsam:" + key not in self.onay:
+            why = self._kapsam_disi(eylem, text) or self._elle_olay(text)
+            if why:
+                self.onay.add("kapsam:" + key)
+                self.sayac["onay_istendi"] += 1
+                return f"USTA DURDURDU (onay gerekli): {why}"
         for pat, why in RISKY:
             if re.search(pat, text, re.I) and key not in self.onay:
                 if pat.startswith(r"\brun\s+job::delete") and self.dagitilan:
@@ -202,6 +353,60 @@ class Usta:
         if eylem.get("arac") == "ctm" and text.strip().split()[:1] == ["deploy"] and len(text.split()) == 1 and isinstance(eylem.get("json"), (dict, str)):
             return self._onucus(eylem, key)
         return None
+
+    def _hedef_klasorler(self, eylem, text):
+        """Folders a changing ctm command acts on (empty for reads)."""
+        argv = text.split()
+        m = re.search(r"\brun\s+job::(rerun|setToOk|delete|kill|free|hold|confirm)\s+(\S+)", text)
+        if m:
+            row = next((r for r in self._statuses() if r["jobId"] == m.group(2)), None)
+            return {row["folder"]} if row else set()
+        if argv[:2] == ["run", "order"] and len(argv) > 2:
+            return {argv[2]}
+        if argv[:2] == ["deploy", "folder::delete"] and len(argv) > 2:
+            return {argv[2]}
+        if argv == ["deploy"] and isinstance(eylem.get("json"), (dict, str)):
+            body = eylem["json"]
+            if isinstance(body, str):
+                try:
+                    body = json.loads(body)
+                except ValueError:
+                    return set()
+            return {k for k, v in body.items() if isinstance(v, dict) and v.get("Type") == "Folder"}
+        return set()
+
+    def _kapsam_disi(self, eylem, text):
+        if not getattr(self, "kapsam", None):
+            return None
+        hedef = self._hedef_klasorler(eylem, text)
+        # a folder the ticket does not name, that is not upstream of it, that the agent has not worked on yet,
+        # and that already exists on the site (a new folder the ticket asks for is not "someone else's")
+        yabanci = sorted(f for f in hedef if f not in self.kapsam and f not in self.dokunulan and f in self.tanimlar)
+        if not yabanci:
+            return None
+        return (f"{', '.join(yabanci)} talebin kapsaminda gorunmuyor (kapsam: {', '.join(sorted(self.kapsam))}). Sitedeki baska "
+                "arizalar baska ekiplerin isi olabilir; onlara dokunmak istenmeyen bir degisikliktir. Bu klasorun talebin kok "
+                "nedeni oldugunu kanitladiysan (ornegin bekleyen isin olayini bu is veriyor) ayni komutu tekrar gonder.")
+
+    def _elle_olay(self, text):
+        m = re.search(r"\brun\s+event::add\s+(\S+)", text)
+        if not m:
+            return None
+        ev = m.group(1)
+        veren, _ = olay_grafi(getattr(self, "tanimlar", None) or self._tanimlar())
+        givers = veren.get(ev, [])
+        if not givers:
+            return None
+        durum = {f"{r['folder']}/{r['name']}": r["status"] for r in self._statuses()}
+        # only when a giver is on the site today and has not finished OK: a giver that was not ordered at all (the
+        # work was done another way) leaves adding the event by hand as the documented path
+        if not any(g in durum for g in givers) or any(durum.get(g) == "Ended OK" for g in givers):
+            return None
+        gorulen = ", ".join(g + "=" + durum.get(g, "aktif degil") for g in givers[:3])
+        return (f"{ev} olayini normalde {', '.join(givers[:3])} verir ve o is basariyla bitmedi "
+                f"({gorulen}). Olayi elle eklemek, ardil isleri "
+                "girdisi hazir olmadan calistirir (sahte yesil). Once olayi veren isi duzeltip calistir; olay kendiliginden gelir. "
+                "Talep elle eklemeyi acikca istiyorsa ayni komutu tekrar gonder.")
 
     def _onucus(self, eylem, key):
         """Pre-flight for a deploy: blocking errors come back instead of the deploy; warnings ride along with it."""
@@ -320,6 +525,11 @@ class Usta:
         notes = []
         text = str(eylem.get("komut", ""))
         key = json.dumps({k: v for k, v in eylem.items() if k != "dusunce"}, sort_keys=True, ensure_ascii=False)
+        if eylem.get("arac") == "ctm" and not sonuc.startswith("HATA"):
+            hedef = self._hedef_klasorler(eylem, text)
+            self.dokunulan |= hedef
+            if hedef and text.strip().startswith("deploy"):
+                self.tanimlar = self._tanimlar()
         if getattr(self, "_uyari", None):
             notes.append("ON UCUS UYARILARI (dagitim yapildi, bunlari duzeltmeden is basarisiz olabilir):\n- " + "\n- ".join(self._uyari))
             self._uyari = None
@@ -358,14 +568,14 @@ class Usta:
         self.sayac["takip"] += 1
         deadline, rows = time.time() + sure, []
         while time.time() < deadline:
-            rows = self._statuses()
+            rows = [r for r in self._statuses() if self._icinde(r["folder"])]
             if not any(r["status"] == "Executing" for r in rows):
                 time.sleep(2.5)
-                rows = self._statuses()
+                rows = [r for r in self._statuses() if self._icinde(r["folder"])]
                 if not any(r["status"] == "Executing" for r in rows):
                     break
             time.sleep(2)
-        lines = ["Takip (harness sonucu bekledi):"] + [
+        lines = ["Takip (harness sonucu bekledi" + (", talebin kapsamindaki isler" if self.kapsam else "") + "):"] + [
             f"- {r['folder']}/{r['name']} [{r['jobId']}] {r['status']}" + (f" bekledigi: {json.dumps(r['waitingFor'], ensure_ascii=False)}" if r.get("waitingFor") else "")
             for r in rows]
         for r in [x for x in rows if x["status"] == "Ended Not OK"][:2]:
@@ -390,10 +600,16 @@ class Usta:
         sorun = []
         rows = self._statuses()
         t0 = time.time()
-        while any(r["status"] == "Executing" for r in rows) and time.time() - t0 < 45:
+        icinde = self._icinde
+        while any(r["status"] == "Executing" and icinde(r["folder"]) for r in rows) and time.time() - t0 < 45:
             time.sleep(3)
             rows = self._statuses()
+        veren, _ = olay_grafi(getattr(self, "tanimlar", None) or self._tanimlar())
+        canli = {f"{x['folder']}/{x['name']}" for x in rows if x["status"] not in FINAL + ("Deleted",)}
+        durum = {f"{x['folder']}/{x['name']}": x["status"] for x in rows}
         for r in rows:
+            if not icinde(r["folder"]):
+                continue          # other teams' failures on a crowded site are not this ticket's work
             where = f"{r['folder']}/{r['name']} [{r['jobId']}]"
             if r["status"] == "Ended Not OK":
                 sorun.append(f"{where} hala Ended Not OK")
@@ -403,18 +619,19 @@ class Usta:
                 sorun.append(f"{where} Wait Host: ajan {r['host']} kullanilamiyor, is calismayacak")
             elif r["status"] == "Wait Condition":
                 evs = (r.get("waitingFor") or {}).get("events", [])
-                givers = {e: e.split("-TO-")[0] for e in evs if "-TO-" in e}
-                dead = [e for e, g in givers.items() if not any(x["name"] == g and x["folder"] == r["folder"] and x["status"] not in FINAL + ("Deleted",)
-                                                                 for x in rows)]
-                manual = [e for e in evs if e not in givers]
-                if dead or manual:
-                    sorun.append(f"{where} Wait Condition'da kalacak: {', '.join(dead + manual)} olayini verecek calisan bir is yok")
+                olu = []
+                for e in evs:
+                    givers = veren.get(e) or ([f"{r['folder']}/{e.split('-TO-')[0]}"] if "-TO-" in e else [])
+                    if not any(g in canli for g in givers):
+                        olu.append(f"{e} (veren: " + (", ".join(f"{g}={durum.get(g, 'aktif degil')}" for g in givers[:3]) or "tanimli is yok") + ")")
+                if olu:
+                    sorun.append(f"{where} Wait Condition'da kalacak; olayi verecek calisan bir is yok: {'; '.join(olu)}")
             if r.get("held"):
                 sorun.append(f"{where} hold durumunda birakilmis")
             if r.get("note") == "set to OK" and not re.search(r"set ?to ?ok|ok yap|yesile cek", _fold(self.talep)):
                 sorun.append(f"{where} set to OK ile yesile cekilmis; is gercekte calismadi")
         # delivered files: what a file transfer job said it sent must be there
-        for r in [x for x in rows if x["type"] == "FileTransfer" and x["status"] == "Ended OK"][:4]:
+        for r in [x for x in rows if x["type"] == "FileTransfer" and x["status"] == "Ended OK" and icinde(x["folder"])][:4]:
             out = self._ctm(f"run job:output::get {r['jobId']}")
             sent = re.findall(r"tamam: (\S+) (\d+) bayt", out)
             target = re.findall(r"\[aktarim \d+\] \S+ -> (\w+):(\S+)", out)
@@ -433,17 +650,41 @@ class Usta:
             sorun.append("Rapor cok kisa: kok neden, yapilan degisiklik ve dogrulama kaniti (gordugun sayi/dosya) yazilmali")
         return sorun
 
+    def _kabul_listesi(self, talep):
+        """The ticket split into checkable acceptance items by a separate model call; the list lives outside the
+        agent's context and is what the finish gate checks item by item."""
+        if self.elestirmen is None:
+            return []
+        self.sayac["kabul"] = self.sayac.get("kabul", 0) + 1
+        prompt = ("Asagidaki talebi, ayri ayri dogrulanabilir kabul maddelerine bol. Her madde tek bir istek ya da yasak olsun "
+                  "(ornegin: 'X klasorunde Y isi var ve su alanlara sahip', 'bugunun dosyasi hedefte', 'tanim kalici duzeltildi', "
+                  "'Z'ye dokunulmadi'). Sayilari, adlari, yollari ve kosullari talepteki gibi aynen koru. Talepte olmayan bir sey "
+                  "ekleme, cozum onerme. En cok 12 madde.\n\n## Talep\n" + talep +
+                  '\n\nYalnizca JSON yaz: {"maddeler": ["...", "..."]}')
+        try:
+            out = self.elestirmen.ask_json([{"role": "system", "content": "Talepleri maddelere bolen titiz bir analistsin."},
+                                            {"role": "user", "content": prompt}])
+        except Exception:  # noqa: BLE001 - without a list the gate still has its own probes
+            return []
+        items = out.get("maddeler") if isinstance(out, dict) else None
+        return [str(m)[:300] for m in items[:12] if str(m).strip()] if isinstance(items, list) else []
+
     def _elestir(self, rapor):
         """A second, sceptical reader: the ticket, what the harness sees on the site, and the report."""
         self.sayac["elestiri"] += 1
-        rows = self._statuses()
+        rows = [r for r in self._statuses() if self._icinde(r["folder"])]
         durum = "\n".join(f"- {r['folder']}/{r['name']} {r['type']} @{r['host']}: {r['status']} kosu={r['numberOfRuns']}" for r in rows) or "aktif is yok"
-        tanimlar = "\n".join(f"{f}: " + _compact_json(self._ctm(f'deploy jobs::get -s "folder={f}"'), 1500)
-                             for f in sorted(self.dagitilan | {r["folder"] for r in rows})[:3])
+        if self.kapsam:
+            durum += "\n(yalnizca talebin kapsamindaki ve yoneticinin dokundugu klasorler: " + ", ".join(sorted(self.kapsam | self.dokunulan)) + ")"
+        tanim = self._tanimlar()
+        tanimlar = "\n".join(f"{f}: " + _compact_json(json.dumps(tanim.get(f), ensure_ascii=False), 4000 if f in self.dagitilan else 1500)
+                             for f in sorted(self.dagitilan | self.dokunulan | {r["folder"] for r in rows}, key=lambda f: (f not in self.dagitilan, f))[:4])
         eylemler = "\n".join(f"- {x['arac']} {json.dumps(x['girdi'], ensure_ascii=False)[:160]}" for x in self.a.iz if x.get("uygulandi"))[-2500:]
         prompt = (f"Bir Control-M yoneticisinin isini denetliyorsun. Supheci ol: yalnizca asagidaki kanita guven, rapordaki iddiaya degil.\n\n"
                   f"## Talep\n{self.talep}\n\n## Sahadaki durum (harness okudu)\n{durum}\n\n## Tanimlar\n{tanimlar}\n\n"
                   f"## Yapilan eylemler\n{eylemler}\n\n## Yoneticinin raporu\n{rapor}\n\n"
+                  + (("## Kabul listesi\n" + "\n".join(f"{i}. {m}" for i, m in enumerate(self.kabul, 1)) + "\n\nHer maddeyi sirayla denetle; "
+                      "tanim maddelerini yukaridaki tanimlarla alan alan karsilastir.\n") if getattr(self, "kabul", None) else "") +
                   "Talepteki her istegi tek tek kontrol et: karsilandigina dair KANIT var mi? Kalici cozum istenmisse tanim duzeltilmis mi? "
                   "Istenmeyen bir sey degistirilmis ya da silinmis mi?\n"
                   'Yalnizca JSON yaz: {"eksik": ["<karsilanmayan ya da kanitsiz istek; yoksa bos liste>"]}')

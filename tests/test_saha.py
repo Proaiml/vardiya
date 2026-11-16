@@ -138,6 +138,64 @@ class Guard(unittest.TestCase):
         self.assertIsNone(self.u.once(act))
 
 
+SITE = {
+    "MUHASEBE_KAPANIS": {"Type": "Folder", "Host": "ajan1",
+                         "KAPANIS_BASLAT": {"Type": "Job:Command", "Command": "true", "WaitForEvents": {"Events": [{"Event": "STOK_KAPANDI"}]}},
+                         "KAPANIS_KONTROL": {"Type": "Job:Command", "Command": "true"},
+                         "akis": {"Type": "Flow", "Sequence": ["KAPANIS_BASLAT", "KAPANIS_KONTROL"]}},
+    "STOK_GUNSONU": {"Type": "Folder", "Host": "ajan1",
+                     "STOK_KAPAT": {"Type": "Job:Command", "Command": "true", "AddEvents": {"Events": [{"Event": "STOK_KAPANDI"}]}}},
+    "DEPO_SAYIM": {"Type": "Folder", "Host": "ajan2", "SAYIM_YUKLE": {"Type": "Job:Command", "Command": "false"}},
+    "LOG_TEMIZLIK": {"Type": "Folder", "Host": "ajan2", "LOG_SIK": {"Type": "Job:Command", "Command": "true"}},
+}
+
+
+class Scope(unittest.TestCase):
+    def test_event_graph_has_explicit_and_flow_events(self):
+        veren, bekler = usta.olay_grafi(SITE)
+        self.assertEqual(veren["STOK_KAPANDI"], ["STOK_GUNSONU/STOK_KAPAT"])
+        self.assertEqual(veren["KAPANIS_BASLAT-TO-KAPANIS_KONTROL"], ["MUHASEBE_KAPANIS/KAPANIS_BASLAT"])
+        self.assertIn("STOK_KAPANDI", bekler["MUHASEBE_KAPANIS/KAPANIS_BASLAT"])
+
+    def test_ticket_words_match_names_with_suffixes(self):
+        talep = "Mali isler sabahtan beri muhasebe kapanisini bekliyor; bugunku kapanis kaydi dusmedi."
+        self.assertEqual(usta.ilgi(talep, "MUHASEBE_KAPANIS"), 2)
+        self.assertEqual(usta.ilgi(talep, "DEPO_SAYIM"), 0)
+
+    def test_scope_follows_the_event_upstream_into_another_folder(self):
+        talep = "Muhasebe kapanisi bugun tamamlanmadi. Sitede baska isler de basarisiz; onlar bu talebin konusu degil."
+        self.assertEqual(usta.kapsam_hesapla(talep, SITE), {"MUHASEBE_KAPANIS", "STOK_GUNSONU"})
+        self.assertEqual(usta.kapsam_hesapla("Bir sorun var, bakar misiniz?", SITE), set())
+
+    def test_wait_chain_names_the_failed_giver(self):
+        rows = [{"folder": "MUHASEBE_KAPANIS", "name": "KAPANIS_BASLAT", "status": "Wait Condition", "waitingFor": {"events": ["STOK_KAPANDI"]}},
+                {"folder": "STOK_GUNSONU", "name": "STOK_KAPAT", "status": "Ended Not OK"}]
+        lines = usta.bekleme_zinciri(rows, SITE)
+        self.assertEqual(len(lines), 1)
+        self.assertIn("STOK_GUNSONU/STOK_KAPAT (Ended Not OK)", lines[0])
+
+    def test_out_of_scope_change_and_hand_made_event_need_a_second_call(self):
+        class Ctm:
+            def cli(self, line):
+                return json.dumps({"statuses": [
+                    {"jobId": "saha:1", "folder": "DEPO_SAYIM", "name": "SAYIM_YUKLE", "status": "Ended Not OK"},
+                    {"jobId": "saha:2", "folder": "STOK_GUNSONU", "name": "STOK_KAPAT", "status": "Ended Not OK"}]})
+
+        class A:
+            dis, iz, ctm = set(), [], Ctm()
+        u = usta.Usta.__new__(usta.Usta)
+        u.a, u.talep, u.onay, u.cagri, u.dagitilan = A(), "muhasebe kapanisi", set(), {}, set()
+        u.sayac = {"red": 0, "onay_istendi": 0, "yoklama": 0}
+        u.kapsam, u.tanimlar, u.dokunulan = {"MUHASEBE_KAPANIS", "STOK_GUNSONU"}, SITE, set()
+        rerun = {"arac": "ctm", "komut": "run job::rerun saha:1"}
+        self.assertIn("kapsaminda", u.once(rerun))
+        self.assertIsNone(u.once(rerun))
+        self.assertIsNone(u.once({"arac": "ctm", "komut": "run job::rerun saha:2"}))
+        ev = {"arac": "ctm", "komut": "run event::add STOK_KAPANDI"}
+        self.assertIn("elle", u.once(ev))
+        self.assertIsNone(u.once(ev))
+
+
 class Analysis(unittest.TestCase):
     def test_budget_is_read_from_the_run_name(self):
         from vardiya.saha import analiz
