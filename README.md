@@ -1,5 +1,18 @@
 # Vardiya
 
+> **Harness olmadan bir dil modeli 0 adminlik yapar.** Sunucuya bağlanamaz, işin çıktısını okuyamaz, profili düzeltemez,
+> işi yeniden çalıştıramaz; yalnızca öneri yazar ve sahada hiçbir şey değişmez. Bench'teki her senaryoda bu durumun
+> sonucu aynıdır: **0 doğru**. Aynı model Vardiya'nın içinde gerçek sunuculara bağlanır, arızayı bulur, düzeltir, işi
+> yeniden çalıştırır ve sonucu kanıtıyla gösterir.
+>
+> | Aynı iş | Harness'siz model | Vardiya ile (araçlı model) | Vardiya ile (Usta) |
+> | --- | --- | --- | --- |
+> | Hafif bulut modeli, 15 senaryo | **0** doğru | 15 doğru, ort. 14 adım | 15 doğru, ort. 8 adım |
+> | Küçük açık model (gpt-oss-120b), gizli test | **0** doğru | 8 / 26 doğru, 4 zararlı sonuç | 11 / 27 doğru, 1 zararlı sonuç |
+>
+> Sıfır bir ölçüm hilesi değil, işin doğası: araç ve erişim yoksa yapılan iş de yoktur. Fark tablonun sağ tarafındadır
+> ve her satır depodaki bir koşudan gelir (`results/saha/`). Zor kümede henüz gösteremediklerimiz aşağıda açıkça yazılı.
+
 **Dil modelini, Control-M sınıfı bir batch zamanlayıcının yöneticisi yapan açık harness.** Vardiya, ekiplerden gelen
 talepten iş tanımlar; başarısız bir işin nedenini gerçek sunucularda bulur, düzeltir ve işi yeniden çalıştırır. Harness'in
 içinde çalışan yönetici ajanın adı **Usta**'dır. Canlı bench, bir Docker laboratuvarında gerçek bir zamanlayıcı, iki ajan
