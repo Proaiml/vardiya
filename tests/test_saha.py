@@ -138,6 +138,20 @@ class Guard(unittest.TestCase):
         self.assertIsNone(self.u.once(act))
 
 
+class Analysis(unittest.TestCase):
+    def test_budget_is_read_from_the_run_name(self):
+        from vardiya.saha import analiz
+        self.assertEqual(analiz.butce_adi("test-flash-low-b10"), 10)
+        self.assertEqual(analiz.butce_adi("test-flash-low-b15"), 15)
+        self.assertEqual(analiz.butce_adi("test-flash-low"), 40)
+
+    def test_sign_test(self):
+        from vardiya.saha import analiz
+        self.assertEqual(analiz.isaret_testi(0, 0), 1.0)
+        self.assertAlmostEqual(analiz.isaret_testi(6, 0), 2 / 64)
+        self.assertAlmostEqual(analiz.isaret_testi(3, 3), 1.0)
+
+
 class Cards(unittest.TestCase):
     def test_cards_load_and_signatures_compile(self):
         cards = usta.kartlar()

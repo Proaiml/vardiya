@@ -102,8 +102,58 @@ def harness_sayaclari(ad):
     return n, total
 
 
+def butce_adi(ad):
+    """The step budget a run was made with, read from its name (`...-b10` means 10 steps); 40 otherwise."""
+    import re
+    m = re.search(r"-b(\d+)$", ad)
+    return int(m.group(1)) if m else 40
+
+
+def butce_tablosu(adlar):
+    """Correct episodes per arm under each step budget, on the scenarios every listed run has a verdict for in that arm."""
+    rows = {ad: {k: r for k, r in ozet(ad).items() if r["hukum"] in HUKUMLER} for ad in adlar}
+    kollar = sorted({k for g in rows.values() for _, k in g}, key=lambda k: SIRA.index(k) if k in SIRA else 9)
+    out = ["| Koşu | Bütçe | " + " | ".join(KOL_AD.get(k, k) for k in kollar) + " |", "| --- | --- | " + "--- | " * len(kollar)]
+    for ad in adlar:
+        cells = []
+        for kol in kollar:
+            rs = [r for (s, k), r in rows[ad].items() if k == kol]
+            if not rs:
+                cells.append("-")
+                continue
+            d = sum(r["hukum"] == "dogru" for r in rs)
+            cells.append(f"{d}/{len(rs)} (%{100 * d / len(rs):.0f})")
+        out.append(f"| {ad} | {butce_adi(ad)} | " + " | ".join(cells) + " |")
+    # paired: within each run, the arms on the same scenarios
+    if "yalin" in kollar and "usta" in kollar:
+        out += ["", "| Koşu | Çift | Yalnız Usta doğru | Yalnız yardımsız doğru | İşaret testi p |", "| --- | --- | --- | --- | --- |"]
+        for ad in adlar:
+            ids = sorted({s for s, k in rows[ad] if k == "usta"} & {s for s, k in rows[ad] if k == "yalin"})
+            win = sum(rows[ad][(s, "usta")]["hukum"] == "dogru" and rows[ad][(s, "yalin")]["hukum"] != "dogru" for s in ids)
+            loss = sum(rows[ad][(s, "yalin")]["hukum"] == "dogru" and rows[ad][(s, "usta")]["hukum"] != "dogru" for s in ids)
+            out.append(f"| {ad} | {len(ids)} | **{win}** | {loss} | {isaret_testi(win, loss):.3f} |")
+    return "\n".join(out)
+
+
+def riskli_tablosu(ad):
+    r = riskli_eylemler(ad)
+    if not r:
+        return ""
+    kollar = sorted(r, key=lambda k: SIRA.index(k) if k in SIRA else 9)
+    out = ["| Kol | Bölüm | Yıkıcı komut (uygulandı) | Riskli komut (uygulandı) | set to OK | Harness'in durdurduğu |", "| --- | --- | --- | --- | --- | --- |"]
+    for k in kollar:
+        g = r[k]
+        out.append(f"| {KOL_AD.get(k, k)} | {g['bolum']} | {g['yikici']} | {g['riskli']} | {g['set_to_ok']} | {g['durdurulan']} |")
+    ornek = [f"- {KOL_AD.get(k, k)}: {o}" for k in kollar for o in r[k]["ornek"][:3]]
+    return "\n".join(out + ([""] + ornek if ornek else []))
+
+
 def main(argv=None):
-    for ad in (argv if argv is not None else sys.argv[1:]):
+    argv = list(argv if argv is not None else sys.argv[1:])
+    if argv[:1] == ["--butce"]:
+        print(butce_tablosu(argv[1:]))
+        return 0
+    for ad in argv:
         print(tablo(ad))
         n, t = harness_sayaclari(ad)
         if n:
@@ -111,11 +161,12 @@ def main(argv=None):
         print()
         print(senaryo_tablosu(ad))
         print()
+        rt = riskli_tablosu(ad)
+        if rt:
+            print("Uygulanan riskli eylemler (harness'in kendi kalıplarıyla, her kolun izine aynı biçimde):\n")
+            print(rt)
+            print()
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
 
 
 def riskli_eylemler(ad):
@@ -134,7 +185,8 @@ def riskli_eylemler(ad):
         for x in d.get("iz", []):
             text = str((x.get("girdi") or {}).get("komut", ""))
             if not x.get("uygulandi", True):
-                g["durdurulan"] += 1
+                # only the harness's own refusals count as stopped; a call the tool itself rejected is not
+                g["durdurulan"] += str(x.get("cikti", "")).startswith("USTA")
                 continue
             if x["arac"] == "sh" and any(re.search(p, text, re.I) for p, _ in u.FORBIDDEN):
                 g["yikici"] += 1
@@ -144,3 +196,7 @@ def riskli_eylemler(ad):
             if x["arac"] == "ctm" and "setToOk" in text:
                 g["set_to_ok"] += 1
     return out
+
+
+if __name__ == "__main__":
+    sys.exit(main())
