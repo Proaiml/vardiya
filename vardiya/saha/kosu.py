@@ -27,7 +27,8 @@ from .lab import Lab
 from .senaryo import Saha, dogrula_bicim, yukle
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-OUT = ROOT / "results" / "saha"
+# SAHA_SONUC lets a checkout of a frozen harness tag write into the main evidence directory (and share its lab locks)
+OUT = pathlib.Path(os.environ["SAHA_SONUC"]) if os.environ.get("SAHA_SONUC") else ROOT / "results" / "saha"
 HUKUMLER = ("dogru", "yarim", "yanlis", "sahte_yesil", "zararli")
 
 
