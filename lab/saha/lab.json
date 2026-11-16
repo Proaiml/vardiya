@@ -1,0 +1,10 @@
+{
+ "_not": "Yalnizca 127.0.0.1'e bagli yerel laboratuvar. Hesaplar laboratuvara ozeldir. SAHA_URL ortam degiskeni url'yi ezer.",
+ "proje": "vardiya-saha",
+ "url": "http://127.0.0.1:27446",
+ "account": "root",
+ "password": "root",
+ "controller_id": "vardiya",
+ "controller_url": "http://js7-controller:4444",
+ "agents": {"ajan1": "http://ajan1:4445", "ajan2": "http://ajan2:4445"}
+}

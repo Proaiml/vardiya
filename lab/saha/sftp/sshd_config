@@ -1,0 +1,10 @@
+Port 22
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+Subsystem sftp internal-sftp
+MaxStartups 30:30:100
+MaxSessions 20
+LogLevel VERBOSE
+UseDNS no

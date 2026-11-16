@@ -1,0 +1,157 @@
+# Saha laboratuvari: canli bench ortami. Gercek bir zamanlayici (JS7), isleri gercekten calistiran iki ajan
+# sunucusu, bir karsi taraf SFTP sunucusu ve bir uygulama veritabani.
+#
+# Yalnizca yerel deneme icindir: butun portlar 127.0.0.1'e baglidir, hesaplar laboratuvara ozeldir.
+#
+#   docker compose -f lab/saha/docker-compose.yml up -d --build
+#   python -m vardiya saha kur
+#
+# Ikinci bir kopya (paralel kosu) icin: SAHA_PROJE=vardiya-saha2 SAHA_PORT_JOC=27447 ile ayni komut.
+name: ${SAHA_PROJE:-vardiya-saha}
+
+x-ajan: &ajan
+  build: ./agent
+  image: vardiya/saha-ajan:1
+  tty: true
+  stdin_open: true
+  environment:
+    RUN_JS_JAVA_OPTIONS: "-Xmx256m"
+    TZ: "Europe/Istanbul"
+
+services:
+  controller:
+    image: sosberlin/js7:controller-2-9-1
+    hostname: js7-controller
+    networks:
+      saha:
+        ipv4_address: ${SAHA_AG:-172.31.57}.10
+    tty: true
+    stdin_open: true
+    environment:
+      RUN_JS_JAVA_OPTIONS: "-Xmx256m"
+      RUN_JS_ID: "vardiya"
+    volumes:
+      - controller-var:/var/sos-berlin.com/js7/controller
+
+  ajan1-init:
+    image: sosberlin/js7:agent-2-9-1
+    entrypoint: ["sh", "-c", "cd /var/sos-berlin.com/js7/agent/config/private && { [ -f private.conf ] || cp -p private.conf-example private.conf; }"]
+    volumes:
+      - ajan1-var:/var/sos-berlin.com/js7/agent
+
+  ajan2-init:
+    image: sosberlin/js7:agent-2-9-1
+    entrypoint: ["sh", "-c", "cd /var/sos-berlin.com/js7/agent/config/private && { [ -f private.conf ] || cp -p private.conf-example private.conf; }"]
+    volumes:
+      - ajan2-var:/var/sos-berlin.com/js7/agent
+
+  ajan1:
+    <<: *ajan
+    hostname: ajan1
+    networks:
+      saha:
+        ipv4_address: ${SAHA_AG:-172.31.57}.11
+    depends_on:
+      ajan1-init:
+        condition: service_completed_successfully
+    volumes:
+      - ajan1-var:/var/sos-berlin.com/js7/agent
+      - ./agent/bin:/opt/ctm/bin:ro
+
+  ajan2:
+    <<: *ajan
+    hostname: ajan2
+    networks:
+      saha:
+        ipv4_address: ${SAHA_AG:-172.31.57}.12
+    depends_on:
+      ajan2-init:
+        condition: service_completed_successfully
+    volumes:
+      - ajan2-var:/var/sos-berlin.com/js7/agent
+      - ./agent/bin:/opt/ctm/bin:ro
+
+  joc:
+    image: sosberlin/js7:joc-2-9-1-1
+    hostname: js7-joc
+    networks:
+      saha:
+        ipv4_address: ${SAHA_AG:-172.31.57}.13
+    tty: true
+    stdin_open: true
+    environment:
+      RUN_JS_JAVA_OPTIONS: "-Xmx512m"
+    volumes:
+      - joc-config:/var/sos-berlin.com/js7/joc/resources/joc
+      - joc-logs:/var/log/sos-berlin.com/js7/joc
+      - ../js7/hibernate.cfg.xml:/var/sos-berlin.com/js7/joc/resources/joc/hibernate.cfg.xml:ro
+    ports:
+      - "127.0.0.1:${SAHA_PORT_JOC:-27446}:4446"
+    depends_on:
+      db:
+        condition: service_healthy
+      controller:
+        condition: service_started
+
+  # JOC Cockpit'in kendi veritabani (zamanlayicinin ic deposu).
+  db:
+    image: postgres:16-alpine
+    hostname: js7-db
+    networks:
+      saha:
+        ipv4_address: ${SAHA_AG:-172.31.57}.14
+    environment:
+      POSTGRES_DB: js7
+      POSTGRES_USER: js7
+      POSTGRES_PASSWORD: js7lab
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U js7 -d js7"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Karsi taraf dosya sunucusu: dosya aktarim islerinin hedefi ve kaynagi.
+  dosya:
+    build: ./sftp
+    image: vardiya/saha-sftp:1
+    hostname: dosya-sunucu
+    networks:
+      saha:
+        ipv4_address: ${SAHA_AG:-172.31.57}.15
+    environment:
+      TZ: "Europe/Istanbul"
+
+  # Uygulama veritabani: veritabani islerinin calistigi yer.
+  appdb:
+    image: postgres:16-alpine
+    hostname: appdb
+    networks:
+      saha:
+        ipv4_address: ${SAHA_AG:-172.31.57}.16
+    environment:
+      POSTGRES_DB: uygulama
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: saha-yonetici
+      TZ: "Europe/Istanbul"
+    command: ["postgres", "-c", "max_connections=30", "-c", "lock_timeout=0", "-c", "log_statement=none"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d uygulama"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+networks:
+  saha:
+    ipam:
+      config:
+        - subnet: ${SAHA_AG:-172.31.57}.0/24
+
+volumes:
+  db-data:
+  controller-var:
+  ajan1-var:
+  ajan2-var:
+  joc-config:
+  joc-logs:

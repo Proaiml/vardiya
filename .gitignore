@@ -8,3 +8,4 @@ results/agent/
 ornekler/*.local.txt
 results/hub-arsiv/
 tools/bmc/liste-*.json
+results/saha/durum/
