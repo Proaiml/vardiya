@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vardiya afişi</title>
+<style>
+  @page { size: 1240px 1754px; margin: 0; }
+  :root {
+    --ink: #111827;
+    --muted: #4b5563;
+    --paper: #fafaf7;
+    --line: #d4d4cc;
+    --teal: #0f6b62;
+    --teal-soft: #e3f0ee;
+    --amber: #9a4a06;
+    --amber-soft: #fbefdc;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body {
+    width: 1240px; height: 1754px; overflow: hidden;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink); font-size: 17px; line-height: 1.4;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .poster { padding: 40px 64px 30px; height: 1754px; display: flex; flex-direction: column; }
+  .kicker { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--teal); font-weight: 700; }
+  h1 { font-size: 92px; line-height: 1; margin: 2px 0 10px; letter-spacing: -.03em; font-weight: 800; }
+  .claim { font-size: 24px; line-height: 1.3; font-weight: 600; max-width: 1020px; margin: 0; }
+  .sub { font-size: 16px; color: var(--muted); margin: 8px 0 0; max-width: 1020px; }
+  h2 { font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: var(--teal); margin: 0 0 10px; font-weight: 700; }
+  section { margin-top: 18px; }
+  .rule { border-top: 2px solid var(--ink); margin-top: 22px; }
+
+  /* diagram */
+  .diagram { border: 1px solid var(--line); background: #fff; padding: 8px 10px; }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .dg-box { fill: #fff; stroke: var(--ink); stroke-width: 1.6; }
+  .dg-agent { fill: var(--teal-soft); stroke: var(--teal); stroke-width: 2; }
+  .dg-t { font: 700 16px "Segoe UI", Arial, sans-serif; fill: var(--ink); }
+  .dg-s { font: 400 13px "Segoe UI", Arial, sans-serif; fill: var(--muted); }
+  .dg-l { font: 600 12.5px "Segoe UI", Arial, sans-serif; fill: var(--teal); }
+  .dg-chip { fill: var(--teal); }
+  .dg-chipt { font: 700 14px Consolas, "Courier New", monospace; fill: #fff; }
+  .dg-line { stroke: var(--ink); stroke-width: 1.6; fill: none; }
+  .dg-dash { stroke: var(--teal); stroke-width: 1.8; fill: none; stroke-dasharray: 6 4; }
+  .dg-judge { fill: var(--amber-soft); stroke: var(--amber); stroke-width: 1.4; }
+
+  /* rungs */
+  .rungs { width: 100%; border-collapse: collapse; }
+  .rungs th, .rungs td { padding: 5px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .rungs thead th { font-size: 14px; font-weight: 700; color: var(--ink); border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
+  .rungs thead th small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .rungs tbody th { font-weight: 600; font-size: 15px; width: 255px; }
+  .rungs tbody th small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+  .big { font-size: 32px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
+  .big.zero { color: var(--muted); }
+  .big.good { color: var(--teal); }
+  .cell small { display: block; font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .note { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+
+  /* episode */
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+  .steps li { border: 1px solid var(--line); background: #fff; padding: 10px 12px 12px; counter-increment: s; position: relative; }
+  .steps li::before { content: counter(s); position: absolute; top: -11px; left: 10px; background: var(--teal); color: #fff; font-weight: 700; font-size: 13px; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; }
+  .steps code { display: block; font-family: Consolas, "Courier New", monospace; font-size: 11.5px; color: var(--ink); background: #f1f1ea; padding: 5px 6px; margin: 6px 0 6px; line-height: 1.3; word-break: break-all; }
+  .steps b { font-size: 14.5px; }
+  .steps span { display: block; font-size: 13.5px; color: var(--muted); line-height: 1.3; }
+  .proof { margin-top: 12px; background: var(--teal-soft); border-left: 5px solid var(--teal); padding: 10px 14px; font-size: 15.5px; }
+  .proof b { color: var(--teal); }
+  .proof .mono { font-family: Consolas, "Courier New", monospace; font-size: 14.5px; }
+  .compare { margin-top: 8px; font-size: 15px; color: var(--muted); }
+  .compare b { color: var(--ink); }
+
+  /* lower: harness + not shown */
+  .lower { display: grid; grid-template-columns: 1fr 1.25fr; gap: 28px; align-items: start; }
+  .parts { margin: 0; padding: 0; list-style: none; }
+  .parts li { padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .parts li:last-child { border-bottom: 0; }
+  .parts li { display: grid; grid-template-columns: 150px 1fr; gap: 6px; }
+  .not { background: var(--amber-soft); border: 2px solid var(--amber); padding: 14px 18px 12px; }
+  .not h2 { color: var(--amber); }
+  .not ul { margin: 0; padding-left: 20px; }
+  .not li { font-size: 15px; margin-bottom: 5px; line-height: 1.33; }
+
+  footer { margin-top: auto; border-top: 2px solid var(--ink); padding-top: 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
+  .repo { font-size: 30px; font-weight: 800; letter-spacing: -.01em; }
+  .repo small { display: block; font-size: 14px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-top: 2px; }
+  .fine { font-size: 12.5px; color: var(--muted); text-align: right; max-width: 560px; line-height: 1.35; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <div class="kicker">Açık kaynak harness · AIOps</div>
+  <h1>Vardiya</h1>
+  <p class="claim">Bir dil modeli, batch zamanlayıcıdaki başarısız işi gerçek sunucularda bulur, düzeltir ve yeniden çalıştırır. Sonucu modelin sözü değil, sunuculardan okunan durum belirler.</p>
+  <p class="sub">Yönetici ajanın adı Usta. Control-M sınıfı bir zamanlayıcıda iş tanımlama, arıza teşhisi ve yeniden çalıştırma yapar.</p>
+
+  <section>
+    <h2>Laboratuvar</h2>
+    <div class="diagram">
+      <svg viewBox="0 0 1112 322" role="img" aria-label="Laboratuvar şeması: ajan, zamanlayıcı, iki ajan sunucusu, SFTP sunucusu ve veritabanı">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#111827"/></marker>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#0f6b62"/></marker>
+        </defs>
+        <!-- agent -->
+        <rect class="dg-agent" x="6" y="30" width="236" height="190" rx="4"/>
+        <text class="dg-t" x="24" y="62">Usta</text>
+        <text class="dg-s" x="24" y="82">dil modeli + harness</text>
+        <text class="dg-s" x="24" y="100">iki aracı vardır:</text>
+        <rect class="dg-chip" x="24" y="116" width="62" height="28" rx="3"/><text class="dg-chipt" x="55" y="135" text-anchor="middle">ctm</text>
+        <text class="dg-s" x="96" y="135">zamanlayıcıya komut</text>
+        <rect class="dg-chip" x="24" y="154" width="62" height="28" rx="3"/><text class="dg-chipt" x="55" y="173" text-anchor="middle">sh</text>
+        <text class="dg-s" x="96" y="173">ajan sunucusunda kabuk</text>
+        <text class="dg-s" x="24" y="206">karşı kurumun sunucusuna kabuk yok</text>
+        <!-- scheduler -->
+        <rect class="dg-box" x="330" y="30" width="236" height="100" rx="4"/>
+        <text class="dg-t" x="348" y="62">Zamanlayıcı (JS7)</text>
+        <text class="dg-s" x="348" y="82">Control-M Automation API</text>
+        <text class="dg-s" x="348" y="99">uyumlu alt küme; BMC ürünü değil</text>
+        <text class="dg-s" x="348" y="116">sipariş, bekleme, geçmiş, çıktı</text>
+        <!-- agents -->
+        <rect class="dg-box" x="650" y="30" width="170" height="70" rx="4"/>
+        <text class="dg-t" x="666" y="62">ajan1</text><text class="dg-s" x="666" y="82">Linux, işleri çalıştırır</text>
+        <rect class="dg-box" x="650" y="140" width="170" height="70" rx="4"/>
+        <text class="dg-t" x="666" y="172">ajan2</text><text class="dg-s" x="666" y="192">Linux, işleri çalıştırır</text>
+        <!-- remote -->
+        <rect class="dg-box" x="910" y="30" width="196" height="70" rx="4"/>
+        <text class="dg-t" x="926" y="62">dosya-sunucu</text><text class="dg-s" x="926" y="82">karşı taraf SFTP</text>
+        <rect class="dg-box" x="910" y="140" width="196" height="70" rx="4"/>
+        <text class="dg-t" x="926" y="172">appdb</text><text class="dg-s" x="926" y="192">PostgreSQL: kilit, kısıt</text>
+        <!-- arrows -->
+        <path class="dg-line" d="M242 70 H330" marker-end="url(#ar)"/>
+        <text class="dg-l" x="262" y="62">ctm</text>
+        <path class="dg-line" d="M566 65 H650" marker-end="url(#ar)"/>
+        <path class="dg-line" d="M566 100 C610 100 610 160 650 160" marker-end="url(#ar)"/>
+        <text class="dg-s" x="574" y="52">işi verir</text>
+        <path class="dg-dash" d="M242 190 H650" marker-end="url(#ar2)"/>
+        <text class="dg-l" x="400" y="182">sh (ajan sunucusunda okuma ve düzeltme)</text>
+        <path class="dg-line" d="M820 65 H910" marker-end="url(#ar)"/>
+        <text class="dg-s" x="834" y="57">sftp</text>
+        <path class="dg-line" d="M820 175 H910" marker-end="url(#ar)"/>
+        <text class="dg-s" x="836" y="167">psql</text>
+        <!-- judge -->
+        <rect class="dg-judge" x="6" y="244" width="1100" height="64" rx="4"/>
+        <text class="dg-t" x="24" y="270" style="fill:#9a4a06">Hakem</text>
+        <text class="dg-s" x="100" y="270" style="font-size:14.5px;fill:#111827">Bölüm sonunda son durumu doğrudan sunuculardan okur: iş durumu, dosya özeti (sha256), SQL sonucu, tanım, çalışma sırası.</text>
+        <text class="dg-s" x="100" y="292" style="font-size:14.5px;fill:#111827">Ajanın raporu hükme girmez. Kimse dokunmazsa doğru çıkmayan, örnek çözümle doğru çıkan senaryo kümeye girer.</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>Üç basamak: aynı iş, üç düzey</h2>
+    <table class="rungs">
+      <thead>
+        <tr>
+          <th></th>
+          <th>1. Saf model<small>araç yok: yalnızca öneri metni, sitede hiçbir şey değişmez</small></th>
+          <th>2. Araçlı model<small>yalnız erişim katmanı: iki araç, el kitabı, döngü</small></th>
+          <th>3. Usta<small>tam harness: triyaj, kartlar, ön uçuş, koruma, takip, bitiş kapısı</small></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>gemini-3.8-flash-low<small>geliştirme kümesi, 15 hükümlü bölüm</small></th>
+          <td class="cell"><span class="big zero">0 / 17</span><small>doğru; kuruluş gereği</small></td>
+          <td class="cell"><span class="big good">15 / 15</span><small>ort. 14,1 adım</small></td>
+          <td class="cell"><span class="big good">15 / 15</span><small>ort. 8,3 adım</small></td>
+        </tr>
+        <tr>
+          <th>gpt-oss-120b-medium<small>gizli test, bütçe 40 adım</small></th>
+          <td class="cell"><span class="big zero">0 / 30</span><small>doğru; kuruluş gereği</small></td>
+          <td class="cell"><span class="big">8 / 26</span><small>4 zararlı sonuç</small></td>
+          <td class="cell"><span class="big">11 / 27</span><small>1 zararlı sonuç; eşli fark p = 0,45, anlamlı değil</small></td>
+        </tr>
+        <tr>
+          <th>qwen3:14b<small>zor geliştirme, kalabalık site ve yanıltıcı bilet, tur 1</small></th>
+          <td class="cell"><span class="big zero">0 / 10</span><small>doğru; kuruluş gereği</small></td>
+          <td class="cell"><span class="big zero">0 / 10</span><small>6 zararlı sonuç</small></td>
+          <td class="cell"><span class="big zero">0 / 10</span><small>5 zararlı sonuç</small></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Her hücre bir model ve bir küme için ayrı bir koşudur (<span style="font-family:Consolas,monospace">dev-flash-low</span>, <span style="font-family:Consolas,monospace">test-gpt-oss</span>, <span style="font-family:Consolas,monospace">zor-dev-qwen-t1</span>); modeller birleştirilmez. 1. basamak ayrı koşulmaz: "kimse dokunmadı" kolu onu ölçer. Büyük kazanç 1'den 2'ye (erişim katmanı); 2'den 3'e kazanç şimdilik hızda ve daha az zararda.</p>
+  </section>
+
+  <section>
+    <h2>Bir bölüm: karşı kurum parolayı değiştirdi (flash-low, geliştirme)</h2>
+    <ol class="steps">
+      <li><b>Profili oku</b><code>ctm … connectionprofiles::get SFTP_KARSI</code><span>mftuser, dosya-sunucu; parola maskeli</span></li>
+      <li><b>Yeni parolayı dağıt</b><code>ctm deploy SFTP_KARSI (yeni parola)</code><span>deployedConnectionProfiles: SFTP_KARSI</span></li>
+      <li><b>Bağlantıyı sına</b><code>ctm … connectionprofile::test SFTP_KARSI ajan1</code><span>result: OK</span></li>
+      <li><b>İşi yeniden çalıştır</b><code>ctm run job::rerun saha:000d0</code><span>GONDER yeniden çalıştırıldı</span></li>
+      <li><b>Hedefe bak</b><code>sh ajan1: runjob.py ls SFTP_KARSI …/in</code><span>320 satis_20261116.csv</span></li>
+    </ol>
+    <div class="proof"><b>Sunuculardan okunan kanıt:</b> GONDER <b>Ended OK</b> · ARSIVLE <b>Ended OK</b> · dosya özeti iki uçta aynı <span class="mono">474aed33bbf5cfee</span> · 21 satır · profil testi OK · <span class="mono">set to OK</span> kullanılmadı. Hüküm: doğru, 6 adım, 54,8 sn.</div>
+    <div class="compare">Aynı bölümde <b>kimse dokunmadı</b>: yanlış, dört kontrolün dördü tutmuyor (GONDER Not OK, ARSIVLE bekliyor, dosya yok, profil testi başarısız). <b>Araçlı model</b>: doğru, aynı çözüm, 10 adım, 72,3 sn. <b>Usta</b>: doğru, 6 adım, 54,8 sn.</div>
+  </section>
+
+  <section class="lower">
+    <div>
+      <h2>Harness'in parçaları</h2>
+      <ul class="parts">
+        <li><b>Ön okuma</b><span>ilk turdan önce siteyi kendisi okur</span></li>
+        <li><b>Beceri kartları</b>görülen hata imzasına uyanlar eklenir</li>
+        <li><b>Ön uçuş denetimi</b>dağıtımdan önce hesap, betik, profil, klasör</li>
+        <li><b>Koruma</b>yıkıcı komutu reddeder, riskli olana ikinci çağrı ister</li>
+        <li><b>Takip</b>yeniden çalıştırma sonucunu kendisi bekler ve getirir</li>
+        <li><b>Bitiş kapısı</b>"bitti"yi model değil, harness'in yoklaması verir</li>
+      </ul>
+    </div>
+    <div class="not">
+      <h2>Henüz gösterilmeyenler</h2>
+      <ul>
+        <li>Zor kümede (kalabalık site, yanıltıcı bilet) denenen zayıf modellerle iki araçlı basamak da senaryoları çözemiyor; Usta'nın doğrulukta kazancı henüz yok.</li>
+        <li>Güçlü model koşuları kota yüzünden kısmi; gizli testte güçlü model ölçülmedi.</li>
+        <li>Laboratuvardaki zamanlayıcı JS7'dir, Control-M Automation API uyumlu bir alt kümeyi konuşur. BMC'nin ürünü değildir; Control-M kurulup denenmedi.</li>
+        <li>Grafik modeliyle erken uyarı kodlandı, ölçülmedi.</li>
+        <li>Küme başına 10-30 senaryo, her bölüm bir kez koşuldu; eşli farklar anlamlı değil.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="repo">github.com/Proaiml/vardiya<small>16 Kasım 2026 · Apache License 2.0 · rapor: docs/vardiya-saha-bench.pdf</small></div>
+    <div class="fine">Vardiya, BMC Software ile bağlantılı değildir; "Control-M" BMC'nin ticari markasıdır. Laboratuvardaki bütün hesaplar ve parolalar yalnızca bu laboratuvara özgü uydurma değerlerdir.</div>
+  </footer>
+
+</div>
+</body>
+</html>
