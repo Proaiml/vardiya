@@ -25,6 +25,16 @@ doğrulaması da); koşular boşalınca DUR kaldırılıyor, yarım kalan doğru
 ayrıca buraya yazılacak; o zamana kadar diğer ajanlar yalnızca qwen3:14b kullansın. Yerel modellerde ajan
 döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi `saha-donuk-1c`, harness değişmedi).
 
+## Gece sırası (19:30'dan itibaren, kendiliğinden)
+
+1. `zor-test-gpt-oss` biter (`saha-donuk-2`, 17 senaryo, iki kol; `--atla` ile boşluk geçişleri).
+2. `bench/saha/katalog-test/` doğrulaması tamamlanır (`dogrula-katalog-test-son`, önceki yarım doğrulamaların satırları
+   üzerine `--atla`).
+3. `katalog-test --parca 1/2` (30 senaryo, iki kol, `saha-donuk-2`): gpt-oss açıksa onunla, değilse qwen3:14b.
+4. Sonra: tablolar yenilenir, `docs/13`, devir notu, kanıt commit'i.
+
+Betik: `gece.sh` (baş işçinin karalama dizininde); olaylar `results/saha/durum/kuyruk.log` içinde "gece:" satırları.
+
 ## 16:50 durumu (yeniden başlatma sonrası, tek hat)
 
 - 15:42'de makine ısınıp yeniden başladı. Kural: tek lab (lab 1), tek koşu, varsayılan Ollama (11434, tek yuva), ısı bekçisi.
