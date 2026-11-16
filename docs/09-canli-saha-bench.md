@@ -47,7 +47,7 @@ kontrolleri, gizli kök neden ve bir örnek çözüm. Her bölümde:
 1. Ortam standart siteye sıfırlanır (hesaplar, dizinler, anahtarlar, tablolar, profiller).
 2. Kurulum adımları çalışır: tanımlar dağıtılır, arıza gerçekten üretilir (parola değişir, anahtar izni bozulur,
    oturum kilit tutar, disk dolar) ve klasör sipariş edilir. Kurulum, arıza zamanlayıcıda görünene kadar bitmez.
-3. Kol çalışır: yardımsız model ya da Usta. İkisinin de elinde aynı iki araç vardır (`ctm`, `sh`) ve aynı el kitabı.
+3. Kol çalışır: araçlı model (yalnız erişim katmanı) ya da Usta. İkisinin de elinde aynı iki araç vardır (`ctm`, `sh`) ve aynı el kitabı.
 4. Hakem uç durumu sunuculardan okur: iş durumu, dosyanın varlığı ve özeti (sha256), SQL sonuçları, tanımın kendisi,
    işlerin gerçek çalışma sırası.
 
@@ -62,7 +62,8 @@ uygulanırsa **doğru çıkmalı**. Bu iki koşulu sağlamayan senaryo kümeye g
 
 | Kol | Ne |
 | --- | --- |
-| Yardımsız model (`yalin`) | Model, el kitabı ve iki araç |
+| Saf model (ölçülmez) | Hiç araç yok: yalnızca metin önerir, sitede hiçbir şey değişmez. Uç durumu kimse dokunmadığında (`bos`) olandır |
+| Araçlı model (`yalin`, yalnız erişim katmanı) | Model, el kitabı, iki araç ve ajan döngüsü: Vardiya'nın erişim katmanı, harness yok |
 | Model ve kart metni (`kart`) | Aynısı; beceri kartlarının tamamı metin olarak eklenir. Plasebo: bilgi var, harness yok |
 | Usta (`usta`) | Aynı model harness içinde |
 
@@ -79,7 +80,7 @@ Usta'nın harness'i (`vardiya/saha/usta.py`) kodla şunları yapar:
   geçilmiş işleri ve aktarılan dosyaların hedefte olup olmadığını kendisi yoklar; ardından ikinci, şüpheci bir model
   çağrısı talebi bu kanıtla karşılaştırır.
 
-Harness yardımsız modelin ulaşamadığı hiçbir veriyi görmez: bütün okumaları aynı iki araçla yapar. Tasarımın dayandığı
+Harness araçlı modelin ulaşamadığı hiçbir veriyi görmez: bütün okumaları aynı iki araçla yapar. Tasarımın dayandığı
 güncel çalışmalar `docs/arastirma/harness-sota-2026-11.md` dosyasında, kaynaklarıyla.
 
 ## Sızıntıya karşı
@@ -114,7 +115,174 @@ Arayüzdeki "Canlı saha" sayfası aynı dosyaları gösterir.
 
 ## Sonuçlar
 
-SONUCLAR_BURAYA
+16 Kasım 2026 akşamı, yarım kalmış hâliyle. Bütün tablolar `results/saha/TABLOLAR.md` dosyasında
+(`python -m vardiya.saha.analiz <koşu>` ile yeniden üretilir); her bölümün kanıtı `results/saha/<koşu>/`.
+
+### Üç basamak
+
+Tablolarda üç basamak vardır, iki değil:
+
+1. **Saf model.** Hiç aracı yoktur: yalnızca metin olarak öneri verebilir, sitede hiçbir şey değişmez. Uç durumu,
+   kimse dokunmadığında olandır. Bu ayrıca koşulmaz: her senaryonun doğrulamasındaki "kimse dokunmadı" (`bos`) kolu
+   tam olarak bunu ölçer ve kuruluş gereği hiçbir zaman doğru çıkmaz.
+2. **Araçlı model** (`yalin`, yalnız erişim katmanı). Vardiya'nın erişim katmanı: ajan döngüsü, el kitabı ve iki araç
+   (`ctm`, `sh`). Harness yoktur.
+3. **Usta.** Aynı model, aynı araçlar ve aynı el kitabıyla tam harness içinde.
+
+Hangi kazanç hangi katmanın:
+
+- **1'den 2'ye: erişim katmanı.** Büyük kazanç budur ve herhangi bir şeyin çözülmesinin nedenidir. Araçsız bir model
+  sunucuya bağlanamaz, işi yeniden çalıştıramaz, dosyayı aktaramaz.
+- **2'den 3'e: yönlendirme, koruma ve doğrulama.** Kazanç her yerde hızda: aynı işi daha az adımda bitirmek. Zayıf
+  modellerde daha az zararlı sonuç. Zor kümede doğrulukta bir kazanç henüz gösterilemedi.
+
+Kimse dokunmadığında (`bos`, saf modelin uç durumu), doğrulama koşularından:
+
+| Küme | Senaryo | Doğru | Yarım | Yanlış | Sahte yeşil | Zararlı |
+| --- | --- | --- | --- | --- | --- | --- |
+| Geliştirme (`dev`) | 17 | 0 | 11 | 5 | 0 | 1 |
+| Gizli test (`test`) | 30 | 0 | 13 | 15 | 2 | 0 |
+| Zor geliştirme (`zor-dev`) | 10 | 0 | 7 | 0 | 3 | 0 |
+| Zor gizli test (`zor-test`) | 18 | 0 | 11 | 5 | 2 | 0 |
+
+"Yarım" burada sitenin dokunulmayan kısmının zaten doğru olmasından gelir (ör. zarar görmemesi gereken tablo). Bir
+geliştirme senaryosunda (`ajan-servisi-bakimdan-donmedi`) boş kol "zararlı" çıktı. Bu senaryonun kusurudur; senaryo
+ölçülen kümelerde yoktur.
+
+### Model başına sonuçlar
+
+Modeller hiçbir yerde birleştirilmez. "Kurulamadı" bölümler (model servisi kesti ya da kota) hükme girmez; sayıları
+yanlarında yazılıdır. Bir koşunun parçası olmadığı sürece ölçüm, donmuş harness ile yapılmıştır (`saha-donuk-1` ve
+yalnızca koşucu ya da yerel model bağlamı değişikliği taşıyan `-1b`, `-1c`, `-1d` etiketleri).
+
+**gemini-3.8-flash-low** (hafif model, barındırılan). Kota 16 Kasım ~13:00'te kapandı.
+
+| Küme | Basamak | Bölüm | Doğru | Yarım | Yanlış | Sahte yeşil | Zararlı | Ort. adım |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| dev | Araçlı model | 15 | 15 | 0 | 0 | 0 | 0 | 14.1 |
+| dev | Usta | 15 | 15 | 0 | 0 | 0 | 0 | 8.3 |
+| test (kısmi, 29 kurulamadı) | Araçlı model | 10 | 10 | 0 | 0 | 0 | 0 | 12.5 |
+| test (kısmi) | Usta | 10 | 10 | 0 | 0 | 0 | 0 | 10.5 |
+
+Kart metni kolu (plasebo) dev'de 15/15, ortalama 12.3 adım: bilgi metni tek başına hızı açıklamıyor.
+
+Adım bütçesine göre (dev, 14 ortak senaryo; en çok k adımda doğru bitenler):
+
+| Basamak | k=6 | k=8 | k=10 | k=12 | k=15 | k=20 | k=40 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Araçlı model | 1 | 2 | 7 | 8 | 9 | 13 | 14 |
+| Kart metni | 1 | 2 | 6 | 8 | 11 | 13 | 14 |
+| Usta | 6 | 9 | 9 | 11 | 14 | 14 | 14 |
+
+**gemini-4-hydrogen-high** (güçlü model). Yalnızca dev, 6 senaryo (30 bölüm kotayla kesildi): araçlı model 6/6 ve
+11.0 adım, Usta 6/6 ve 7.7 adım. Gizli test ölçülmedi.
+
+**claude-sonnet-5-5-low**. Kota 15:19'da kapandı. Gizli testte 13 bölüm: araçlı model 7/7, Usta 6/6. Sonuç
+çıkarmaya yetmez.
+
+**gpt-oss-120b-medium** (zayıf model, barındırılan; kota 15:20'de kapandı, akşam yeniden açıldı).
+
+| Küme | Basamak | Bölüm | Doğru | Yarım | Yanlış | Sahte yeşil | Zararlı | Ort. adım |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| test, bütçe 40 (7 kurulamadı) | Araçlı model | 26 | 8 | 5 | 1 | 8 | 4 | 15.0 |
+| test, bütçe 40 | Kart metni | 11 | 2 | 3 | 0 | 5 | 1 | 13.6 |
+| test, bütçe 40 | Usta | 27 | 11 | 7 | 0 | 8 | 1 | 18.0 |
+| test, bütçe 10 (yarısı) | Araçlı model | 15 | 4 | 6 | 0 | 3 | 2 | 9.5 |
+| test, bütçe 10 (yarısı) | Usta | 15 | 5 | 3 | 3 | 4 | 0 | 9.5 |
+| zor-test, `saha-donuk-2` (kısmi) | Araçlı model | 7 | 0 | 3 | 0 | 2 | 2 | 19.0 |
+| zor-test, `saha-donuk-2` (kısmi) | Usta | 6 | 0 | 0 | 0 | 4 | 2 | 22.3 |
+
+Eşli karşılaştırma (aynı senaryolar, araçlı modele karşı Usta): bütçe 40'ta 26 çift; yalnız Usta doğru 5, yalnız
+araçlı model doğru 2, işaret testi p=0.45. Bütçe 10'da 15 çift; 3'e 2, p=1.0. Fark anlamlı değil.
+
+Uygulanan riskli eylemler (harness'in kendi kalıplarıyla, iki kolun izine aynı biçimde; test, bütçe 40):
+
+| Basamak | Bölüm | Yıkıcı komut (uygulandı) | Riskli komut (uygulandı) | set to OK | Harness'in durdurduğu |
+| --- | --- | --- | --- | --- | --- |
+| Araçlı model | 26 | 2 | 4 | 3 | - |
+| Usta | 27 | 0 | 50 | 0 | 30 |
+
+Usta'nın "riskli" sayısı, harness'in ikinci, açık çağrıyla izin verdiği komutlardır (ör. bir dosya silme, kapsamı
+dar bir `delete`).
+
+**qwen3:14b** (zayıf yerel model; Ollama, `VARDIYA_NUM_CTX=24576`, tek yuva, ekran kartında).
+
+| Küme | Harness | Basamak | Bölüm | Doğru | Yarım | Yanlış | Sahte yeşil | Zararlı | Ort. adım |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| test (kısmi; yeniden başlatmada kesildi) | donuk | Araçlı model | 7 | 2 | 1 | 1 | 0 | 3 | 15.1 |
+| test (kısmi) | donuk | Usta | 6 | 2 | 1 | 1 | 2 | 0 | 24.8 |
+| zor-dev tur 1 | geliştirme | Araçlı model | 10 | 0 | 3 | 0 | 1 | 6 | 32.4 |
+| zor-dev tur 1 | geliştirme | Usta | 10 | 0 | 3 | 0 | 2 | 5 | 36.5 |
+| zor-dev tur 2 | `saha-donuk-2` | Usta | 10 | 1 | 1 | 0 | 6 | 2 | 27.3 |
+
+Kısmi test koşusunda araçlı model 31 yıkıcı komut uyguladı, Usta'da bu sayı 0. Harness 8 komutu durdurdu.
+
+### Zor küme ve ayar
+
+Zor geliştirme kümesinde (10 senaryo) ilk tur, iki basamakta da 0/10 doğru verdi; zarar ikisinde de yüksekti.
+Kanıtta görülenler:
+
+- Zayıf model üründe olmayan komutlar uyduruyordu (profil ya da klasör `create`, `job::set`, `-f dosya`).
+- Aynı çağrıyı 15-31 kez tekrarlıyordu.
+- Profil ve klasör silmeyi ikinci çağrıda yapıyordu.
+- Yanlış veritabanı oturumunu sonlandırıyordu.
+
+`saha-donuk-1` ile `saha-donuk-2` arasındaki harness değişiklikleri:
+
+- **Kalabalık sitede okuma.** Harness'in kendi durum ve tanım okumaları ekran kesimine takılıyordu; kalabalık sitede
+  "aktif iş yok" görülüyordu. Artık kesimsiz okunuyor.
+- **Talep kapsamı ve klasörler arası olay zinciri.** Kapsam dışı klasöre değişiklik ve veren işi bitmemiş bir olayı
+  elle eklemek ikinci bir açık çağrı istiyor.
+- **Kabul listesi.** Ayrı bir model çağrısı talebi maddelere bölüyor; bitiş kapısı ve denetçi bunları madde madde
+  denetliyor ve altı adımda bir hatırlatılıyor.
+- **Bağlantı profilleri.** Profilin hesabı ile uzak yolun ait olduğu hesap uyuşmuyorsa ön uçuş durduruyor; başka işlerin
+  kullandığı profilin hesabını ya da sunucusunu değiştirmek de durduruluyor. Profil dağıtılınca aynı hesabı kullanan
+  diğer profiller gösteriliyor.
+- **Standartlar.** Tanım taleplerinde sunucudaki standart belgesi ön okumaya ve denetçiye ekleniyor.
+- **Tek başına sipariş.** Akıştan tek başına sipariş edilen işin öncülünün olayını beklediği söyleniyor.
+- **Zayıf model için koruma** (tur 1'den):
+  - Talep bir silme istemiyorsa var olan klasörü ya da profili silmek ve mevcut işleri düşüren dağıtım reddediliyor.
+  - Yalnızca gerçekten engelleyen veritabanı oturumu sonlandırılabiliyor.
+  - Aynı çağrının üçüncüsü çalıştırılmıyor.
+  - Üründe olmayan komutlara doğru çağrının örneği veriliyor.
+- **Bitiş kapısı.** En çok iki kez geri çeviriyor. "Değiştirmeden raporla" denen taleplerde kırmızı işleri gerekçe
+  yapmıyor.
+
+Ayar bir onay turuyla sınırlandı (tur 2, yalnızca Usta). Zararlı 5'ten 2'ye indi, ama zararın çoğu sahte yeşile döndü
+(2'den 6'ya). Doğru 0'dan 1'e çıktı. Talimat gereği sonuç kovalanmadı; `saha-donuk-2` bu hâliyle etiketlendi. Zor
+gizli küme (`zor-test`, 17 senaryo) bu etiketle gpt-oss ile koşuluyordu; rapor yazılırken 13 bölüm hükümlüydü ve iki
+basamakta da doğru yoktu.
+
+### Yayın ölçütleri: durum
+
+| Ölçüt | Durum | Kanıt |
+| --- | --- | --- |
+| 1. Usta, ürünü uçtan uca yönetmede araçlı modelden üstün | Kısmen gösterildi, yalnızca ilk kümede | Bütün modellerde aynı doğrulukta belirgin daha az adım (flash dev: 8.3'e karşı 14.1; 8 adımda 9'a karşı 2). gpt-oss gizli testte doğru 11'e 8, zararlı 1'e 4, ama eşli fark anlamlı değil (p=0.45) |
+| 2. Zor kümede doğruluk farkı | Gösterilmedi | zor-dev'de iki basamak da ~0/10; ayar zararı azalttı, doğruluğu getirmedi; zor-test kısmi, 0 doğru |
+| 3. Erken uyarı kolu | Kodu var, ölçülmedi | `docs/11`, `vardiya/saha/erken*.py` |
+| 4. Kriz hızı | Kısmen | Adım bütçesi tabloları var (flash dev, gpt-oss bütçe 10). Ajan servisini yeniden başlatma senaryoları yazıldı, biri doğrulandı, ölçülmedi |
+
+### Sınırlar ve ölçülmeyenler
+
+- **Kota.** Bütün barındırılan modellerin kotası gün içinde kapandı: flash ve hydrogen ~13:00 (21 Kasım'da açılır),
+  argon 13:36, sonnet 15:19, gpt-oss 15:20 (akşam açıldı). Güçlü model verisi flash ve hydrogen'in sabah verisidir;
+  21 Kasım'dan sonra `--atla` ile tamamlanacak. Argon ve sonnet kullanılabilir sonuç vermedi.
+- **Yeniden başlatma ve tek hat.** 15:42'de makine ısınıp yeniden başladı (beş lab kopyası ve iki yuvalı ikinci bir Ollama
+  sunucusu). O andan beri tek lab, tek koşu, tek model yuvası ve ısı bekçisi (`tools/isi_bekcisi.py`) kuralı geçerli.
+  qwen3:14b gizli test koşusu bu yüzden kısmi.
+- **Windows.** Bir Windows konuğu (`lab/saha/windows`: Windows Server 2022, WinRM, CtmAgent hizmeti) kuruldu, açıldı,
+  bellek için kaldırıldı; hiç kullanılmadı. Canlı bench'te Windows sunucusu ve WinRM yolu yok.
+- **Gerçek Control-M.** Kurulmadı (hesabın indirme hakkı yok). Ölçümler JS7 üzerindeki Control-M sözdizimli katmanda.
+- **Öykünmeyle olaylar.** Laboratuvarda üretilemeyen olaylar için planlandı (`docs/10`), yapılmadı.
+- **Katalog kümeleri** (`bench/saha/katalog-*`). Ölçülmedi. Gizli yarının doğrulaması yeniden başlatmada yarım kaldı.
+- **Senaryo yazarının körlüğü.** Yazar `skills/`, `usta.py`, `tests/test_saha.py`, `opsbench.py`, `desk.py`,
+  `checks.py`, `skills.py`, `docs/ilerleme.md` ve `bench/saha/test/`'in hiçbirini açmadığını bildirdi. Bir grep
+  `usta.py`'nin ilgisiz tek bir satırını gösterdi; dosyayı açmadı. Yanlış adrese giden mesaj bilinen bir sızıntıya yol
+  açmadı.
+- **Kaynak okuması.** Harness'i yazan taraf, kapsama bölümü için SAB ailelerinin ve öykünücü arızalarının listesini
+  okudu; harness'i bunlara göre değiştirmedi. Zor küme ayarı yalnızca `zor-dev` kanıtıyla yapıldı.
+- **Örneklem.** Senaryo sayıları küçük (10-30); hiçbir eşli fark istatistik olarak anlamlı değil. Her bölüm bir kez
+  koşuldu (pass^k ölçülmedi).
 
 ## Bench'ler arası ilişki
 
@@ -142,7 +310,7 @@ gizli kümelerin kaynakları senaryo yazarının raporunda):
 | `run_as_right` | `os-betik-izni`, `b-os-izin-ve-hedef-dizin`, `zd-yetim-olay` (ikinci arıza) |
 | `file_late` | `zd-eksik-sube` |
 | `lock_table` | `db-kilit-bekleyen`, `zd-gece-kilit` |
-| `resource_stuck`, `oom_kill`, `env_path`, `cert_expired`, `db_corrupt` | Geliştirme kümelerinde karşılığı yok |
+| `resource_stuck`, `oom_kill`, `env_path`, `cert_expired`, `db_corrupt` | Geliştirme kümelerinde karşılığı yok (yazar: `resource_stuck`, `oom_kill`, `db_corrupt` ve `run_as_right`'ın Windows biçimi laboratuvarda üretilemiyor) |
 
 | SAB ailesi | Canlı karşılığı |
 | --- | --- |
@@ -153,6 +321,9 @@ gizli kümelerin kaynakları senaryo yazarının raporunda):
 | `t-referans` | `zd-asya-tedarik` |
 | `t-bagimli` | `zd-profil-paylasim` (başka işin kullandığı profil değiştirilmemeli) |
 | `takvim`, `t-takvim`, `t-dongu`, `t-olmayan`, `kaldir`, `aciklamali`, `t-celiski`, `t-belirsiz`, `t-tip`, `t-uyumsuz` | Canlı karşılığı yok |
+
+Zor kümenin iki yarısı ortak kaynak paylaşmaz. `bench/ops/dev.jsonl`'deki 236 vakanın yaklaşık 150'si arayüz, Windows,
+takvim ya da başka zamanlayıcı konusu olduğu için alınmadı.
 
 Canlı bench'in kapsamadıkları: takvimler ve New Day (gün dönümü), zamanlama kriterleri (saat, takvim, döngüsel
 işler), kaynak sayaçları (quantitative resource), Windows sunucuları ve WinRM (bir Windows konuğu `lab/saha/windows`

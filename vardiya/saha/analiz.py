@@ -13,7 +13,7 @@ import sys
 
 from .kosu import HUKUMLER, OUT, ozet
 
-KOL_AD = {"yalin": "Yardımsız model", "kart": "Model ve kart metni", "usta": "Usta", "bos": "Kimse dokunmadı", "referans": "Örnek çözüm"}
+KOL_AD = {"yalin": "Araçlı model (yalnız erişim katmanı)", "kart": "Model ve kart metni", "usta": "Usta", "bos": "Kimse dokunmadı", "referans": "Örnek çözüm"}
 SIRA = ["yalin", "kart", "usta", "referans", "bos"]
 AILE = {"ariza": "Arıza", "tanim": "Tanım", "yonetim": "Yönetim"}
 TUR = {"aft": "Dosya aktarımı (AFT)", "os": "Komut / betik (EXC)", "db": "Veritabanı (DBJ)", "karma": "Karma"}
@@ -48,8 +48,8 @@ def tablo(ad):
     if atilan:
         out += ["", f"Hüküm dışı bırakılan bölüm: {atilan} (kurulamadı ya da model servisi kesti)."]
     if "yalin" in kollar:
-        out += ["", "Aynı senaryolarda yardımsız modele karşı:", "",
-                "| Kol | Çift | İkisi de doğru | Yalnız bu kol doğru | Yalnız yardımsız doğru | İkisi de değil | İşaret testi p |", "| --- | --- | --- | --- | --- | --- | --- |"]
+        out += ["", "Aynı senaryolarda araçlı modele (yalnız erişim katmanı) karşı:", "",
+                "| Kol | Çift | İkisi de doğru | Yalnız bu kol doğru | Yalnız araçlı model doğru | İkisi de değil | İşaret testi p |", "| --- | --- | --- | --- | --- | --- | --- |"]
         for kol in [k for k in kollar if k not in ("yalin", "bos", "referans")]:
             ids = sorted({s for s, k in gecerli if k == kol} & {s for s, k in gecerli if k == "yalin"})
             a = [gecerli[(s, kol)]["hukum"] == "dogru" for s in ids]
@@ -126,7 +126,7 @@ def butce_tablosu(adlar):
         out.append(f"| {ad} | {butce_adi(ad)} | " + " | ".join(cells) + " |")
     # paired: within each run, the arms on the same scenarios
     if "yalin" in kollar and "usta" in kollar:
-        out += ["", "| Koşu | Çift | Yalnız Usta doğru | Yalnız yardımsız doğru | İşaret testi p |", "| --- | --- | --- | --- | --- |"]
+        out += ["", "| Koşu | Çift | Yalnız Usta doğru | Yalnız araçlı model doğru | İşaret testi p |", "| --- | --- | --- | --- | --- |"]
         for ad in adlar:
             ids = sorted({s for s, k in rows[ad] if k == "usta"} & {s for s, k in rows[ad] if k == "yalin"})
             win = sum(rows[ad][(s, "usta")]["hukum"] == "dogru" and rows[ad][(s, "yalin")]["hukum"] != "dogru" for s in ids)

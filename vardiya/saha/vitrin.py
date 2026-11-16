@@ -138,7 +138,7 @@ def markdown(rec):
     k = rec.get("karsi")
     if k:
         lines += [f"**Sonuç.** Usta: {h}, {rec['tutan']}/{rec['toplam']} kontrol, {rec['adim']} adım, {rec['saniye']:.0f} sn. "
-                  f"Yardımsız model: {HUKUM_AD.get(k['hukum'], k['hukum'])}, {k['tutan']}/{k['toplam']} kontrol, {k['adim']} adım.", ""]
+                  f"Araçlı model (yalnız erişim katmanı): {HUKUM_AD.get(k['hukum'], k['hukum'])}, {k['tutan']}/{k['toplam']} kontrol, {k['adim']} adım.", ""]
     else:
         lines += [f"**Sonuç.** Usta: {h}, {rec['tutan']}/{rec['toplam']} kontrol, {rec['adim']} adım.", ""]
     if rec["kartlar"] or rec["harness"]:
@@ -158,7 +158,7 @@ def markdown(rec):
         if c["tutar"]:
             lines.append(f"- ZARAR: `{c['kontrol'][:150]}` görülen: `{c['gorulen'][:100]}`")
     if k and (k["tutmayan"] or k["zarar"]):
-        lines += ["", "**Yardımsız modelde tutmayan ya da zarar veren kontroller.**", ""]
+        lines += ["", "**Araçlı modelde tutmayan ya da zarar veren kontroller.**", ""]
         lines += [f"- tutmuyor: `{c['kontrol'][:150]}` görülen: `{c['gorulen'][:100]}`" for c in k["tutmayan"]]
         lines += [f"- ZARAR: `{c['kontrol'][:150]}` görülen: `{c['gorulen'][:100]}`" for c in k["zarar"]]
     return "\n".join(lines) + "\n"
@@ -171,12 +171,12 @@ def belge(adlar, n=20, yol=None):
     head = ["# Müdahale günlüğü", "",
             "Bu belge kanıt dosyalarından betikle üretilir (`python -m vardiya.saha.vitrin belge " + " ".join(adlar) + "`); model çağrısı "
             "yoktur. Her kayıt bir Usta bölümüdür: talep, harness'in gördüğü, sırasıyla yapılan eylemler (reddedilen ve ikinci çağrı istenenler "
-            "işaretli), bölüm sonunda sunuculardan okunan kanıt ve aynı senaryoda yardımsız modelin sonucu.", "",
-            f"Seçim kuralı: önce iki kolun hükmünün farklı olduğu bütün bölümler (önce Usta'nın doğru, yardımsızın doğru olmadığı), sonra "
+            "işaretli), bölüm sonunda sunuculardan okunan kanıt ve aynı senaryoda araçlı modelin (yalnız erişim katmanı: aynı araçlar ve el kitabı, harness yok) sonucu.", "",
+            f"Seçim kuralı: önce iki kolun hükmünün farklı olduğu bütün bölümler (önce Usta'nın doğru, araçlı modelin doğru olmadığı), sonra "
             f"bileşik senaryolardan en çok adım sürenler; en çok {n} kayıt. Bu seçimde hükmü farklı olan: {farkli}.", "",
             "Koşular: " + ", ".join(f"`{a}`" for a in adlar) + ". Ham kanıt: `results/saha/<koşu>/<senaryo>__<kol>.json` ve web "
             "konsolundaki \"Canlı saha\" ile \"Müdahale vitrini\" sayfaları.", "",
-            "| # | Koşu | Senaryo | Usta | Yardımsız | Usta adım | Yardımsız adım |", "| --- | --- | --- | --- | --- | --- | --- |"]
+            "| # | Koşu | Senaryo | Usta | Araçlı model | Usta adım | Araçlı adım |", "| --- | --- | --- | --- | --- | --- | --- |"]
     for i, r in enumerate(secilen, 1):
         head.append(f"| {i} | {r['ad']} | `{r['senaryo']}` | {HUKUM_AD.get(r['hukum'])} | {HUKUM_AD.get(r['karsi_hukum'])} | {r['adim']} | {r['karsi_adim']} |")
     body = [markdown(kayit(r["ad"], r["senaryo"])) for r in secilen]

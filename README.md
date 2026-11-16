@@ -198,7 +198,9 @@ Usta'nin urunu uctan uca yonetebildigini gercek bir ortamda olcen bench. Ayrinti
 - **Senaryo.** Talep metni, arizayi gercekten ureten kurulum adimlari, sunuculardan okunan kontroller ve zarar
   kontrolleri (`bench/saha/<kume>/*.json`). Her senaryo iki yonden sinanir: kimse dokunmazsa dogru cikmaz, ornek
   cozumle dogru cikar.
-- **Kollar.** Yardimsiz model (el kitabi ve iki arac: `ctm`, `sh`) ile ayni model Usta'nin icinde. Ikisinin araci ve
+- **Basamaklar.** Saf model (hic arac yok: yalnizca metin onerir, sitede hicbir sey degismez; uc durumu `bos` kolununkidir),
+  aracli model (`yalin`: yalnizca Vardiya'nin erisim katmani, yani el kitabi, iki arac `ctm`, `sh` ve ajan dongusu) ve
+  ayni model Usta'nin icinde. Ikisinin araci ve
   el kitabi aynidir; harness modelin ulasamadigi veriyi gormez.
 - **Hukum.** Bolum sonunda sunuculardan okunan uc durum: dogru, yarim, yanlis, sahte yesil, zararli.
 
