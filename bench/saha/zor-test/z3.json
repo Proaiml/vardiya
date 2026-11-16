@@ -1,0 +1,1775 @@
+[
+ {
+  "id": "zt-ajan-ayar-bozuk",
+  "aile": "ariza",
+  "tur": "os",
+  "bilesik": true,
+  "ayakta": [
+   "ajan1"
+  ],
+  "baslik": "Gece ajan2 uzerindeki isler hic baslamadi",
+  "talep": "Gece boyunca ajan2 sunucusundaki gece yukleme isleri hic baslamadi; sabah (yukleme_log tablosunda gece_ajan2_<tarih> adiyla) bekledigimiz kayit dusmedi. Sunucuya ulasilabiliyor. Gece isinin bugun icin eksiksiz tamamlanmasini (ozet dosyasi dahil) ve kaydin dusmesini saglayin. Sitede baska basarisiz isler de var; onlar bu talebin konusu degil.",
+  "kurulum": [
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/app/scripts/gece_yukle.sh",
+     "icerik": "#!/bin/sh\n# gece ajan2 ozetini yazar\ngun=$1\nf=/data/giden/gece_${gun}.txt\n[ -f \"$f\" ] || { echo \"girdi yok: $f\" >&2; exit 3; }\necho \"ozet $(cat $f) $gun\" > /data/arsiv/gece_ozet_${gun}.txt\necho \"ozet yazildi\"\n",
+     "sahip": "root:root",
+     "mod": "600"
+    }
+   },
+   {
+    "deploy": {
+     "TEDARIK_SIPARIS": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "SIPARIS_AL": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_AL\" >> /var/log/app/siparis_al.log"
+      },
+      "SIPARIS_DOGRULA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_DOGRULA\" >> /var/log/app/siparis_dogrula.log"
+      },
+      "SIPARIS_ONAYLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_ONAYLA\" >> /var/log/app/siparis_onayla.log"
+      },
+      "SIPARIS_YAZ": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_YAZ\" >> /var/log/app/siparis_yaz.log"
+      },
+      "SIPARIS_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_KAPAT\" >> /var/log/app/siparis_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "SIPARIS_AL",
+        "SIPARIS_DOGRULA",
+        "SIPARIS_ONAYLA",
+        "SIPARIS_YAZ",
+        "SIPARIS_KAPAT"
+       ]
+      }
+     },
+     "ENVANTER_SENK": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "ENV_TOPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_TOPLA\" >> /var/log/app/env_topla.log"
+      },
+      "ENV_FARK": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "select count(*) from envanter_fark"
+      },
+      "ENV_RAPOR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_RAPOR\" >> /var/log/app/env_rapor.log"
+      },
+      "ENV_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_KAPAT\" >> /var/log/app/env_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "ENV_TOPLA",
+        "ENV_FARK",
+        "ENV_RAPOR",
+        "ENV_KAPAT"
+       ]
+      }
+     },
+     "KARGO_TAKIP": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "KARGO_AL": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_AL\" >> /var/log/app/kargo_al.log"
+      },
+      "KARGO_ESLE": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo 'kargo servisi 503 dondu' >&2; exit 6"
+      },
+      "KARGO_BILDIR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_BILDIR\" >> /var/log/app/kargo_bildir.log"
+      },
+      "KARGO_ARSIV": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_ARSIV\" >> /var/log/app/kargo_arsiv.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "KARGO_AL",
+        "KARGO_ESLE",
+        "KARGO_BILDIR",
+        "KARGO_ARSIV"
+       ]
+      }
+     },
+     "BUTCE_DONEMI": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "BUTCE_AC": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_AC\" >> /var/log/app/butce_ac.log"
+      },
+      "BUTCE_KILIT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_KILIT\" >> /var/log/app/butce_kilit.log",
+       "WaitForEvents": {
+        "Type": "WaitForEvents",
+        "Events": [
+         {
+          "Event": "DONEM_ONAYI"
+         }
+        ]
+       }
+      },
+      "BUTCE_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_KAPAT\" >> /var/log/app/butce_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "BUTCE_KILIT",
+        "BUTCE_KAPAT"
+       ]
+      }
+     },
+     "MALIYE_RAPOR": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "MALIYE_TOPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_TOPLA\" >> /var/log/app/maliye_topla.log"
+      },
+      "MALIYE_ONAY": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo 'imzali onay formu yok' >&2; exit 9"
+      },
+      "MALIYE_YAYIN": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_YAYIN\" >> /var/log/app/maliye_yayin.log"
+      },
+      "MALIYE_ARSIV": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_ARSIV\" >> /var/log/app/maliye_arsiv.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "MALIYE_TOPLA",
+        "MALIYE_ONAY",
+        "MALIYE_YAYIN",
+        "MALIYE_ARSIV"
+       ]
+      }
+     },
+     "ARSIV_TEMIZ": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "ARSIV_SAY": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_SAY\" >> /var/log/app/arsiv_say.log"
+      },
+      "ARSIV_SIKISTIR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_SIKISTIR\" >> /var/log/app/arsiv_sikistir.log"
+      },
+      "ARSIV_ESKI_SIL": {
+       "Type": "Job:Command",
+       "Command": "cd / && find /data/tmp -name 'eskiarsiv_*' -mtime +60 -delete"
+      },
+      "ARSIV_RAPOR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_RAPOR\" >> /var/log/app/arsiv_rapor.log"
+      }
+     },
+     "PERSONEL_PRIM": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "PRIM_HESAPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) PRIM_HESAPLA\" >> /var/log/app/prim_hesapla.log"
+      },
+      "PRIM_YAZ": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_RAPOR",
+       "Query": "insert into musteri values (999, 'x', 'y')"
+      },
+      "PRIM_DAGIT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) PRIM_DAGIT\" >> /var/log/app/prim_dagit.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "PRIM_HESAPLA",
+        "PRIM_YAZ",
+        "PRIM_DAGIT"
+       ]
+      }
+     },
+     "GECE_AJAN2": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "GECE_HAZIRLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo hazir > /data/giden/gece_%%$ODATE.txt"
+      },
+      "GECE_YUKLE": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gece_yukle.sh",
+       "Arguments": [
+        "%%$ODATE"
+       ]
+      },
+      "GECE_KAYIT": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "insert into yukleme_log (dosya, satir) values ('gece_ajan2_%%$ODATE', 1)"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "GECE_HAZIRLA",
+        "GECE_YUKLE",
+        "GECE_KAYIT"
+       ]
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "TEDARIK_SIPARIS",
+     "bekle": {
+      "SIPARIS_AL": "Ended OK",
+      "SIPARIS_DOGRULA": "Ended OK",
+      "SIPARIS_ONAYLA": "Ended OK",
+      "SIPARIS_YAZ": "Ended OK",
+      "SIPARIS_KAPAT": "Ended OK"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "ENVANTER_SENK",
+     "bekle": {
+      "ENV_TOPLA": "Ended OK",
+      "ENV_FARK": "Ended Not OK",
+      "ENV_RAPOR": "Wait Condition",
+      "ENV_KAPAT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "KARGO_TAKIP",
+     "bekle": {
+      "KARGO_AL": "Ended OK",
+      "KARGO_ESLE": "Ended Not OK",
+      "KARGO_BILDIR": "Wait Condition",
+      "KARGO_ARSIV": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "BUTCE_DONEMI",
+     "bekle": {
+      "BUTCE_AC": "Ended OK",
+      "BUTCE_KILIT": "Wait Condition",
+      "BUTCE_KAPAT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "MALIYE_RAPOR",
+     "bekle": {
+      "MALIYE_TOPLA": "Ended OK",
+      "MALIYE_ONAY": "Ended Not OK",
+      "MALIYE_YAYIN": "Wait Condition",
+      "MALIYE_ARSIV": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "ARSIV_TEMIZ",
+     "bekle": {
+      "ARSIV_SAY": "Ended OK",
+      "ARSIV_SIKISTIR": "Ended OK",
+      "ARSIV_ESKI_SIL": "Ended OK",
+      "ARSIV_RAPOR": "Ended OK"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "PERSONEL_PRIM",
+     "bekle": {
+      "PRIM_HESAPLA": "Ended OK",
+      "PRIM_YAZ": "Ended Not OK",
+      "PRIM_DAGIT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag stop bakim; printf 'JAVA_OPTIONS=\"-Xms512m -Xmx128m\"\\nHTTP_PORT=4445\\n' > /etc/ctm/ajan.conf",
+     "sure": 50
+    }
+   },
+   {
+    "bekle": 15
+   },
+   {
+    "order": {
+     "folder": "GECE_AJAN2",
+     "bekle": {
+      "GECE_HAZIRLA": "Wait Host",
+      "GECE_YUKLE": "Wait Condition",
+      "GECE_KAYIT": "Wait Condition"
+     },
+     "sure": 60
+    }
+   },
+   {
+    "bekle": 1
+   }
+  ],
+  "kontroller": [
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag status",
+     "icerir": "calisiyor"
+    }
+   },
+   {
+    "is": {
+     "folder": "GECE_AJAN2",
+     "job": "GECE_HAZIRLA",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "GECE_AJAN2",
+     "job": "GECE_YUKLE",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "GECE_AJAN2",
+     "job": "GECE_KAYIT",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*) from yukleme_log where dosya = 'gece_ajan2_{GUN}'",
+     "esit": "1"
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/gece_ozet_{GUN}.txt",
+     "icerir": "hazir"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "grep -c 'HTTP_PORT=4445' /etc/ctm/ajan.conf",
+     "esit": "1"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "grep -q 'Xms512m' /etc/ctm/ajan.conf; echo $?",
+     "esit": "1"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "for p in /app/scripts/gece_yukle.sh /app/scripts /etc/ctm/ajan.conf; do m=$(stat -c %a $p 2>/dev/null) || continue; case $m in *[2367]) echo herkese-yazilabilir $p;; esac; done",
+     "icerir": "herkese-yazilabilir"
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_FARK",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_RAPOR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_KAPAT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ESLE",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_BILDIR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KILIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KAPAT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ONAY",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_YAYIN",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_YAZ",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_DAGIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   }
+  ],
+  "kok_neden": "Ajan2'nin servisi durmus ve /etc/ctm/ajan.conf icindeki JAVA_OPTIONS bozuk (-Xms -Xmx'ten buyuk): JVM acilir acilmaz kapaniyor ('ctmag start' ve ajan gunlugu nedeni gosterir). Ayar duzeltilip ajan baslatilinca baglanir; bu kez ikinci ariza: gece_yukle.sh root:root 600, is calisamiyor; batch sahipligi ve 755/750 ile duzeltilip is yeniden calistirilir. HTTP_PORT degistirilirse ajan baglanamaz.",
+  "cozum": [
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "/opt/ctm/bin/ctmag status; tail -5 /var/log/ctmagent.log; cat /etc/ctm/ajan.conf"
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "printf 'JAVA_OPTIONS=\"-Xmx256m\"\\nHTTP_PORT=4445\\n' > /etc/ctm/ajan.conf && /opt/ctm/bin/ctmag start",
+    "sure": 60
+   },
+   {
+    "bekle": {
+     "folder": "GECE_AJAN2",
+     "job": "GECE_YUKLE",
+     "durum": "Ended Not OK",
+     "sure": 120
+    }
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "chown batch:batch /app/scripts/gece_yukle.sh && chmod 755 /app/scripts/gece_yukle.sh"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run job::rerun {jobid:GECE_AJAN2/GECE_YUKLE}"
+   },
+   {
+    "bekle": 5
+   },
+   {
+    "bekle": {
+     "folder": "GECE_AJAN2",
+     "job": "GECE_KAYIT",
+     "durum": "Ended OK",
+     "sure": 90
+    }
+   }
+  ],
+  "kaynak": [
+   "opsworld:agent_down",
+   "ops-dev:ops-dev-091-tracker-starved"
+  ]
+ },
+ {
+  "id": "zt-ajan-ayar-sozdizimi",
+  "aile": "ariza",
+  "tur": "os",
+  "bilesik": true,
+  "ayakta": [
+   "ajan1"
+  ],
+  "baslik": "Sabah toplama ve yukleme isleri bekliyor",
+  "talep": "Sabah toplama, yukleme ve rapor isleri hic baslamadi; sabah kaydi (yukleme_log tablosunda ajan2_sabah_<tarih> adiyla) dusmedi. Sunucu ayakta, kabuga girilebiliyor; dunku ayar degisikligini yapan kisiye ulasilamiyor. Bugunun sabah akisinin tamamlanmasini saglayin. Sitede baska basarisiz isler de var; onlar bu talebin konusu degil.",
+  "kurulum": [
+   {
+    "deploy": {
+     "TEDARIK_SIPARIS": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "SIPARIS_AL": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_AL\" >> /var/log/app/siparis_al.log"
+      },
+      "SIPARIS_DOGRULA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_DOGRULA\" >> /var/log/app/siparis_dogrula.log"
+      },
+      "SIPARIS_ONAYLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_ONAYLA\" >> /var/log/app/siparis_onayla.log"
+      },
+      "SIPARIS_YAZ": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_YAZ\" >> /var/log/app/siparis_yaz.log"
+      },
+      "SIPARIS_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_KAPAT\" >> /var/log/app/siparis_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "SIPARIS_AL",
+        "SIPARIS_DOGRULA",
+        "SIPARIS_ONAYLA",
+        "SIPARIS_YAZ",
+        "SIPARIS_KAPAT"
+       ]
+      }
+     },
+     "ENVANTER_SENK": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "ENV_TOPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_TOPLA\" >> /var/log/app/env_topla.log"
+      },
+      "ENV_FARK": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "select count(*) from envanter_fark"
+      },
+      "ENV_RAPOR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_RAPOR\" >> /var/log/app/env_rapor.log"
+      },
+      "ENV_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_KAPAT\" >> /var/log/app/env_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "ENV_TOPLA",
+        "ENV_FARK",
+        "ENV_RAPOR",
+        "ENV_KAPAT"
+       ]
+      }
+     },
+     "KARGO_TAKIP": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "KARGO_AL": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_AL\" >> /var/log/app/kargo_al.log"
+      },
+      "KARGO_ESLE": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo 'kargo servisi 503 dondu' >&2; exit 6"
+      },
+      "KARGO_BILDIR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_BILDIR\" >> /var/log/app/kargo_bildir.log"
+      },
+      "KARGO_ARSIV": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_ARSIV\" >> /var/log/app/kargo_arsiv.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "KARGO_AL",
+        "KARGO_ESLE",
+        "KARGO_BILDIR",
+        "KARGO_ARSIV"
+       ]
+      }
+     },
+     "BUTCE_DONEMI": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "BUTCE_AC": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_AC\" >> /var/log/app/butce_ac.log"
+      },
+      "BUTCE_KILIT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_KILIT\" >> /var/log/app/butce_kilit.log",
+       "WaitForEvents": {
+        "Type": "WaitForEvents",
+        "Events": [
+         {
+          "Event": "DONEM_ONAYI"
+         }
+        ]
+       }
+      },
+      "BUTCE_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_KAPAT\" >> /var/log/app/butce_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "BUTCE_KILIT",
+        "BUTCE_KAPAT"
+       ]
+      }
+     },
+     "MALIYE_RAPOR": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "MALIYE_TOPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_TOPLA\" >> /var/log/app/maliye_topla.log"
+      },
+      "MALIYE_ONAY": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo 'imzali onay formu yok' >&2; exit 9"
+      },
+      "MALIYE_YAYIN": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_YAYIN\" >> /var/log/app/maliye_yayin.log"
+      },
+      "MALIYE_ARSIV": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_ARSIV\" >> /var/log/app/maliye_arsiv.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "MALIYE_TOPLA",
+        "MALIYE_ONAY",
+        "MALIYE_YAYIN",
+        "MALIYE_ARSIV"
+       ]
+      }
+     },
+     "ARSIV_TEMIZ": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "ARSIV_SAY": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_SAY\" >> /var/log/app/arsiv_say.log"
+      },
+      "ARSIV_SIKISTIR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_SIKISTIR\" >> /var/log/app/arsiv_sikistir.log"
+      },
+      "ARSIV_ESKI_SIL": {
+       "Type": "Job:Command",
+       "Command": "cd / && find /data/tmp -name 'eskiarsiv_*' -mtime +60 -delete"
+      },
+      "ARSIV_RAPOR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_RAPOR\" >> /var/log/app/arsiv_rapor.log"
+      }
+     },
+     "PERSONEL_PRIM": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "PRIM_HESAPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) PRIM_HESAPLA\" >> /var/log/app/prim_hesapla.log"
+      },
+      "PRIM_YAZ": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_RAPOR",
+       "Query": "insert into musteri values (999, 'x', 'y')"
+      },
+      "PRIM_DAGIT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) PRIM_DAGIT\" >> /var/log/app/prim_dagit.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "PRIM_HESAPLA",
+        "PRIM_YAZ",
+        "PRIM_DAGIT"
+       ]
+      }
+     },
+     "AJ_SABAH": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "AJ_TOPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo topla >> /var/log/app/aj_sabah.log"
+      },
+      "AJ_YUKLE": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "insert into yukleme_log (dosya, satir) values ('ajan2_sabah_%%$ODATE', 3)"
+      },
+      "AJ_RAPOR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo rapor >> /var/log/app/aj_sabah.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "AJ_TOPLA",
+        "AJ_YUKLE",
+        "AJ_RAPOR"
+       ]
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "TEDARIK_SIPARIS",
+     "bekle": {
+      "SIPARIS_AL": "Ended OK",
+      "SIPARIS_DOGRULA": "Ended OK",
+      "SIPARIS_ONAYLA": "Ended OK",
+      "SIPARIS_YAZ": "Ended OK",
+      "SIPARIS_KAPAT": "Ended OK"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "ENVANTER_SENK",
+     "bekle": {
+      "ENV_TOPLA": "Ended OK",
+      "ENV_FARK": "Ended Not OK",
+      "ENV_RAPOR": "Wait Condition",
+      "ENV_KAPAT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "KARGO_TAKIP",
+     "bekle": {
+      "KARGO_AL": "Ended OK",
+      "KARGO_ESLE": "Ended Not OK",
+      "KARGO_BILDIR": "Wait Condition",
+      "KARGO_ARSIV": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "BUTCE_DONEMI",
+     "bekle": {
+      "BUTCE_AC": "Ended OK",
+      "BUTCE_KILIT": "Wait Condition",
+      "BUTCE_KAPAT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "MALIYE_RAPOR",
+     "bekle": {
+      "MALIYE_TOPLA": "Ended OK",
+      "MALIYE_ONAY": "Ended Not OK",
+      "MALIYE_YAYIN": "Wait Condition",
+      "MALIYE_ARSIV": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "ARSIV_TEMIZ",
+     "bekle": {
+      "ARSIV_SAY": "Ended OK",
+      "ARSIV_SIKISTIR": "Ended OK",
+      "ARSIV_ESKI_SIL": "Ended OK",
+      "ARSIV_RAPOR": "Ended OK"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "PERSONEL_PRIM",
+     "bekle": {
+      "PRIM_HESAPLA": "Ended OK",
+      "PRIM_YAZ": "Ended Not OK",
+      "PRIM_DAGIT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag stop bakim; printf 'JAVA_OPTIONS=\"-Xmx256m\\nHTTP_PORT=4445\\n' > /etc/ctm/ajan.conf; printf 'JAVA_OPTIONS=\"-Xmx128m\"\\nHTTP_PORT=4444\\n' > /etc/ctm/ajan.conf.eski",
+     "sure": 50
+    }
+   },
+   {
+    "bekle": 15
+   },
+   {
+    "order": {
+     "folder": "AJ_SABAH",
+     "bekle": {
+      "AJ_TOPLA": "Wait Host",
+      "AJ_YUKLE": "Wait Condition",
+      "AJ_RAPOR": "Wait Condition"
+     },
+     "sure": 60
+    }
+   },
+   {
+    "bekle": 1
+   }
+  ],
+  "kontroller": [
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag status",
+     "icerir": "calisiyor"
+    }
+   },
+   {
+    "is": {
+     "folder": "AJ_SABAH",
+     "job": "AJ_TOPLA",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "AJ_SABAH",
+     "job": "AJ_YUKLE",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "AJ_SABAH",
+     "job": "AJ_RAPOR",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*) from yukleme_log where dosya = 'ajan2_sabah_{GUN}'",
+     "esit": "1"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "sh -n /etc/ctm/ajan.conf && grep -c 'HTTP_PORT=4445' /etc/ctm/ajan.conf",
+     "esit": "1"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "for p in /etc/ctm/ajan.conf /etc/ctm; do m=$(stat -c %a $p 2>/dev/null) || continue; case $m in *[2367]) echo herkese-yazilabilir $p;; esac; done",
+     "icerir": "herkese-yazilabilir"
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_FARK",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_RAPOR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_KAPAT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ESLE",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_BILDIR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KILIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KAPAT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ONAY",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_YAYIN",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_YAZ",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_DAGIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   }
+  ],
+  "kok_neden": "Ajan2'nin servisi durmus; /etc/ctm/ajan.conf'ta kapanmamis tirnak (soz dizimi hatasi) yuzunden 'ctmag start' ayari okuyamiyor. Yanindaki ajan.conf.eski dosyasi yaniltici: HTTP_PORT=4444 ile baslayan ajan calisir ama denetleyiciyle baglanmaz (4445 olmali; ajan1'deki ayar ornektir). Duzeltip baslatmak ve baglandigini dogrulamak gerekir.",
+  "cozum": [
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "/opt/ctm/bin/ctmag status; /opt/ctm/bin/ctmag start; cat /etc/ctm/ajan.conf",
+    "sure": 60
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "printf 'JAVA_OPTIONS=\"-Xmx256m\"\\nHTTP_PORT=4445\\n' > /etc/ctm/ajan.conf && /opt/ctm/bin/ctmag start",
+    "sure": 60
+   },
+   {
+    "bekle": {
+     "folder": "AJ_SABAH",
+     "job": "AJ_RAPOR",
+     "durum": "Ended OK",
+     "sure": 120
+    }
+   }
+  ],
+  "kaynak": [
+   "opsworld:agent_down",
+   "ops-dev:ops-dev-153-nonroot-fqdn"
+  ]
+ },
+ {
+  "id": "zt-ajan-ayar-yok",
+  "aile": "ariza",
+  "tur": "os",
+  "bilesik": false,
+  "ayakta": [
+   "ajan1"
+  ],
+  "baslik": "Aksam akisi bekliyor, bakim sonrasi",
+  "talep": "Dun aksam ajan2 sunucusunda bakim yapildi; bakimdan sonra aksam akisinin (alma, isleme, kayit, bildirim) isleri calismadi ve bekliyor. Sunucuya kabuk erisiminiz var. Akisin tamamlanmasini (yukleme_log tablosunda aksam_ajan2_<tarih> kaydi dahil) saglayin. Ajanin bakimdan once nasil ayarli oldugunu bilen kimse yok; diger ajan sunucusu ayni sekilde kurulmustur. Sitede baska basarisiz isler de var; onlar bu talebin konusu degil.",
+  "kurulum": [
+   {
+    "deploy": {
+     "TEDARIK_SIPARIS": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "SIPARIS_AL": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_AL\" >> /var/log/app/siparis_al.log"
+      },
+      "SIPARIS_DOGRULA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_DOGRULA\" >> /var/log/app/siparis_dogrula.log"
+      },
+      "SIPARIS_ONAYLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_ONAYLA\" >> /var/log/app/siparis_onayla.log"
+      },
+      "SIPARIS_YAZ": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_YAZ\" >> /var/log/app/siparis_yaz.log"
+      },
+      "SIPARIS_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) SIPARIS_KAPAT\" >> /var/log/app/siparis_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "SIPARIS_AL",
+        "SIPARIS_DOGRULA",
+        "SIPARIS_ONAYLA",
+        "SIPARIS_YAZ",
+        "SIPARIS_KAPAT"
+       ]
+      }
+     },
+     "ENVANTER_SENK": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "ENV_TOPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_TOPLA\" >> /var/log/app/env_topla.log"
+      },
+      "ENV_FARK": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "select count(*) from envanter_fark"
+      },
+      "ENV_RAPOR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_RAPOR\" >> /var/log/app/env_rapor.log"
+      },
+      "ENV_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ENV_KAPAT\" >> /var/log/app/env_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "ENV_TOPLA",
+        "ENV_FARK",
+        "ENV_RAPOR",
+        "ENV_KAPAT"
+       ]
+      }
+     },
+     "KARGO_TAKIP": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "KARGO_AL": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_AL\" >> /var/log/app/kargo_al.log"
+      },
+      "KARGO_ESLE": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo 'kargo servisi 503 dondu' >&2; exit 6"
+      },
+      "KARGO_BILDIR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_BILDIR\" >> /var/log/app/kargo_bildir.log"
+      },
+      "KARGO_ARSIV": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) KARGO_ARSIV\" >> /var/log/app/kargo_arsiv.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "KARGO_AL",
+        "KARGO_ESLE",
+        "KARGO_BILDIR",
+        "KARGO_ARSIV"
+       ]
+      }
+     },
+     "BUTCE_DONEMI": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "BUTCE_AC": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_AC\" >> /var/log/app/butce_ac.log"
+      },
+      "BUTCE_KILIT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_KILIT\" >> /var/log/app/butce_kilit.log",
+       "WaitForEvents": {
+        "Type": "WaitForEvents",
+        "Events": [
+         {
+          "Event": "DONEM_ONAYI"
+         }
+        ]
+       }
+      },
+      "BUTCE_KAPAT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) BUTCE_KAPAT\" >> /var/log/app/butce_kapat.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "BUTCE_KILIT",
+        "BUTCE_KAPAT"
+       ]
+      }
+     },
+     "MALIYE_RAPOR": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "MALIYE_TOPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_TOPLA\" >> /var/log/app/maliye_topla.log"
+      },
+      "MALIYE_ONAY": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo 'imzali onay formu yok' >&2; exit 9"
+      },
+      "MALIYE_YAYIN": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_YAYIN\" >> /var/log/app/maliye_yayin.log"
+      },
+      "MALIYE_ARSIV": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) MALIYE_ARSIV\" >> /var/log/app/maliye_arsiv.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "MALIYE_TOPLA",
+        "MALIYE_ONAY",
+        "MALIYE_YAYIN",
+        "MALIYE_ARSIV"
+       ]
+      }
+     },
+     "ARSIV_TEMIZ": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "ARSIV_SAY": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_SAY\" >> /var/log/app/arsiv_say.log"
+      },
+      "ARSIV_SIKISTIR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_SIKISTIR\" >> /var/log/app/arsiv_sikistir.log"
+      },
+      "ARSIV_ESKI_SIL": {
+       "Type": "Job:Command",
+       "Command": "cd / && find /data/tmp -name 'eskiarsiv_*' -mtime +60 -delete"
+      },
+      "ARSIV_RAPOR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) ARSIV_RAPOR\" >> /var/log/app/arsiv_rapor.log"
+      }
+     },
+     "PERSONEL_PRIM": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "PRIM_HESAPLA": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) PRIM_HESAPLA\" >> /var/log/app/prim_hesapla.log"
+      },
+      "PRIM_YAZ": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_RAPOR",
+       "Query": "insert into musteri values (999, 'x', 'y')"
+      },
+      "PRIM_DAGIT": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo \"$(date +%H:%M:%S) PRIM_DAGIT\" >> /var/log/app/prim_dagit.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "PRIM_HESAPLA",
+        "PRIM_YAZ",
+        "PRIM_DAGIT"
+       ]
+      }
+     },
+     "AKSAM_AJAN2": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "AKSAM_AL": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo al >> /var/log/app/aksam_aj2.log"
+      },
+      "AKSAM_ISLE": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo isle > /data/arsiv/aksam_%%$ODATE.txt"
+      },
+      "AKSAM_KAYIT": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "insert into yukleme_log (dosya, satir) values ('aksam_ajan2_%%$ODATE', 2)"
+      },
+      "AKSAM_BILDIR": {
+       "Type": "Job:Command",
+       "Command": "cd / && echo bildir >> /var/log/app/aksam_aj2.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "AKSAM_AL",
+        "AKSAM_ISLE",
+        "AKSAM_KAYIT",
+        "AKSAM_BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "TEDARIK_SIPARIS",
+     "bekle": {
+      "SIPARIS_AL": "Ended OK",
+      "SIPARIS_DOGRULA": "Ended OK",
+      "SIPARIS_ONAYLA": "Ended OK",
+      "SIPARIS_YAZ": "Ended OK",
+      "SIPARIS_KAPAT": "Ended OK"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "ENVANTER_SENK",
+     "bekle": {
+      "ENV_TOPLA": "Ended OK",
+      "ENV_FARK": "Ended Not OK",
+      "ENV_RAPOR": "Wait Condition",
+      "ENV_KAPAT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "KARGO_TAKIP",
+     "bekle": {
+      "KARGO_AL": "Ended OK",
+      "KARGO_ESLE": "Ended Not OK",
+      "KARGO_BILDIR": "Wait Condition",
+      "KARGO_ARSIV": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "BUTCE_DONEMI",
+     "bekle": {
+      "BUTCE_AC": "Ended OK",
+      "BUTCE_KILIT": "Wait Condition",
+      "BUTCE_KAPAT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "MALIYE_RAPOR",
+     "bekle": {
+      "MALIYE_TOPLA": "Ended OK",
+      "MALIYE_ONAY": "Ended Not OK",
+      "MALIYE_YAYIN": "Wait Condition",
+      "MALIYE_ARSIV": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "ARSIV_TEMIZ",
+     "bekle": {
+      "ARSIV_SAY": "Ended OK",
+      "ARSIV_SIKISTIR": "Ended OK",
+      "ARSIV_ESKI_SIL": "Ended OK",
+      "ARSIV_RAPOR": "Ended OK"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "order": {
+     "folder": "PERSONEL_PRIM",
+     "bekle": {
+      "PRIM_HESAPLA": "Ended OK",
+      "PRIM_YAZ": "Ended Not OK",
+      "PRIM_DAGIT": "Wait Condition"
+     },
+     "sure": 120
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag stop bakim; rm -f /etc/ctm/ajan.conf",
+     "sure": 50
+    }
+   },
+   {
+    "bekle": 15
+   },
+   {
+    "order": {
+     "folder": "AKSAM_AJAN2",
+     "bekle": {
+      "AKSAM_AL": "Wait Host",
+      "AKSAM_ISLE": "Wait Condition",
+      "AKSAM_KAYIT": "Wait Condition",
+      "AKSAM_BILDIR": "Wait Condition"
+     },
+     "sure": 60
+    }
+   },
+   {
+    "bekle": 1
+   }
+  ],
+  "kontroller": [
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag status",
+     "icerir": "calisiyor"
+    }
+   },
+   {
+    "is": {
+     "folder": "AKSAM_AJAN2",
+     "job": "AKSAM_AL",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "AKSAM_AJAN2",
+     "job": "AKSAM_ISLE",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "AKSAM_AJAN2",
+     "job": "AKSAM_KAYIT",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "AKSAM_AJAN2",
+     "job": "AKSAM_BILDIR",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*) from yukleme_log where dosya = 'aksam_ajan2_{GUN}'",
+     "esit": "1"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "grep -c 'HTTP_PORT=4445' /etc/ctm/ajan.conf",
+     "esit": "1"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "for p in /etc/ctm/ajan.conf /etc/ctm; do m=$(stat -c %a $p 2>/dev/null) || continue; case $m in *[2367]) echo herkese-yazilabilir $p;; esac; done",
+     "icerir": "herkese-yazilabilir"
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_FARK",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_RAPOR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "ENVANTER_SENK",
+      "job": "ENV_KAPAT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ESLE",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_BILDIR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KILIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KAPAT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ONAY",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_YAYIN",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_YAZ",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_DAGIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   }
+  ],
+  "kok_neden": "Bakimda ajan servisi durdurulmus ve /etc/ctm/ajan.conf silinmis; 'ctmag start' ayar dosyasi yok diye baslamiyor. Diger ajanin (ajan1) ajan.conf dosyasi ornek alinip (HTTP_PORT=4445 onemli: yanlis port ajani baslatir ama denetleyiciyle baglanmaz) dosya yeniden olusturulur, ajan baslatilir, baglandigi dogrulanir.",
+  "cozum": [
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "/opt/ctm/bin/ctmag status; tail -3 /var/log/ctmagent.log"
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan1",
+    "komut": "cat /etc/ctm/ajan.conf"
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "mkdir -p /etc/ctm && printf 'JAVA_OPTIONS=\"-Xmx256m\"\\nHTTP_PORT=4445\\n' > /etc/ctm/ajan.conf && /opt/ctm/bin/ctmag start",
+    "sure": 60
+   },
+   {
+    "bekle": {
+     "folder": "AKSAM_AJAN2",
+     "job": "AKSAM_BILDIR",
+     "durum": "Ended OK",
+     "sure": 120
+    }
+   }
+  ],
+  "kaynak": [
+   "opsworld:agent_down",
+   "ops-dev:ops-dev-226-hard-down"
+  ]
+ }
+]
