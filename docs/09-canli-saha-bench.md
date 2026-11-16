@@ -133,8 +133,9 @@ Hangi kazanç hangi katmanın:
 
 - **1'den 2'ye: erişim katmanı.** Büyük kazanç budur ve herhangi bir şeyin çözülmesinin nedenidir. Araçsız bir model
   sunucuya bağlanamaz, işi yeniden çalıştıramaz, dosyayı aktaramaz.
-- **2'den 3'e: yönlendirme, koruma ve doğrulama.** Kazanç her yerde hızda: aynı işi daha az adımda bitirmek. Zayıf
-  modellerde daha az zararlı sonuç. Zor kümede doğrulukta bir kazanç henüz gösterilemedi.
+- **2'den 3'e: yönlendirme, koruma ve doğrulama.** Güçlü ve hafif modellerde kazanç hızda: aynı işi daha az adımda
+  bitirmek. Zayıf modellerde daha az zararlı sonuç. Küçük yerel modelde (qwen3:14b) geliştirme kümesinde doğrulukta
+  da: 16 senaryoda 3'e karşı 9 doğru, 10'a karşı 0 zararlı. Zor kümede doğrulukta bir kazanç gösterilemedi.
 
 Kimse dokunmadığında (`bos`, saf modelin uç durumu), doğrulama koşularından:
 
@@ -189,8 +190,8 @@ Adım bütçesine göre (dev, 14 ortak senaryo; en çok k adımda doğru bitenle
 | test, bütçe 40 | Usta | 27 | 11 | 7 | 0 | 8 | 1 | 18.0 |
 | test, bütçe 10 (yarısı) | Araçlı model | 15 | 4 | 6 | 0 | 3 | 2 | 9.5 |
 | test, bütçe 10 (yarısı) | Usta | 15 | 5 | 3 | 3 | 4 | 0 | 9.5 |
-| zor-test, `saha-donuk-2` (kısmi) | Araçlı model | 7 | 0 | 3 | 0 | 2 | 2 | 19.0 |
-| zor-test, `saha-donuk-2` (kısmi) | Usta | 6 | 0 | 0 | 0 | 4 | 2 | 22.3 |
+| zor-test, `saha-donuk-2` | Araçlı model | 17 | 0 | 4 | 0 | 8 | 5 | 18.7 |
+| zor-test, `saha-donuk-2` | Usta | 17 | 0 | 2 | 0 | 11 | 4 | 23.2 |
 
 Eşli karşılaştırma (aynı senaryolar, araçlı modele karşı Usta): bütçe 40'ta 26 çift; yalnız Usta doğru 5, yalnız
 araçlı model doğru 2, işaret testi p=0.45. Bütçe 10'da 15 çift; 3'e 2, p=1.0. Fark anlamlı değil.
@@ -209,13 +210,25 @@ dar bir `delete`).
 
 | Küme | Harness | Basamak | Bölüm | Doğru | Yarım | Yanlış | Sahte yeşil | Zararlı | Ort. adım |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| dev (16) | `saha-donuk-2` | Araçlı model | 16 | 3 | 1 | 2 | 0 | 10 | 22.8 |
+| dev (16) | `saha-donuk-2` | Usta | 16 | 9 | 5 | 0 | 2 | 0 | 28.3 |
 | test (kısmi; yeniden başlatmada kesildi) | donuk | Araçlı model | 7 | 2 | 1 | 1 | 0 | 3 | 15.1 |
 | test (kısmi) | donuk | Usta | 6 | 2 | 1 | 1 | 2 | 0 | 24.8 |
 | zor-dev tur 1 | geliştirme | Araçlı model | 10 | 0 | 3 | 0 | 1 | 6 | 32.4 |
 | zor-dev tur 1 | geliştirme | Usta | 10 | 0 | 3 | 0 | 2 | 5 | 36.5 |
 | zor-dev tur 2 | `saha-donuk-2` | Usta | 10 | 1 | 1 | 0 | 6 | 2 | 27.3 |
 
-Kısmi test koşusunda araçlı model 31 yıkıcı komut uyguladı, Usta'da bu sayı 0. Harness 8 komutu durdurdu.
+Küçük yerel modelin üç basamağı (dev, 16 senaryo):
+
+| Basamak | Doğru | Zararlı | Ne olur |
+| --- | --- | --- | --- |
+| 1. Saf model | 0 | 0 | Araç yok; sitede hiçbir şey değişmez (kimse dokunmadı kolu: 17 dev senaryosunda 0 doğru) |
+| 2. Araçlı model | 3 | 10 | Sunuculara bağlanıp iş yapıyor, ama 16 bölümün 10'unda zarar: 12 yıkıcı komut ve 11 kez set to OK uyguladı |
+| 3. Usta | 9 | 0 | Aynı model; harness 232 çağrıyı durdurdu ya da ikinci çağrı istedi, hiçbir yıkıcı komut ve set to OK uygulanmadı |
+
+Eşli karşılaştırma: 16 çift; yalnız Usta doğru 7, yalnız araçlı model doğru 1 (işaret testi p=0.07). Usta adım bakımından hızlı değil (28.3'e karşı 22.8): araçlı model zarar vererek erken bitiriyor.
+
+Kısmi test koşusunda (donuk harness) araçlı model 31 yıkıcı komut uyguladı, Usta'da bu sayı 0. Harness 8 komutu durdurdu.
 
 ### Zor küme ve ayar
 
@@ -250,17 +263,17 @@ Kanıtta görülenler:
 
 Ayar bir onay turuyla sınırlandı (tur 2, yalnızca Usta). Zararlı 5'ten 2'ye indi, ama zararın çoğu sahte yeşile döndü
 (2'den 6'ya). Doğru 0'dan 1'e çıktı. Talimat gereği sonuç kovalanmadı; `saha-donuk-2` bu hâliyle etiketlendi. Zor
-gizli küme (`zor-test`, 17 senaryo) bu etiketle gpt-oss ile koşuluyordu; rapor yazılırken 13 bölüm hükümlüydü ve iki
-basamakta da doğru yoktu.
+gizli küme (`zor-test`, 17 senaryo) bu etiketle gpt-oss ile bir kez koşuldu: iki basamakta da 0/17 doğru; araçlı model 5,
+Usta 4 zararlı; sahte yeşil 8'e 11. Zor kümede doğruluk farkı yok.
 
 ### Yayın ölçütleri: durum
 
 | Ölçüt | Durum | Kanıt |
 | --- | --- | --- |
-| 1. Usta, ürünü uçtan uca yönetmede araçlı modelden üstün | Kısmen gösterildi, yalnızca ilk kümede | Bütün modellerde aynı doğrulukta belirgin daha az adım (flash dev: 8.3'e karşı 14.1; 8 adımda 9'a karşı 2). gpt-oss gizli testte doğru 11'e 8, zararlı 1'e 4, ama eşli fark anlamlı değil (p=0.45) |
-| 2. Zor kümede doğruluk farkı | Gösterilmedi | zor-dev'de iki basamak da ~0/10; ayar zararı azalttı, doğruluğu getirmedi; zor-test kısmi, 0 doğru |
+| 1. Usta, ürünü uçtan uca yönetmede araçlı modelden üstün | Kısmen gösterildi, ilk kümelerde | Güçlü ve hafif modelde aynı doğrulukta belirgin daha az adım (flash dev: 8.3'e karşı 14.1; 8 adımda 9'a karşı 2). Küçük yerel modelde (qwen3:14b, dev) doğru 9'a 3, zararlı 0'a 10 (p=0.07). gpt-oss gizli testte doğru 11'e 8, zararlı 1'e 4 (p=0.45). Hiçbir eşli fark 0.05 altında değil |
+| 2. Zor kümede doğruluk farkı | Gösterilmedi | zor-dev'de iki basamak da ~0/10; ayar zararı azalttı, doğruluğu getirmedi; zor-test (gpt-oss) iki basamakta 0/17 |
 | 3. Erken uyarı kolu | Kodu var, ölçülmedi | `docs/11`, `vardiya/saha/erken*.py` |
-| 4. Kriz hızı | Kısmen | Adım bütçesi tabloları var (flash dev, gpt-oss bütçe 10). Ajan servisini yeniden başlatma senaryoları yazıldı, biri doğrulandı, ölçülmedi |
+| 4. Kriz hızı | Kısmen | Adım bütçesi tabloları var (flash dev, gpt-oss bütçe 10). Ajan servisi senaryoları: zor-test'teki üçü (`zt-ajan-ayar-bozuk`, `-sozdizimi`, `-yok`) gpt-oss ile ölçüldü, iki basamakta da hiçbiri doğru değil (Usta üçünde sahte yeşil; araçlı model bir yarım, iki sahte yeşil). Geliştirme kümesindeki iki ajan servisi senaryosu ölçülmedi |
 
 ### Sınırlar ve ölçülmeyenler
 

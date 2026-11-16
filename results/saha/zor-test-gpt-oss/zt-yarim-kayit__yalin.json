@@ -1,0 +1,956 @@
+{
+ "senaryo": "zt-yarim-kayit",
+ "kol": "yalin",
+ "model": "agy:gpt-oss-120b-medium",
+ "aile": "ariza",
+ "tur": "db",
+ "bilesik": true,
+ "zaman": "2026-11-16T17:55:53",
+ "sifirlama_sn": 6.8,
+ "kurulum": [
+  {
+   "adim": "sh",
+   "sn": 0.1,
+   "not": ""
+  },
+  {
+   "adim": "sql",
+   "sn": 0.1,
+   "not": "[['CREATE TABLE'], ['CREATE TABLE'], ['ALTER TABLE'], ['ALTER TABLE'], ['GRANT'], ['INSERT 0 40']]"
+  },
+  {
+   "adim": "dosya",
+   "sn": 0.1,
+   "not": "/app/sql/stok_yukle.sql"
+  },
+  {
+   "adim": "deploy",
+   "sn": 1.7,
+   "not": "{'deployedFolders': ['TEDARIK_SIPARIS', 'KARGO_TAKIP', 'BUTCE_DONEMI', 'PERSONEL_PRIM', 'MALIYE_RAPOR', 'ARSIV_TEMIZ', 'STOK_YUKLEME', 'STOK_PANO'], 'deployedJobs': ['TEDARIK_SIPARIS/SIPARIS_AL', 'TEDARIK_SIPARIS/SIPARIS_DOGRULA', 'TEDARIK_SIPARIS/SIPARIS_ONAYLA', 'TEDARIK_SIPARIS/SIPARIS_YAZ', 'TED"
+  },
+  {
+   "adim": "order",
+   "sn": 3.0,
+   "not": "{'SIPARIS_AL': 'Ended OK', 'SIPARIS_DOGRULA': 'Ended OK', 'SIPARIS_ONAYLA': 'Ended OK', 'SIPARIS_YAZ': 'Ended OK', 'SIPARIS_KAPAT': 'Ended OK'}"
+  },
+  {
+   "adim": "order",
+   "sn": 1.9,
+   "not": "{'KARGO_AL': 'Ended OK', 'KARGO_ESLE': 'Ended Not OK', 'KARGO_BILDIR': 'Wait Condition', 'KARGO_ARSIV': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 1.9,
+   "not": "{'BUTCE_AC': 'Ended OK', 'BUTCE_KILIT': 'Wait Condition', 'BUTCE_KAPAT': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 1.9,
+   "not": "{'PRIM_HESAPLA': 'Ended OK', 'PRIM_YAZ': 'Ended Not OK', 'PRIM_DAGIT': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 2.1,
+   "not": "{'MALIYE_TOPLA': 'Ended OK', 'MALIYE_ONAY': 'Ended Not OK', 'MALIYE_YAYIN': 'Wait Condition', 'MALIYE_ARSIV': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 2.2,
+   "not": "{'ARSIV_SAY': 'Ended OK', 'ARSIV_SIKISTIR': 'Ended OK', 'ARSIV_ESKI_SIL': 'Ended OK', 'ARSIV_RAPOR': 'Ended OK'}"
+  },
+  {
+   "adim": "order",
+   "sn": 3.4,
+   "not": "{'STOK_YUKLE': 'Ended Not OK', 'STOK_DOGRULA': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 0.1,
+   "not": "{'PANO_STOK': 'Wait Condition'}"
+  },
+  {
+   "adim": "bekle",
+   "sn": 2.0,
+   "not": "None"
+  }
+ ],
+ "hukum": "yarim",
+ "tutan": 1,
+ "toplam": 7,
+ "kontroller": [
+  {
+   "kontrol": {
+    "is": {
+     "folder": "STOK_YUKLEME",
+     "job": "STOK_YUKLE",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "STOK_YUKLEME",
+     "job": "STOK_DOGRULA",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "STOK_PANO",
+     "job": "PANO_STOK",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*), count(distinct id), sum(adet) from stok_hareket where gun = '20261116'",
+     "esit": "20|20|630"
+    }
+   },
+   "tutar": false,
+   "gorulen": "120|20|3780"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*), sum(adet) from stok_hareket where gun = '20261101'",
+     "esit": "40|820"
+    }
+   },
+   "tutar": true,
+   "gorulen": "40|820"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*) from yukleme_log where dosya = 'stok_20261116.csv'",
+     "esit": "1"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*) from stok_gecici",
+     "esit": "0"
+    }
+   },
+   "tutar": false,
+   "gorulen": "60"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "sql": {
+      "sorgu": "select count(*) from stok_hareket where gun = '20261101'",
+      "esit": "40"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "40"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ESLE",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK kosu=1"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_BILDIR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "KARGO_TAKIP",
+      "job": "KARGO_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KILIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "BUTCE_DONEMI",
+      "job": "BUTCE_KAPAT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_YAZ",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK kosu=1"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "PERSONEL_PRIM",
+      "job": "PRIM_DAGIT",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ONAY",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK kosu=1"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_YAYIN",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "MALIYE_RAPOR",
+      "job": "MALIYE_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:0079e",
+   "folder": "TEDARIK_SIPARIS",
+   "name": "SIPARIS_AL",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# TEDARIK_SIPARIS/SIPARIS_AL saha:0079e kosu 1/1\n[MAIN] [Start] Job=TEDARIK_SIPARIS__SIPARIS_AL, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=TEDARIK_SIPARIS is=SIPARIS_AL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0079f",
+   "folder": "TEDARIK_SIPARIS",
+   "name": "SIPARIS_DOGRULA",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# TEDARIK_SIPARIS/SIPARIS_DOGRULA saha:0079f kosu 1/1\n[MAIN] [Start] Job=TEDARIK_SIPARIS__SIPARIS_DOGRULA, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=TEDARIK_SIPARIS is=SIPARIS_DOGRULA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007a0",
+   "folder": "TEDARIK_SIPARIS",
+   "name": "SIPARIS_ONAYLA",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# TEDARIK_SIPARIS/SIPARIS_ONAYLA saha:007a0 kosu 1/1\n[MAIN] [Start] Job=TEDARIK_SIPARIS__SIPARIS_ONAYLA, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=TEDARIK_SIPARIS is=SIPARIS_ONAYLA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007a1",
+   "folder": "TEDARIK_SIPARIS",
+   "name": "SIPARIS_YAZ",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# TEDARIK_SIPARIS/SIPARIS_YAZ saha:007a1 kosu 1/1\n[MAIN] [Start] Job=TEDARIK_SIPARIS__SIPARIS_YAZ, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=TEDARIK_SIPARIS is=SIPARIS_YAZ tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007a2",
+   "folder": "TEDARIK_SIPARIS",
+   "name": "SIPARIS_KAPAT",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# TEDARIK_SIPARIS/SIPARIS_KAPAT saha:007a2 kosu 1/1\n[MAIN] [Start] Job=TEDARIK_SIPARIS__SIPARIS_KAPAT, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=TEDARIK_SIPARIS is=SIPARIS_KAPAT tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007a4",
+   "folder": "KARGO_TAKIP",
+   "name": "KARGO_AL",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# KARGO_TAKIP/KARGO_AL saha:007a4 kosu 1/1\n[MAIN] [Start] Job=KARGO_TAKIP__KARGO_AL, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=KARGO_TAKIP is=KARGO_AL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007a5",
+   "folder": "KARGO_TAKIP",
+   "name": "KARGO_ESLE",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# KARGO_TAKIP/KARGO_ESLE saha:007a5 kosu 1/1\n[MAIN] [Start] Job=KARGO_TAKIP__KARGO_ESLE, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n[STDERR] kargo servisi 503 dondu\n== ajan=ajan2 klasor=KARGO_TAKIP is=KARGO_ESLE tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 6 ==\n[MAIN] [End] [Error] returnCode=6, errorState=failed, reason=failed, msg=kargo servisi 503 dondu"
+  },
+  {
+   "jobId": "saha:007a6",
+   "folder": "KARGO_TAKIP",
+   "name": "KARGO_BILDIR",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007a7",
+   "folder": "KARGO_TAKIP",
+   "name": "KARGO_ARSIV",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007a9",
+   "folder": "BUTCE_DONEMI",
+   "name": "BUTCE_AC",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# BUTCE_DONEMI/BUTCE_AC saha:007a9 kosu 1/1\n[MAIN] [Start] Job=BUTCE_DONEMI__BUTCE_AC, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=BUTCE_DONEMI is=BUTCE_AC tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007aa",
+   "folder": "BUTCE_DONEMI",
+   "name": "BUTCE_KILIT",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007ab",
+   "folder": "BUTCE_DONEMI",
+   "name": "BUTCE_KAPAT",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007ad",
+   "folder": "PERSONEL_PRIM",
+   "name": "PRIM_HESAPLA",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# PERSONEL_PRIM/PRIM_HESAPLA saha:007ad kosu 1/1\n[MAIN] [Start] Job=PERSONEL_PRIM__PRIM_HESAPLA, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=PERSONEL_PRIM is=PRIM_HESAPLA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007ae",
+   "folder": "PERSONEL_PRIM",
+   "name": "PRIM_YAZ",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan2",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# PERSONEL_PRIM/PRIM_YAZ saha:007ae kosu 1/1\n[MAIN] [Start] Job=PERSONEL_PRIM__PRIM_YAZ, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n[STDERR] ERROR:  permission denied for table musteri\n== ajan=ajan2 klasor=PERSONEL_PRIM is=PRIM_YAZ tip=Job:Database:EmbeddedQuery RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] rapor_user@appdb:5432/uygulama profil=PG_RAPOR\n== bitis kodu 1 ==\n[MAIN] [End] [Error] returnCode=1, errorState=failed, reason=failed, msg=ERROR:  permission denied for table musteri"
+  },
+  {
+   "jobId": "saha:007af",
+   "folder": "PERSONEL_PRIM",
+   "name": "PRIM_DAGIT",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007b1",
+   "folder": "MALIYE_RAPOR",
+   "name": "MALIYE_TOPLA",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# MALIYE_RAPOR/MALIYE_TOPLA saha:007b1 kosu 1/1\n[MAIN] [Start] Job=MALIYE_RAPOR__MALIYE_TOPLA, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=MALIYE_RAPOR is=MALIYE_TOPLA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007b2",
+   "folder": "MALIYE_RAPOR",
+   "name": "MALIYE_ONAY",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# MALIYE_RAPOR/MALIYE_ONAY saha:007b2 kosu 1/1\n[MAIN] [Start] Job=MALIYE_RAPOR__MALIYE_ONAY, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n[STDERR] imzali onay formu yok\n== ajan=ajan2 klasor=MALIYE_RAPOR is=MALIYE_ONAY tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 9 ==\n[MAIN] [End] [Error] returnCode=9, errorState=failed, reason=failed, msg=imzali onay formu yok"
+  },
+  {
+   "jobId": "saha:007b3",
+   "folder": "MALIYE_RAPOR",
+   "name": "MALIYE_YAYIN",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007b4",
+   "folder": "MALIYE_RAPOR",
+   "name": "MALIYE_ARSIV",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007b6",
+   "folder": "ARSIV_TEMIZ",
+   "name": "ARSIV_SAY",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# ARSIV_TEMIZ/ARSIV_SAY saha:007b6 kosu 1/1\n[MAIN] [Start] Job=ARSIV_TEMIZ__ARSIV_SAY, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=ARSIV_TEMIZ is=ARSIV_SAY tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007b7",
+   "folder": "ARSIV_TEMIZ",
+   "name": "ARSIV_SIKISTIR",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# ARSIV_TEMIZ/ARSIV_SIKISTIR saha:007b7 kosu 1/1\n[MAIN] [Start] Job=ARSIV_TEMIZ__ARSIV_SIKISTIR, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=ARSIV_TEMIZ is=ARSIV_SIKISTIR tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007b8",
+   "folder": "ARSIV_TEMIZ",
+   "name": "ARSIV_ESKI_SIL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# ARSIV_TEMIZ/ARSIV_ESKI_SIL saha:007b8 kosu 1/1\n[MAIN] [Start] Job=ARSIV_TEMIZ__ARSIV_ESKI_SIL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=ARSIV_TEMIZ is=ARSIV_ESKI_SIL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007b9",
+   "folder": "ARSIV_TEMIZ",
+   "name": "ARSIV_RAPOR",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# ARSIV_TEMIZ/ARSIV_RAPOR saha:007b9 kosu 1/1\n[MAIN] [Start] Job=ARSIV_TEMIZ__ARSIV_RAPOR, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=ARSIV_TEMIZ is=ARSIV_RAPOR tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:007bb",
+   "folder": "STOK_YUKLEME",
+   "name": "STOK_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 3,
+   "cikti": "# STOK_YUKLEME/STOK_YUKLE saha:007bb kosu 3/3\n[MAIN] [Start] Job=STOK_YUKLEME__STOK_YUKLE, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n[STDERR] psql:/app/sql/stok_yukle.sql:6: ERROR:  relation \"stok_gecici_x\" does not exist\nLINE 1: ...ct 'stok_' || '20261116' || '.csv', count(*) from stok_gecic...\n                                                             ^\n== ajan=ajan1 klasor=STOK_YUKLEME is=STOK_YUKLE tip=Job:Database:SQLScript RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nCOPY 20\nINSERT 0 60\n== bitis kodu 3 ==\n[MAIN] [End] [Error] returnCode=3, errorState=failed, reason=failed, msg=psql:/app/sql/stok_yukle.sql:6: ERROR:  relation \"stok_gecici_x\" does not exist\nLINE 1: ...ct 'stok_' || '20261116' || '.csv', count(*) from stok_gecic...\n                                                             ^"
+  },
+  {
+   "jobId": "saha:007bc",
+   "folder": "STOK_YUKLEME",
+   "name": "STOK_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007be",
+   "folder": "STOK_PANO",
+   "name": "PANO_STOK",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007c0",
+   "folder": "StokPanosuBugun",
+   "name": "TransferCSV",
+   "type": "FileTransfer",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 2,
+   "cikti": "# StokPanosuBugun/TransferCSV saha:007c0 kosu 2/2\n[MAIN] [Start] Job=StokPanosuBugun__TransferCSV, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=StokPanosuBugun is=TransferCSV tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] SFTP_KARSI:/home/mftuser/in/stock_%%$ODATE_*.csv -> YEREL_BATCH:/data/gelen/stock_20261116.csv (Binary)\n[STDERR] CTM5322 kaynakta eslesen dosya yok: /home/mftuser/in/stock_%%$ODATE_*.csv\n[MAIN] [End] [Error] returnCode=43, errorState=failed, reason=failed, msg=CTM5322 kaynakta eslesen dosya yok: /home/mftuser/in/stock_%%$ODATE_*.csv"
+  },
+  {
+   "jobId": "saha:007c1",
+   "folder": "StokPanosuBugun",
+   "name": "LoadToDB",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:007c3",
+   "folder": "StokPanosuBugun",
+   "name": "TransferCSV",
+   "type": "FileTransfer",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# StokPanosuBugun/TransferCSV saha:007c3 kosu 1/1\n[MAIN] [Start] Job=StokPanosuBugun__TransferCSV, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n[STDERR] CTM5321 kaynak listelenemedi (SFTP_KARSI): Can't ls: \"/in\" not found\n== ajan=ajan1 klasor=StokPanosuBugun is=TransferCSV tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] SFTP_KARSI:/in/stock_%%$ODATE_*.csv -> YEREL_BATCH:/data/gelen/stock_20261116.csv (Binary)\n[MAIN] [End] [Error] returnCode=42, errorState=failed, reason=failed, msg=CTM5321 kaynak listelenemedi (SFTP_KARSI): Can't ls: \"/in\" not found"
+  },
+  {
+   "jobId": "saha:007c4",
+   "folder": "StokPanosuBugun",
+   "name": "LoadToDB",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  }
+ ],
+ "rapor": "StokPanosuBugun klasörü dağıtıldı, TransferCSV işi iki kez denendi ancak hem /in/ hem /out/ /home/mftuser dizinlerinde hiç dosya bulunamadı. Bu yüzden veri aktarımı yapılamadı ve LoadToDB işi çalışmadı. Önceki günlerin verileri etkilenmedi. İşin tekrar çalışması için ilgili stok dosyalarının SFTP_KARSI profilindeki doğru dizine yerleştirilmesi gerekli.",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "StokPanosuBugun": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "Variables": [
+       {
+        "ODATE": "%%$ODATE"
+       }
+      ],
+      "TransferCSV": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "SFTP_KARSI",
+       "ConnectionProfileDest": "YEREL_BATCH",
+       "FileTransfers": [
+        {
+         "Src": "/home/mftuser/in/stock_%%$ODATE_*.csv",
+         "Dest": "/data/gelen/stock_%%$ODATE.csv",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      },
+      "LoadToDB": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/load_stock.sql",
+       "Parameters": [
+        {
+         "date": "%%$ODATE"
+        }
+       ]
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "TransferCSV",
+        "LoadToDB"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.5,
+   "cikti": "{\n \"deployedFolders\": [\n  \"StokPanosuBugun\"\n ],\n \"deployedJobs\": [\n  \"StokPanosuBugun/TransferCSV\",\n  \"StokPanosuBugun/LoadToDB\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order StokPanosuBugun"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"runId\": \"1983\",\n \"statusURI\": \"run status 1983\",\n \"jobIds\": [\n  \"saha:007c0\",\n  \"saha:007c1\"\n ]\n}"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get saha:007c0 saha:007c1"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.6,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:0079e\",\n   \"folder\": \"TEDARIK_SIPARIS\",\n   \"name\": \"SIPARIS_AL\",\n   \"type\": \"Command\",\n   \"host\": \"ajan2\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:0079f\",\n   \"folder\": \"TEDARIK_SIPARIS\",\n   \"name\": \"SIPARIS_DOGRULA\",\n   \"type\": \"Command\",\n   \"host\": \"ajan2\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007a0\",\n   \"folder\": \"TEDARIK_SIPARIS\",\n   \"name\": \"SIPARIS_ONAYLA\",\n   \"type\": \"Command\",\n   \"host\": \"ajan2\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007a1\",\n   \"folder\": \"TEDARIK_SIPARIS\",\n   \"name\": \"SIPARIS_YAZ\",\n   \"type\": \"Command\",\n   \"host\": \"ajan2\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007a2\",\n   \"folder\": \"TEDARIK_SIPARIS\",\n   \"name\": \"SIPARIS_KAPAT\",\n   \"type\": \"Command\",\n   \"host\": \"ajan2\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n  \n... (3755 karakter kisaltildi) ...\nd\": \"saha:007b6\",\n   \"folder\": \"ARSIV_TEMIZ\",\n   \"name\": \"ARSIV_SAY\",\n   \"type\": \"Command\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007b7\",\n   \"folder\": \"ARSIV_TEMIZ\",\n   \"name\": \"ARSIV_SIKISTIR\",\n   \"type\": \"Command\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007b8\",\n   \"folder\": \"ARSIV_TEMIZ\",\n   \"name\": \"ARSIV_ESKI_SIL\",\n   \"type\": \"Command\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007b9\",\n   \"folder\": \"ARSIV_TEMIZ\",\n   \"name\": \"ARSIV_RAPOR\",\n   \"type\": \"Command\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007bb\",\n   \"folder\": \"STOK_YUKLEME\",\n   \"name\": \"STOK_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended Not OK\",\n   \"held\": false,\n   \"numberOfRuns\": 3,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007bc\",\n   \"folder\": \"STOK_YUKLEME\",\n   \"name\": \"STOK_DOGRULA\",\n   \"type\": \"Database:EmbeddedQuery\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Condition\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"events\": [\n     \"STOK_YUKLE-TO-STOK_DOGRULA\"\n    ]\n   }\n  },\n  {\n   \"jobId\": \"saha:007be\",\n   \"folder\": \"STOK_PANO\",\n   \"name\": \"PANO_STOK\",\n   \"type\": \"Command\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Condition\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"events\": [\n     \"STOK_DOGRULANDI\"\n    ]\n   }\n  },\n  {\n   \"jobId\": \"saha:007c0\",\n   \"folder\": \"StokPanosuBugun\",\n   \"name\": \"TransferCSV\",\n   \"type\": \"FileTransfer\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended Not OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:007c1\",\n   \"folder\": \"StokPanosuBugun\",\n   \"name\": \"LoadToDB\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Condition\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"events\": [\n     \"TransferCSV-TO-LoadToDB\"\n    ]\n   }\n  }\n ],\n \"returned\": 28,\n \"total\": 28\n}"
+  },
+  {
+   "n": 4,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::rerun saha:007c0"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:007c0 yeniden calistirildi\"\n}"
+  },
+  {
+   "n": 5,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:007c0"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:007c0\",\n   \"folder\": \"StokPanosuBugun\",\n   \"name\": \"TransferCSV\",\n   \"type\": \"FileTransfer\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended Not OK\",\n   \"held\": false,\n   \"numberOfRuns\": 2,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 6,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::test SFTP_KARSI ajan1"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.5,
+   "cikti": "{\n \"profile\": \"SFTP_KARSI\",\n \"agent\": \"ajan1\",\n \"result\": \"OK\",\n \"output\": \"sftp> pwd\\nRemote working directory: /home/mftuser\"\n}"
+  },
+  {
+   "n": 7,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "ls -l /home/mftuser/in/"
+   },
+   "rc": 2,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "[cikis kodu 2]\nls: cannot access '/home/mftuser/in/': No such file or directory"
+  },
+  {
+   "n": 8,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /home/mftuser/in"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.3,
+   "cikti": "[cikis kodu 0]\ntoplam 0 dosya"
+  },
+  {
+   "n": 9,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "StokPanosuBugun": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "Variables": [
+       {
+        "ODATE": "%%$ODATE"
+       }
+      ],
+      "TransferCSV": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "SFTP_KARSI",
+       "ConnectionProfileDest": "YEREL_BATCH",
+       "FileTransfers": [
+        {
+         "Src": "/in/stock_%%$ODATE_*.csv",
+         "Dest": "/data/gelen/stock_%%$ODATE.csv",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      },
+      "LoadToDB": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/load_stock.sql",
+       "Parameters": [
+        {
+         "date": "%%$ODATE"
+        }
+       ]
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "TransferCSV",
+        "LoadToDB"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.4,
+   "cikti": "{\n \"deployedFolders\": [\n  \"StokPanosuBugun\"\n ],\n \"deployedJobs\": [\n  \"StokPanosuBugun/TransferCSV\",\n  \"StokPanosuBugun/LoadToDB\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 10,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order StokPanosuBugun"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"1986\",\n \"statusURI\": \"run status 1986\",\n \"jobIds\": [\n  \"saha:007c3\",\n  \"saha:007c4\"\n ]\n}"
+  },
+  {
+   "n": 11,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:007c3 saha:007c4"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:007c3\",\n   \"folder\": \"StokPanosuBugun\",\n   \"name\": \"TransferCSV\",\n   \"type\": \"FileTransfer\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended Not OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 12,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /home/mftuser/out"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.3,
+   "cikti": "[cikis kodu 0]\ntoplam 0 dosya"
+  },
+  {
+   "n": 13,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /in"
+   },
+   "rc": 2,
+   "uygulandi": true,
+   "sn": 0.4,
+   "cikti": "[cikis kodu 2]\nlistelenemedi (SFTP_KARSI): Can't ls: \"/in\" not found"
+  },
+  {
+   "n": 14,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.5,
+   "cikti": "[cikis kodu 0]\n       516 entry.sh\ntoplam 1 dosya"
+  },
+  {
+   "n": 15,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py find SFTP_KARSI . -name \"stock_%%$ODATE_*.csv\""
+   },
+   "rc": 120,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "[cikis kodu 120]\nCTM5300 is tanimi okunamadi"
+  },
+  {
+   "n": 16,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /home/mftuser"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.4,
+   "cikti": "[cikis kodu 0]\ntoplam 0 dosya"
+  }
+ ],
+ "denetim": [
+  [
+   "17:56:30",
+   "deploy",
+   {
+    "deployedFolders": [
+     "StokPanosuBugun"
+    ],
+    "deployedJobs": [
+     "StokPanosuBugun/TransferCSV",
+     "StokPanosuBugun/LoadToDB"
+    ]
+   }
+  ],
+  [
+   "17:56:36",
+   "order",
+   {
+    "folder": "StokPanosuBugun",
+    "job": null,
+    "jobIds": [
+     "saha:007c0",
+     "saha:007c1"
+    ]
+   }
+  ],
+  [
+   "17:56:50",
+   "rerun",
+   "saha:007c0"
+  ],
+  [
+   "17:57:29",
+   "deploy",
+   {
+    "deployedFolders": [
+     "StokPanosuBugun"
+    ],
+    "deployedJobs": [
+     "StokPanosuBugun/TransferCSV",
+     "StokPanosuBugun/LoadToDB"
+    ]
+   }
+  ],
+  [
+   "17:57:34",
+   "order",
+   {
+    "folder": "StokPanosuBugun",
+    "job": null,
+    "jobIds": [
+     "saha:007c3",
+     "saha:007c4"
+    ]
+   }
+  ]
+ ],
+ "arac_cagrisi": 16,
+ "saniye": 129.8,
+ "adim": 17,
+ "bitis": "bitir",
+ "cagri": 17,
+ "mesaj_sayisi": 35,
+ "talep": "Stok panosu bugun yenilenmedi. Bugunun stok hareketlerinin (20 kayit) tabloya eksiksiz ve bir kez yuklenmesini, dogrulamanin ve panonun tamamlanmasini saglayin. Onceki gunlerin hareketlerine dokunmayin. Sitede baska basarisiz isler de var; onlar bu talebin konusu degil.",
+ "kok_neden": "Yukleme betiginin son sorgusunda bozuk tablo adi var (stok_gecici_x); is Autocommit=Y calistigindan ilk iki sorgu tek tek kalici olmus ve Rerun ayari ile uc deneme boyunca ayni dosya tekrar tekrar eklenmis (bugun icin 120 satir). Dogru: betigi duzelt, bugunun satirlarini ve gecici tabloyu temizle, isi bir kez yeniden calistir."
+}

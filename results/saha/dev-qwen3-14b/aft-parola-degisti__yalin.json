@@ -1,0 +1,603 @@
+{
+ "senaryo": "aft-parola-degisti",
+ "kol": "yalin",
+ "model": "ollama:qwen3:14b",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": false,
+ "zaman": "2026-11-16T21:29:09",
+ "sifirlama_sn": 5.8,
+ "kurulum": [
+  {
+   "adim": "sh",
+   "sn": 0.1,
+   "not": ""
+  },
+  {
+   "adim": "deploy",
+   "sn": 0.5,
+   "not": "{'deployedFolders': ['GUNSONU'], 'deployedJobs': ['GUNSONU/URET', 'GUNSONU/GONDER', 'GUNSONU/ARSIVLE'], 'deployedConnectionProfiles': [], 'removedJobs': []}"
+  },
+  {
+   "adim": "order",
+   "sn": 1.8,
+   "not": "{'URET': 'Ended OK', 'GONDER': 'Ended Not OK', 'ARSIVLE': 'Wait Condition'}"
+  }
+ ],
+ "hukum": "yanlis",
+ "tutan": 0,
+ "toplam": 4,
+ "kontroller": [
+  {
+   "kontrol": {
+    "is": {
+     "folder": "GUNSONU",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "GUNSONU",
+     "job": "ARSIVLE",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition"
+  },
+  {
+   "kontrol": {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/in/satis_20261116.csv",
+     "esit": {
+      "host": "ajan1",
+      "yol": "/data/arsiv/satis_20261116.csv"
+     },
+     "satir": 21
+    }
+   },
+   "tutar": false,
+   "gorulen": "dosya yok"
+  },
+  {
+   "kontrol": {
+    "profil": {
+     "ad": "SFTP_KARSI",
+     "alan": {
+      "User": "mftuser",
+      "HostName": "dosya-sunucu"
+     },
+     "test": true
+    }
+   },
+   "tutar": false,
+   "gorulen": "profil yok"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "ls /data/giden/satis_20261116.csv /data/arsiv/satis_20261116.csv 2>/dev/null | wc -l",
+     "esit": "0"
+    }
+   },
+   "tutar": false,
+   "gorulen": "rc=0 1"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:00d91",
+   "folder": "GUNSONU",
+   "name": "URET",
+   "type": "Script",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# GUNSONU/URET saha:00d91 kosu 1/1\n[MAIN] [Start] Job=GUNSONU__URET, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=GUNSONU is=URET tip=Job:Script RunAs=batch ODATE=20261116 kosu=1 ==\nuretildi: /data/giden/satis_20261116.csv 21 satir\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:00d92",
+   "folder": "GUNSONU",
+   "name": "GONDER",
+   "type": "FileTransfer",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# GUNSONU/GONDER saha:00d92 kosu 1/1\n[MAIN] [Start] Job=GUNSONU__GONDER, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n[STDERR] CTM5323 hedef dizin okunamadi (SFTP_KARSI): mftuser@dosya-sunucu: Permission denied (publickey,password,keyboard-interactive).\n== ajan=ajan1 klasor=GUNSONU is=GONDER tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] YEREL_BATCH:/data/giden/satis_20261116.csv -> SFTP_KARSI:/home/mftuser/in/satis_20261116.csv (Binary)\n[MAIN] [End] [Error] returnCode=44, errorState=failed, reason=failed, msg=CTM5323 hedef dizin okunamadi (SFTP_KARSI): mftuser@dosya-sunucu: Permission denied (publickey,password,keyboard-interactive)."
+  },
+  {
+   "jobId": "saha:00d93",
+   "folder": "GUNSONU",
+   "name": "ARSIVLE",
+   "type": "Script",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  }
+ ],
+ "rapor": "",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::test SFTP_KARSI ajan1"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.3,
+   "cikti": "{\n \"profile\": \"SFTP_KARSI\",\n \"agent\": \"ajan1\",\n \"result\": \"FAILED\",\n \"output\": \"mftuser@dosya-sunucu: Permission denied (publickey,password,keyboard-interactive).\\nConnection closed\"\n}"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::delete SFTP_KARSI"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{\n \"message\": \"profil silindi: SFTP_KARSI\"\n}"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;Host=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 4,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  },
+  {
+   "n": 5,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;Host=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 6,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::test SFTP_KARSI ajan1"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "HATA: profil bulunamadi: SFTP_KARSI (ajan ajan1)"
+  },
+  {
+   "n": 7,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 8,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 9,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  },
+  {
+   "n": 10,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::test SFTP_KARSI ajan1"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "HATA: profil bulunamadi: SFTP_KARSI (ajan ajan1)"
+  },
+  {
+   "n": 11,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "echo 'SFTP_KARSI profilini test etmek icin gerekli ayarlari kontrol edin. Parola ve konfigurasyon dogru mu?'"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "[cikis kodu 0]\nSFTP_KARSI profilini test etmek icin gerekli ayarlari kontrol edin. Parola ve konfigurasyon dogru mu?"
+  },
+  {
+   "n": 12,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 13,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 14,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 15,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  },
+  {
+   "n": 16,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::test SFTP_KARSI ajan1"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "HATA: profil bulunamadi: SFTP_KARSI (ajan ajan1)"
+  },
+  {
+   "n": 17,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 18,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 19,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 20,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{}"
+  },
+  {
+   "n": 21,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 22,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 23,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 24,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  },
+  {
+   "n": 25,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 26,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 27,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 28,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  },
+  {
+   "n": 29,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 30,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 31,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 32,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  },
+  {
+   "n": 33,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 34,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 35,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 36,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  },
+  {
+   "n": 37,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 38,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"PG_RAPOR\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"rapor_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"PG_UYG\": {\n  \"Type\": \"ConnectionProfile:Database:PostgreSQL\",\n  \"Host\": \"appdb\",\n  \"Port\": \"5432\",\n  \"User\": \"etl_user\",\n  \"Password\": \"*****\",\n  \"DatabaseName\": \"uygulama\"\n },\n \"SFTP_BANKA\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:SFTP\",\n  \"HostName\": \"dosya-sunucu\",\n  \"Port\": \"22\",\n  \"User\": \"banka\",\n  \"PrivateKeyName\": \"banka_key\"\n },\n \"YEREL_BATCH\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"batch\"\n },\n \"YEREL_ETL\": {\n  \"Type\": \"ConnectionProfile:FileTransfer:Local\",\n  \"User\": \"etl\"\n }\n}"
+  },
+  {
+   "n": 39,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofile::add SFTP_KARSI -s \"Type=FileTransfer:SFTP;HostName=dosya-sunucu;Port=22;User=mftuser;Password=Mft-2026-Kasim\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy connectionprofile::add. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 40,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy connectionprofiles::get -s \"name=SFTP_KARSI\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{}"
+  }
+ ],
+ "denetim": [
+  [
+   "21:29:19",
+   "delete_profile",
+   "SFTP_KARSI"
+  ]
+ ],
+ "arac_cagrisi": 40,
+ "saniye": 49.8,
+ "adim": 40,
+ "bitis": "adim_siniri",
+ "cagri": 40,
+ "baglam": {
+  "sinir_karakter": 62812,
+  "num_ctx": 24576,
+  "en_cok_prompt": 7562,
+  "dolu_cagri": 0
+ },
+ "mesaj_sayisi": 82,
+ "talep": "GUNSONU klasorundeki GONDER isi NOTOK bitti, gunluk satis dosyasi karsi tarafa gitmedi ve arkasindaki arsivleme bekliyor. Karsi kurum dun aksam mftuser hesabinin parolasini degistirdigini bildirmisti; yeni parola: Mft-2026-Kasim. Dosyanin karsi tarafa ulasmasini ve akisin tamamlanmasini saglayin.",
+ "kok_neden": "SFTP_KARSI profilindeki parola eski; karsi taraf parolayi degistirdi. Profil guncellenir, GONDER yeniden calistirilir."
+}
