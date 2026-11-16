@@ -33,7 +33,7 @@ besleyeceği için harness'i bu kaynaklara bakarak değil, yalnızca `zor-dev` s
 | 4 | ayrılmış (senaryo yazarı) | - |
 
 Kuyruk günlüğü: `results/saha/durum/kuyruk.log`. Dondurulmuş harness ile yapılan koşular ayrı bir çalışma kopyasından
-(`C:\D\projelerardiya-donuk1`, commit e632004: `saha-donuk-1` + bütçe değişiklikleri + yalnızca koşucu/analiz) koşuyor,
+(`C:/D/projeler/vardiya-donuk1`, commit e632004: `saha-donuk-1` + bütçe değişiklikleri + yalnızca koşucu/analiz) koşuyor,
 `SAHA_SONUC` ile ana kanıt dizinine yazıyor; ana depodaki `usta.py` geliştirmesi onları etkilemiyor.
 
 ## Yapılanlar
