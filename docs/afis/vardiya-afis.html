@@ -84,6 +84,13 @@
   .not ul { margin: 0; padding-left: 20px; }
   .not li { font-size: 15px; margin-bottom: 5px; line-height: 1.33; }
 
+  .skills { margin-top: 10px; border-left: 5px solid var(--teal); background: var(--teal-soft); padding: 8px 12px; font-size: 14px; line-height: 1.35; }
+  .skills b { color: var(--teal); }
+  .skillbox { border: 2px solid var(--teal); background: var(--teal-soft); padding: 14px 18px 12px; }
+  .skillbox p { font-size: 15px; margin: 0 0 8px; line-height: 1.38; }
+  .counts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+  .counts div { background: #fff; border: 1px solid var(--line); padding: 5px 8px; font-size: 12px; color: var(--muted); }
+  .counts b { display: block; font-size: 22px; line-height: 1.1; color: var(--teal); }
   footer { margin-top: auto; border-top: 2px solid var(--ink); padding-top: 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
   .repo { font-size: 30px; font-weight: 800; letter-spacing: -.01em; }
   .repo small { display: block; font-size: 14px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-top: 2px; }
@@ -213,15 +220,14 @@
         <li><b>Bitiş kapısı</b>"bitti"yi model değil, harness'in yoklaması verir</li>
       </ul>
     </div>
-    <div class="not">
-      <h2>Henüz gösterilmeyenler</h2>
-      <ul>
-        <li>Zor kümede (kalabalık site, yanıltıcı bilet) denenen zayıf modellerle iki araçlı basamak da senaryoları çözemiyor; Usta'nın doğrulukta kazancı henüz yok.</li>
-        <li>Güçlü model koşuları kota yüzünden kısmi; gizli testte güçlü model ölçülmedi.</li>
-        <li>Laboratuvardaki zamanlayıcı JS7'dir, Control-M Automation API uyumlu bir alt kümeyi konuşur. BMC'nin ürünü değildir; Control-M kurulup denenmedi.</li>
-        <li>Grafik modeliyle erken uyarı kodlandı, ölçülmedi.</li>
-        <li>Küme başına 10-30 senaryo, her bölüm bir kez koşuldu; eşli farklar anlamlı değil.</li>
-      </ul>
+    <div class="skillbox">
+      <h2>Beceriler: yeni duruma veriyle uyarlanır</h2>
+      <p>Yeni bir arıza ya da site için kod yazılmaz: <b>bir JSON kartı eklenir</b> (hata imzası, teşhis, düzeltme, doğrulama, yapma). Kart, ajanın gerçekten gördüğü hata metniyle eşleşirse o bölümde modele gösterilir; eşleşmeyen kart hiç gösterilmez.</p>
+      <p>Kart veridir: çalıştırılabilir betik, dış bağlantı ya da yetki genişletme taşıyamaz.</p>
+      <div class="counts">
+        <div><b>20</b>saha kartı</div><div><b>27</b>olay sınıfı</div><div><b>156</b>admin yordamı</div><div><b>51</b>genel yetenek</div><div><b>13</b>çözüm zinciri</div><div><b>4</b>talep kuralı</div>
+      </div>
+      <p class="note" style="margin-top:8px">Başka bir zamanlayıcı için ayrıca ürünün API'sine bir bağdaştırıcı gerekir.</p>
     </div>
   </section>
 
