@@ -186,6 +186,37 @@ olmayan tanim) reddettigini hicbir skill kabul ettiremez. Standart skill'i hic y
 **Ariza skill'i**: tetik, yetki, izinli eylemler, teshis kosullari, planlar ve dogrulama kosullari.
 Ornek: `skills/failed-load-triage/SKILL.md`.
 
+## Canli saha bench'i
+
+Usta'nin urunu uctan uca yonetebildigini gercek bir ortamda olcen bench. Ayrinti ve sonuclar:
+`docs/09-canli-saha-bench.md`; Usta'nin tek tek mudahaleleri: `docs/13-mudahale-gunlugu.md`.
+
+- **Ortam.** Docker icinde gercek bir zamanlayici (JS7 JobScheduler), isleri gercekten calistiran iki Linux ajan
+  sunucusu, karsi taraf SFTP sunucusu ve PostgreSQL uygulama veritabani (`lab/saha`). Yonetici ortamla Control-M
+  Automation API sozdizimiyle konusur (`vardiya/saha/ctm.py`). Bu, BMC'nin urunu degildir; gercek Control-M icin
+  bagdastirici hazir ama denenmedi.
+- **Senaryo.** Talep metni, arizayi gercekten ureten kurulum adimlari, sunuculardan okunan kontroller ve zarar
+  kontrolleri (`bench/saha/<kume>/*.json`). Her senaryo iki yonden sinanir: kimse dokunmazsa dogru cikmaz, ornek
+  cozumle dogru cikar.
+- **Kollar.** Yardimsiz model (el kitabi ve iki arac: `ctm`, `sh`) ile ayni model Usta'nin icinde. Ikisinin araci ve
+  el kitabi aynidir; harness modelin ulasamadigi veriyi gormez.
+- **Hukum.** Bolum sonunda sunuculardan okunan uc durum: dogru, yarim, yanlis, sahte yesil, zararli.
+
+```
+docker compose -f lab/saha/docker-compose.yml up -d --build
+python -m vardiya saha kur
+python -m vardiya saha dogrula --split dev                     # kimse dokunmazsa yanlis, ornek cozumle dogru mu
+python -m vardiya.saha.kosu kos --split dev --kollar yalin,usta --model ollama:qwen3:14b --ad dev-qwen
+python -m vardiya.saha.kosu kos --split test --kollar yalin,usta --model ollama:qwen3:14b --max-adim 10 --ad test-qwen-b10
+python -m vardiya.saha.analiz dev-qwen                         # tablolar, esli karsilastirma, riskli eylemler
+python -m vardiya.saha.analiz --butce test-qwen test-qwen-b10   # adim butcesine gore
+python -m vardiya.saha.vitrin belge dev-qwen                   # docs/13: mudahale gunlugu
+python -m vardiya web --port 8780                              # "Canli saha" ve "Mudahale vitrini" sayfalari
+```
+
+Yerel modellerde `VARDIYA_NUM_CTX` baglam penceresini belirler (olcumlerde 24576). Laboratuvardaki butun hesaplar ve
+parolalar (`Mft-2026-Ilk` gibi) yalnizca bu laboratuvara ozgu uydurma degerlerdir; gercek bir sisteme ait degildir.
+
 ## Scheduler Admin Bench
 
 Uretilen talep senaryolariyla kollari karsilastiran bench. Tasarim, kollar ve sonuclar:
