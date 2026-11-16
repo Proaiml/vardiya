@@ -26,7 +26,8 @@ class Lab:
         self.proje = os.environ.get("SAHA_PROJE", self.cfg["proje"])
         self.cid = self.cfg["controller_id"]
         self.js = JS7(self.cfg["url"], self.cfg["account"], self.cfg["password"])
-        self.durum = ROOT / "results" / "saha" / "durum" / f"{self.proje}.json"
+        sonuc = pathlib.Path(os.environ["SAHA_SONUC"]) if os.environ.get("SAHA_SONUC") else ROOT / "results" / "saha"
+        self.durum = sonuc / "durum" / f"{self.proje}.json"
 
     # ---- docker -----------------------------------------------------------------
     def container(self, host):
