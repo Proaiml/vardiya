@@ -1,0 +1,258 @@
+{
+ "id": "k2-15-os-runas-yazim-os-crlf",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": true,
+ "baslik": "windows_yetki + ortam_farki (aft)",
+ "talep": "MUTABAKAT_GONDER klasorundeki DOSYA_URET isi calismadi, durumu Ended Not OK; arkasindaki KARSIYA_GONDER isi bekliyor. Klasorun tanimi yeni surumle yuklendi; o gunden beri is dusuyor. Betigin yeni halini bir arkadas dun gece sunucuya koydu; sunucuda elle calistirmadik. Bugunku dosyanin karsi tarafa dogru icerikle ulasmasini ve akisin bitmesini saglayin. Tanimda bir hata varsa kalici olarak duzeltin.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/mutabakat_uret.sh",
+    "icerik": "#!/bin/sh\r\nset -e\r\n# mutabakat gunluk dosya uretimi: /data/giden/mutabakat_<gun>.csv\r\ngun=${1:-$(date +%Y%m%d)}\r\nout=/data/giden/mutabakat_${gun}.csv\r\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 40)); i=$((i + 1)); done; } > \"$out\"\r\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\r\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/mutabakat_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# mutabakat gunluk dosya uretimi: /data/giden/mutabakat_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/mutabakat_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 40)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "deploy": {
+    "SFTP_RAPOR": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "rapor",
+     "Password": "Rapor-2026-Ilk"
+    },
+    "MUTABAKAT_GONDER": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "DOSYA_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "mutabakat_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ],
+      "RunAs": "batch1"
+     },
+     "KARSIYA_GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_RAPOR",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/mutabakat_%%$ODATE.csv",
+        "Dest": "/home/rapor/in/mutabakat_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVE_AL": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "DOSYA_URET",
+       "KARSIYA_GONDER",
+       "ARSIVE_AL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "MUTABAKAT_GONDER",
+    "bekle": {
+     "DOSYA_URET": "Ended Not OK"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "DOSYA_URET",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "KARSIYA_GONDER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/rapor/in/mutabakat_{GUN}.csv",
+    "esit": {
+     "host": "ajan1",
+     "yol": "/data/arsiv/mutabakat_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "tanim": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "DOSYA_URET",
+    "alan": {
+     "RunAs": "batch"
+    }
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "grep -q \"$(printf '\\r')\" /app/scripts/mutabakat_uret.sh; test $? -eq 1",
+    "rc": 0
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  },
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "RunAs\\W+root"
+   }
+  }
+ ],
+ "kok_neden": "Isin tanimindaki RunAs hesabi yanlis yazilmis, sudo hesabi bulamiyor. Tanim duzeltilir ve is yeniden siparis edilir (kopya eskidir); isi root'a cevirmek zararlidir. Betik Windows satir sonlariyla (CRLF) kaydedilmis; #!/bin/sh\\r yorumlayicisi bulunamiyor. Satir sonlari duzeltilir.",
+ "cozum": [
+  {
+   "arac": "sh",
+   "sunucu": "ajan1",
+   "komut": "sed -i 's/\\r$//' /app/scripts/mutabakat_uret.sh"
+  },
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "MUTABAKAT_GONDER": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "DOSYA_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "mutabakat_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "KARSIYA_GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_RAPOR",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/mutabakat_%%$ODATE.csv",
+        "Dest": "/home/rapor/in/mutabakat_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVE_AL": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "DOSYA_URET",
+       "KARSIYA_GONDER",
+       "ARSIVE_AL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUTABAKAT_GONDER/DOSYA_URET}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUTABAKAT_GONDER/KARSIYA_GONDER}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUTABAKAT_GONDER/ARSIVE_AL}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order MUTABAKAT_GONDER"
+  },
+  {
+   "bekle": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "emulator:run_as_right; forum:ops-dev-185-runas-invalid",
+  "forum:ops-dev-132-bat-autoedit; forum:ops-dev-026-cron-ortam"
+ ],
+ "ariza": [
+  "os_runas_yazim",
+  "os_crlf"
+ ]
+}

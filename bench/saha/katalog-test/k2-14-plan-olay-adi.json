@@ -1,0 +1,230 @@
+{
+ "id": "k2-14-plan-olay-adi",
+ "aile": "ariza",
+ "tur": "os",
+ "bilesik": false,
+ "baslik": "plan (os)",
+ "talep": "MUHASEBE_KAPANIS akisinin HAZIRLA isi bu sabah calismadi; bekleme durumunda gorunuyor. Hazirlik islemi tamamlandi gorunuyor ama HAZIRLA yine de baslamiyor. Isin sorunsuz calisip dosyanin uretilmesini rica ediyoruz. Sorun tanimdaysa gecici degil kalici cozum isteriz.",
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/defter_ozet.sh",
+    "icerik": "#!/bin/sh\nset -e\n# defter_ozet gunluk ozeti\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/defter_ozet_${gun}.txt\necho \"defter_ozet ${gun} satir=$(ls /data/giden | wc -l)\" > \"$out\"\necho \"uretildi: $out\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/defter_ozet.sh",
+    "icerik": "#!/bin/sh\nset -e\n# defter_ozet gunluk ozeti\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/defter_ozet_${gun}.txt\necho \"defter_ozet ${gun} satir=$(ls /data/giden | wc -l)\" > \"$out\"\necho \"uretildi: $out\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "deploy": {
+    "MUHASEBE_KAPANIS": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "HAZIRLA": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "defter_ozet.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ],
+      "WaitForEvents": {
+       "Type": "WaitForEvents",
+       "Events": [
+        {
+         "Event": "VERI-HAZIRR-DEFTER-OZET"
+        }
+       ]
+      }
+     },
+     "DOGRULA_DOSYA": {
+      "Type": "Job:Command",
+      "Command": "test -s /data/giden/defter_ozet_%%$ODATE.txt && echo onay: tamam"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "HAZIRLA",
+       "DOGRULA_DOSYA"
+      ]
+     }
+    },
+    "MUHASEBE_KAPANIS_ONCESI": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "HAZIRLA": {
+      "Type": "Job:Command",
+      "Command": "echo hazir > /data/tmp/defter_ozet_hazir_%%$ODATE.ok",
+      "AddEvents": {
+       "Type": "AddEvents",
+       "Events": [
+        {
+         "Event": "VERI-HAZIR-DEFTER-OZET"
+        }
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "MUHASEBE_KAPANIS_ONCESI",
+    "bekle": {
+     "HAZIRLA": "Ended OK"
+    },
+    "sure": 60
+   }
+  },
+  {
+   "order": {
+    "folder": "MUHASEBE_KAPANIS",
+    "bekle": {
+     "HAZIRLA": "Wait Condition"
+    },
+    "sure": 60
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "MUHASEBE_KAPANIS",
+    "job": "HAZIRLA",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "MUHASEBE_KAPANIS",
+    "job": "DOGRULA_DOSYA",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/data/giden/defter_ozet_{GUN}.txt",
+    "icerir": "defter_ozet {GUN}"
+   }
+  },
+  {
+   "tanim": {
+    "folder": "MUHASEBE_KAPANIS",
+    "job": "HAZIRLA",
+    "alan": {
+     "WaitForEvents": {
+      "Events": [
+       {
+        "Event": "VERI-HAZIR-DEFTER-OZET"
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/data/tmp/defter_ozet_hazir_{GUN}.ok"
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  }
+ ],
+ "kok_neden": "Akis, baska klasordeki hazirlik isinin yayinladigindan farkli adli bir olayi bekliyor (yazim farki); hazirlik calismis ama olay eslesmiyor. Bekleyen olay adi duzeltilir, akis yeniden siparis edilir.",
+ "cozum": [
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "MUHASEBE_KAPANIS": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "HAZIRLA": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "defter_ozet.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ],
+      "WaitForEvents": {
+       "Type": "WaitForEvents",
+       "Events": [
+        {
+         "Event": "VERI-HAZIR-DEFTER-OZET"
+        }
+       ]
+      }
+     },
+     "DOGRULA_DOSYA": {
+      "Type": "Job:Command",
+      "Command": "test -s /data/giden/defter_ozet_%%$ODATE.txt && echo onay: tamam"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "HAZIRLA",
+       "DOGRULA_DOSYA"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUHASEBE_KAPANIS/HAZIRLA}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUHASEBE_KAPANIS/DOGRULA_DOSYA}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order MUHASEBE_KAPANIS"
+  },
+  {
+   "bekle": {
+    "folder": "MUHASEBE_KAPANIS",
+    "job": "DOGRULA_DOSYA",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "forum:ops-dev-323-kosul-silinme-mmdd; forum:ops-dev-078-prev-cond"
+ ],
+ "ariza": [
+  "plan_olay_adi"
+ ]
+}

@@ -1,0 +1,276 @@
+{
+ "id": "k2-11-host-ajan-kapali-tasi-aft-parola-degisti",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": true,
+ "baslik": "host + parola (aft)",
+ "talep": "MUTABAKAT_GONDER akisinin DOSYA_URET isi sunucu bekleme durumunda takili; arkasindaki KARSIYA_GONDER isi bekliyor. ajan2 kapandi ve geri gelmesi belirsiz; gunluk akisin bugun tamamlanmasi gerekiyor. Karsi kurumun bildirdigine gore rapor hesabinin parolasi yenilendi, yeni parola Yeni-Anahtar-Kasim. Bugunku dosyanin karsi tarafa dogru icerikle ulasmasini ve akisin bitmesini saglayin.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "ayakta": [
+  "ajan1"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/mutabakat_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# mutabakat gunluk dosya uretimi: /data/giden/mutabakat_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/mutabakat_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 40)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/mutabakat_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# mutabakat gunluk dosya uretimi: /data/giden/mutabakat_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/mutabakat_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 40)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "echo 'rapor:Yeni-Anahtar-Kasim' | chpasswd"
+   }
+  },
+  {
+   "deploy": {
+    "SFTP_RAPOR": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "rapor",
+     "Password": "Rapor-2026-Ilk"
+    },
+    "MUTABAKAT_GONDER": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "DOSYA_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "mutabakat_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "KARSIYA_GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_RAPOR",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/mutabakat_%%$ODATE.csv",
+        "Dest": "/home/rapor/in/mutabakat_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVE_AL": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "DOSYA_URET",
+       "KARSIYA_GONDER",
+       "ARSIVE_AL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "guc": {
+    "host": "ajan2",
+    "eylem": "stop"
+   }
+  },
+  {
+   "order": {
+    "folder": "MUTABAKAT_GONDER",
+    "bekle": {
+     "DOSYA_URET": "Wait Host"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "DOSYA_URET",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "KARSIYA_GONDER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/rapor/in/mutabakat_{GUN}.csv",
+    "esit": {
+     "host": "ajan1",
+     "yol": "/data/arsiv/mutabakat_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "is": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "profil": {
+    "ad": "SFTP_RAPOR",
+    "alan": {
+     "User": "rapor",
+     "HostName": "dosya-sunucu",
+     "Password": "Yeni-Anahtar-Kasim"
+    },
+    "test": true
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  }
+ ],
+ "kok_neden": "Isin calistigi ajan sunucusu kapali ve yarina kadar donmeyecek; is ayakta olan ajana tasinir (tanim ve siparis). Karsi taraf rapor hesabinin parolasini degistirdi; baglanti profilindeki parola eski kaldi. Profil yeni parolayla guncellenir ve is yeniden calistirilir.",
+ "cozum": [
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "SFTP_RAPOR": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "rapor",
+     "Password": "Yeni-Anahtar-Kasim"
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "MUTABAKAT_GONDER": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "DOSYA_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "mutabakat_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "KARSIYA_GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_RAPOR",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/mutabakat_%%$ODATE.csv",
+        "Dest": "/home/rapor/in/mutabakat_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVE_AL": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "DOSYA_URET",
+       "KARSIYA_GONDER",
+       "ARSIVE_AL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUTABAKAT_GONDER/DOSYA_URET}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUTABAKAT_GONDER/KARSIYA_GONDER}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:MUTABAKAT_GONDER/ARSIVE_AL}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order MUTABAKAT_GONDER"
+  },
+  {
+   "bekle": {
+    "folder": "MUTABAKAT_GONDER",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "emulator:agent_down; forum:ops-dev-045-noroute; forum:ops-dev-039-ha-gecis",
+  "emulator:password_rotated; forum:ops-dev-021-ucm0001"
+ ],
+ "ariza": [
+  "host_ajan_kapali_tasi",
+  "aft_parola_degisti"
+ ]
+}

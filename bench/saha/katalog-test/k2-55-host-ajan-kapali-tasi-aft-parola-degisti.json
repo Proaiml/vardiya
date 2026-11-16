@@ -1,0 +1,276 @@
+{
+ "id": "k2-55-host-ajan-kapali-tasi-aft-parola-degisti",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": true,
+ "baslik": "host + parola (aft)",
+ "talep": "SIPARIS_AKTAR akisinin OLUSTUR isi sunucu bekleme durumunda takili; arkasindaki TRANSFER isi bekliyor. ajan1 kapandi ve geri gelmesi belirsiz; gunluk akisin bugun tamamlanmasi gerekiyor. Karsi kurumun bildirdigine gore rapor hesabinin parolasi yenilendi, yeni parola Karsi-Tarafin-2026. Bugunku dosyanin karsi tarafa dogru icerikle ulasmasini ve akisin bitmesini saglayin.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "ayakta": [
+  "ajan2"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/siparis_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# siparis gunluk dosya uretimi: /data/giden/siparis_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/siparis_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 25)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/siparis_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# siparis gunluk dosya uretimi: /data/giden/siparis_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/siparis_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 25)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "echo 'rapor:Karsi-Tarafin-2026' | chpasswd"
+   }
+  },
+  {
+   "deploy": {
+    "SFTP_RAPOR": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "rapor",
+     "Password": "Rapor-2026-Ilk"
+    },
+    "SIPARIS_AKTAR": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "OLUSTUR": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "siparis_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "TRANSFER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_RAPOR",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/siparis_%%$ODATE.csv",
+        "Dest": "/home/rapor/in/siparis_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIV": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "OLUSTUR",
+       "TRANSFER",
+       "ARSIV"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "guc": {
+    "host": "ajan1",
+    "eylem": "stop"
+   }
+  },
+  {
+   "order": {
+    "folder": "SIPARIS_AKTAR",
+    "bekle": {
+     "OLUSTUR": "Wait Host"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "SIPARIS_AKTAR",
+    "job": "OLUSTUR",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "SIPARIS_AKTAR",
+    "job": "TRANSFER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "SIPARIS_AKTAR",
+    "job": "ARSIV",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/rapor/in/siparis_{GUN}.csv",
+    "esit": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/siparis_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "is": {
+    "folder": "SIPARIS_AKTAR",
+    "job": "ARSIV",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "profil": {
+    "ad": "SFTP_RAPOR",
+    "alan": {
+     "User": "rapor",
+     "HostName": "dosya-sunucu",
+     "Password": "Karsi-Tarafin-2026"
+    },
+    "test": true
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  }
+ ],
+ "kok_neden": "Isin calistigi ajan sunucusu kapali ve yarina kadar donmeyecek; is ayakta olan ajana tasinir (tanim ve siparis). Karsi taraf rapor hesabinin parolasini degistirdi; baglanti profilindeki parola eski kaldi. Profil yeni parolayla guncellenir ve is yeniden calistirilir.",
+ "cozum": [
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "SFTP_RAPOR": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "rapor",
+     "Password": "Karsi-Tarafin-2026"
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "SIPARIS_AKTAR": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "OLUSTUR": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "siparis_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "TRANSFER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_RAPOR",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/siparis_%%$ODATE.csv",
+        "Dest": "/home/rapor/in/siparis_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIV": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "OLUSTUR",
+       "TRANSFER",
+       "ARSIV"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:SIPARIS_AKTAR/OLUSTUR}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:SIPARIS_AKTAR/TRANSFER}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:SIPARIS_AKTAR/ARSIV}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order SIPARIS_AKTAR"
+  },
+  {
+   "bekle": {
+    "folder": "SIPARIS_AKTAR",
+    "job": "ARSIV",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "emulator:agent_down; forum:ops-dev-045-noroute; forum:ops-dev-039-ha-gecis",
+  "emulator:password_rotated; forum:ops-dev-021-ucm0001"
+ ],
+ "ariza": [
+  "host_ajan_kapali_tasi",
+  "aft_parola_degisti"
+ ]
+}

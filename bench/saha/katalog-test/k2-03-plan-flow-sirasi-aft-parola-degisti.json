@@ -1,0 +1,274 @@
+{
+ "id": "k2-03-plan-flow-sirasi-aft-parola-degisti",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": true,
+ "baslik": "plan + parola (aft)",
+ "talep": "TRANSFER isi (klasor CARI_HESAP_AKTARIM) gece NOTOK bitti; arkasindaki OLUSTUR isi bekliyor; sabah nobetci arkadas bakamadi. CARI_HESAP_AKTARIM akisinin siralamasi degisti, sonrasinda hata basladi. Karsi kurumun bildirdigine gore mftuser hesabinin parolasi yenilendi, yeni parola Mft-Yenilendi-26. Bugunku dosyanin karsi tarafa dogru icerikle ulasmasini ve akisin bitmesini saglayin. Sorun tanimdaysa gecici degil kalici cozum isteriz.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/cari_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# cari gunluk dosya uretimi: /data/giden/cari_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/cari_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 15)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/cari_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# cari gunluk dosya uretimi: /data/giden/cari_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/cari_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 15)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "echo 'mftuser:Mft-Yenilendi-26' | chpasswd"
+   }
+  },
+  {
+   "deploy": {
+    "SFTP_KARSI": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "mftuser",
+     "Password": "Mft-2026-Ilk"
+    },
+    "CARI_HESAP_AKTARIM": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "OLUSTUR": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "cari_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "TRANSFER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_KARSI",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/cari_%%$ODATE.csv",
+        "Dest": "/home/mftuser/in/cari_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIV": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "TRANSFER",
+       "OLUSTUR",
+       "ARSIV"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "bekle": {
+     "TRANSFER": "Ended Not OK"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "OLUSTUR",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "TRANSFER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "ARSIV",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/mftuser/in/cari_{GUN}.csv",
+    "esit": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/cari_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "akis": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "once": "OLUSTUR",
+    "sonra": "TRANSFER"
+   }
+  },
+  {
+   "sira": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "once": "OLUSTUR",
+    "sonra": "TRANSFER"
+   }
+  },
+  {
+   "profil": {
+    "ad": "SFTP_KARSI",
+    "alan": {
+     "User": "mftuser",
+     "HostName": "dosya-sunucu",
+     "Password": "Mft-Yenilendi-26"
+    },
+    "test": true
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  }
+ ],
+ "kok_neden": "Flow sirasi ters kurulmus (uretim/yukleme isinden once kontrol ya da gonderim); ilk is hazir olmayan veriyle calisip dusuyor. Sira duzeltilir, klasor yeniden siparis edilir. Karsi taraf mftuser hesabinin parolasini degistirdi; baglanti profilindeki parola eski kaldi. Profil yeni parolayla guncellenir ve is yeniden calistirilir.",
+ "cozum": [
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "SFTP_KARSI": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "mftuser",
+     "Password": "Mft-Yenilendi-26"
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "CARI_HESAP_AKTARIM": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "OLUSTUR": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "cari_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "TRANSFER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_KARSI",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/cari_%%$ODATE.csv",
+        "Dest": "/home/mftuser/in/cari_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIV": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "OLUSTUR",
+       "TRANSFER",
+       "ARSIV"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:CARI_HESAP_AKTARIM/TRANSFER}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:CARI_HESAP_AKTARIM/OLUSTUR}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:CARI_HESAP_AKTARIM/ARSIV}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order CARI_HESAP_AKTARIM"
+  },
+  {
+   "bekle": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "ARSIV",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "forum:ops-dev-031-airflow-clear; forum:ops-dev-208-hold-on-fail",
+  "emulator:password_rotated; forum:ops-dev-021-ucm0001"
+ ],
+ "ariza": [
+  "plan_flow_sirasi",
+  "aft_parola_degisti"
+ ]
+}

@@ -1,0 +1,200 @@
+{
+ "id": "k2-36-aft-host-adi-yanlis",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": false,
+ "baslik": "ag (aft)",
+ "talep": "Bu sabah STOK_BILDIRIM klasorunun TRANSFER isi hatayla bitmis; arkasindaki ARSIV isi bekliyor. Karsi sunucunun adi hep ayniydi: dosya-sunucu. Bugunku dosyanin karsi tarafa dogru icerikle ulasmasini ve akisin bitmesini saglayin.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/stok_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# stok gunluk dosya uretimi: /data/giden/stok_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/stok_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 20)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/stok_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# stok gunluk dosya uretimi: /data/giden/stok_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/stok_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 20)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "deploy": {
+    "SFTP_KARSI": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosyasunucu",
+     "Port": "22",
+     "User": "mftuser",
+     "Password": "Mft-2026-Ilk"
+    },
+    "STOK_BILDIRIM": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "OLUSTUR": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "stok_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "TRANSFER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_KARSI",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/stok_%%$ODATE.csv",
+        "Dest": "/home/mftuser/in/stok_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIV": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "OLUSTUR",
+       "TRANSFER",
+       "ARSIV"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "STOK_BILDIRIM",
+    "bekle": {
+     "TRANSFER": "Ended Not OK"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "STOK_BILDIRIM",
+    "job": "OLUSTUR",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "STOK_BILDIRIM",
+    "job": "TRANSFER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "STOK_BILDIRIM",
+    "job": "ARSIV",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/mftuser/in/stok_{GUN}.csv",
+    "esit": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/stok_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "profil": {
+    "ad": "SFTP_KARSI",
+    "alan": {
+     "HostName": "dosya-sunucu"
+    },
+    "test": true
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "ls /data/giden/stok_{GUN}.csv /data/arsiv/stok_{GUN}.csv 2>/dev/null | wc -l",
+    "esit": "0"
+   }
+  }
+ ],
+ "kok_neden": "Baglanti profilindeki sunucu adi yanlis yazilmis, ad cozulemiyor. Profil duzeltilir.",
+ "cozum": [
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "SFTP_KARSI": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "mftuser",
+     "Password": "Mft-2026-Ilk"
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::rerun {jobid:STOK_BILDIRIM/TRANSFER}"
+  },
+  {
+   "bekle": {
+    "folder": "STOK_BILDIRIM",
+    "job": "ARSIV",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "forum:ops-dev-045-noroute; forum:ops-dev-097-server-hostname"
+ ],
+ "ariza": [
+  "aft_host_adi_yanlis"
+ ]
+}

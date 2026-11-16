@@ -1,0 +1,233 @@
+{
+ "id": "k2-59-aft-uretici-dun",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": false,
+ "baslik": "tarih (aft)",
+ "talep": "KARSIYA_GONDER isi (klasor CARI_HESAP_AKTARIM) gece NOTOK bitti; arkasindaki ARSIVE_AL isi bekliyor; sabah nobetci arkadas bakamadi. Uygulama ekibi dun uretim betigini degistirdi, bugun gonderim dusuyor. Dosyanin hedefe sorunsuz ulasip akisin tamamlanmasini rica ediyoruz.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/cari_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# cari gunluk dosya uretimi: /data/giden/cari_<gun>.csv\ngun=$(date -d @$(( $(date +%s) - 86400 )) +%Y%m%d)\nout=/data/giden/cari_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 25)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/cari_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# cari gunluk dosya uretimi: /data/giden/cari_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/cari_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 25)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "deploy": {
+    "CARI_HESAP_AKTARIM": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "DOSYA_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "cari_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "KARSIYA_GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_KARSI",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/cari_%%$ODATE.csv",
+        "Dest": "/home/mftuser/in/cari_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVE_AL": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "DOSYA_URET",
+       "KARSIYA_GONDER",
+       "ARSIVE_AL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "bekle": {
+     "KARSIYA_GONDER": "Ended Not OK"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "DOSYA_URET",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "KARSIYA_GONDER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/mftuser/in/cari_{GUN}.csv",
+    "esit": {
+     "host": "ajan1",
+     "yol": "/data/arsiv/cari_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "grep -q 86400 /app/scripts/cari_uret.sh; test $? -eq 1",
+    "rc": 0
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  }
+ ],
+ "kok_neden": "Uretim betigi (dunku surum) dosya adina dunun tarihini yaziyor; uretim isi OK bitiyor ama bugunun dosyasi uretilmiyor. Betik duzeltilir ve akis yeniden siparis edilir.",
+ "cozum": [
+  {
+   "arac": "sh",
+   "sunucu": "ajan1",
+   "komut": "cat > /app/scripts/cari_uret.sh <<'SAHA_EOF'\n#!/bin/sh\nset -e\n# cari gunluk dosya uretimi: /data/giden/cari_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/cari_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 25)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\nSAHA_EOF"
+  },
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "CARI_HESAP_AKTARIM": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "DOSYA_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "cari_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "KARSIYA_GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_KARSI",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/cari_%%$ODATE.csv",
+        "Dest": "/home/mftuser/in/cari_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVE_AL": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "DOSYA_URET",
+       "KARSIYA_GONDER",
+       "ARSIVE_AL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:CARI_HESAP_AKTARIM/DOSYA_URET}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:CARI_HESAP_AKTARIM/KARSIYA_GONDER}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:CARI_HESAP_AKTARIM/ARSIVE_AL}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order CARI_HESAP_AKTARIM"
+  },
+  {
+   "bekle": {
+    "folder": "CARI_HESAP_AKTARIM",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "emulator:pred_setok; forum:ops-dev-077-start-time"
+ ],
+ "ariza": [
+  "aft_uretici_dun"
+ ]
+}

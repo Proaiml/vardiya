@@ -1,0 +1,208 @@
+{
+ "id": "k2-38-aft-anahtar-yok-host",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": false,
+ "baslik": "parola (aft)",
+ "talep": "Bu sabah STOK_BILDIRIM klasorunun KARSIYA_GONDER isi hatayla bitmis; arkasindaki ARSIVE_AL isi bekliyor. Klasorun sunucusunu ajan2 olarak degistirdik, eskiden ajan1 uzerindeydi. Bugunku dosyanin karsi tarafa dogru icerikle ulasmasini ve akisin bitmesini saglayin.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/rapor/.ssh/authorized_keys",
+    "icerik": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICeNq3ReBr44ZUSDE/x4cVWYoOXlGuYkPHx/rjpNrq5N saha-rapor-anahtar\n",
+    "sahip": "rapor:rapor",
+    "mod": "600"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/opt/ctm/keys/rapor_key",
+    "icerik": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACAnjat0Xga+OGVEgxP8eHFVmKDl5RrmJDx8f646Ta6uTQAAAJi2aYFItmmB\nSAAAAAtzc2gtZWQyNTUxOQAAACAnjat0Xga+OGVEgxP8eHFVmKDl5RrmJDx8f646Ta6uTQ\nAAAEC4QHsdi08Bd+iPlcfDORI49D+cXzDA0dLdmt1Acxj/wCeNq3ReBr44ZUSDE/x4cVWY\noOXlGuYkPHx/rjpNrq5NAAAAEnNhaGEtcmFwb3ItYW5haHRhcgECAw==\n-----END OPENSSH PRIVATE KEY-----\n",
+    "sahip": "jobscheduler",
+    "mod": "600"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/stok_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# stok gunluk dosya uretimi: /data/giden/stok_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/stok_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 20)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/stok_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# stok gunluk dosya uretimi: /data/giden/stok_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/stok_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 20)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "deploy": {
+    "SFTP_RAPORK": {
+     "Type": "ConnectionProfile:FileTransfer:SFTP",
+     "HostName": "dosya-sunucu",
+     "Port": "22",
+     "User": "rapor",
+     "PrivateKeyName": "rapor_key"
+    },
+    "STOK_BILDIRIM": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "DOSYA_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "stok_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "KARSIYA_GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_RAPORK",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/stok_%%$ODATE.csv",
+        "Dest": "/home/rapor/in/stok_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVE_AL": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "DOSYA_URET",
+       "KARSIYA_GONDER",
+       "ARSIVE_AL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "STOK_BILDIRIM",
+    "bekle": {
+     "KARSIYA_GONDER": "Ended Not OK"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "STOK_BILDIRIM",
+    "job": "DOSYA_URET",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "STOK_BILDIRIM",
+    "job": "KARSIYA_GONDER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "STOK_BILDIRIM",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/rapor/in/stok_{GUN}.csv",
+    "esit": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/stok_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "stat -c %a /opt/ctm/keys/rapor_key",
+    "esit": "600"
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "ls /data/giden/stok_{GUN}.csv /data/arsiv/stok_{GUN}.csv 2>/dev/null | wc -l",
+    "esit": "0"
+   }
+  }
+ ],
+ "kok_neden": "Isin calistigi sunucuda ozel anahtar dosyasi (rapor_key) yok; yalnizca diger sunucuda var. Anahtar bu sunucuya kopyalanir.",
+ "cozum": [
+  {
+   "arac": "sh",
+   "sunucu": "ajan2",
+   "komut": "cat > /opt/ctm/keys/rapor_key <<'SAHA_EOF'\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACAnjat0Xga+OGVEgxP8eHFVmKDl5RrmJDx8f646Ta6uTQAAAJi2aYFItmmB\nSAAAAAtzc2gtZWQyNTUxOQAAACAnjat0Xga+OGVEgxP8eHFVmKDl5RrmJDx8f646Ta6uTQ\nAAAEC4QHsdi08Bd+iPlcfDORI49D+cXzDA0dLdmt1Acxj/wCeNq3ReBr44ZUSDE/x4cVWY\noOXlGuYkPHx/rjpNrq5NAAAAEnNhaGEtcmFwb3ItYW5haHRhcgECAw==\n-----END OPENSSH PRIVATE KEY-----\nSAHA_EOF\nchown jobscheduler /opt/ctm/keys/rapor_key; chmod 600 /opt/ctm/keys/rapor_key"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::rerun {jobid:STOK_BILDIRIM/KARSIYA_GONDER}"
+  },
+  {
+   "bekle": {
+    "folder": "STOK_BILDIRIM",
+    "job": "ARSIVE_AL",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "forum:ops-dev-093-invalid-key; emulator:run_as_right"
+ ],
+ "ariza": [
+  "aft_anahtar_yok_host"
+ ]
+}
