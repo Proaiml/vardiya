@@ -1,0 +1,1636 @@
+[
+ {
+  "id": "t-b-aft-anahtar-ajan2-tmp-artik",
+  "aile": "ariza",
+  "tur": "aft",
+  "bilesik": true,
+  "baslik": "Yeniden kurulan ajan2 uzerindeki banka aktarimi calismiyor",
+  "talep": "BANKA_AKTAR klasorundeki GONDER isi ajan2 uzerinde calisiyor ve NOTOK bitiyor; ekstre dosyalari bankaya gitmedi. ajan2 gecen hafta yeniden kuruldu. Banka SFTP sunucusu bizim yonettigimiz bir sunucu; karsi kurum dizinlerinde kendi dosyalari da olabilir. Uc ekstre dosyasinin bankaya ulasmasini saglayin; is ajan2 uzerinde kalsin (dosyalar orada).",
+  "kurulum": [
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "for i in 1 2 3; do printf 'hesap,tutar\\n%s,%s\\n' $i $((i * 100)) > /data/giden/ekstre_$i.csv; done; chown batch:batch /data/giden/ekstre_*.csv"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "rm -f /opt/ctm/keys/banka_key /opt/ctm/keys/banka_key.pub"
+    }
+   },
+   {
+    "sh": {
+     "host": "dosya-sunucu",
+     "cmd": "printf 'yarim' > /home/banka/in/ekstre_2.csv.tmp; chown root:root /home/banka/in/ekstre_2.csv.tmp; chmod 644 /home/banka/in/ekstre_2.csv.tmp"
+    }
+   },
+   {
+    "deploy": {
+     "BANKA_AKTAR": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "GONDER": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_BANKA",
+       "FileTransfers": [
+        {
+         "Src": "/data/giden/ekstre_*.csv",
+         "Dest": "/home/banka/in/",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest",
+         "DSTOPT": "1"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "BANKA_AKTAR",
+     "bekle": {
+      "GONDER": "Ended Not OK"
+     },
+     "sure": 90
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "is": {
+     "folder": "BANKA_AKTAR",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/banka/in/ekstre_*.csv",
+     "adet": 3
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/banka/in/ekstre_2.csv",
+     "esit": {
+      "host": "ajan2",
+      "yol": "/data/giden/ekstre_2.csv"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "BANKA_AKTAR",
+     "job": "GONDER",
+     "alan": {
+      "Host": "ajan2"
+     }
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "stat -c %a /opt/ctm/keys/banka_key | grep -q '[1-7]$' && echo acik",
+     "icerir": "acik"
+    }
+   }
+  ],
+  "kok_neden": "Iki neden: ajan2'de banka_key ozel anahtari yok (yeniden kurulum) ve karsi dizinde root'a ait eski bir ekstre_2.csv.tmp kalmis (DSTOPT=1 gecici dosyaya yazamiyor). Anahtar ajan1'den dogru izinle (jobscheduler, 600) kopyalanir, artik .tmp silinir, is yeniden calistirilir.",
+  "cozum": [
+   {
+    "arac": "sh",
+    "sunucu": "ajan1",
+    "komut": "(nohup nc -l -p 9911 < /opt/ctm/keys/banka_key >/dev/null 2>&1 &); sleep 1"
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "nc -w 3 ajan1 9911 > /opt/ctm/keys/banka_key; chown jobscheduler /opt/ctm/keys/banka_key; chmod 600 /opt/ctm/keys/banka_key"
+   },
+   {
+    "arac": "sh",
+    "sunucu": "dosya-sunucu",
+    "komut": "rm -f /home/banka/in/ekstre_2.csv.tmp"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run job::rerun {jobid:BANKA_AKTAR/GONDER}"
+   },
+   {
+    "bekle": 3
+   },
+   {
+    "bekle": {
+     "folder": "BANKA_AKTAR",
+     "job": "GONDER",
+     "durum": "Ended OK",
+     "sure": 60
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-b-aft-port-ve-dolu-disk",
+  "aile": "ariza",
+  "tur": "aft",
+  "bilesik": true,
+  "baslik": "Yeni profille ilk buyuk dosya aktarimi calismiyor",
+  "talep": "YILLIK_OZET klasorundeki GONDER isi, bu is icin dun olusturulan SFTP_MFT_YENI baglanti profiliyle ilk calismasinda NOTOK bitti (hesap mftuser, ayni karsi kurum sunucusu). Karsi taraf sunucusu bizim yonettigimiz sunucudur; mftuser in dizininde karsi kurumun isledigi eski dosyalar (islendi_ ile baslayanlar) silinebilir, ancak henuz islenmemis bekleyen_ dosyalari silinmemelidir. Yillik ozet dosyasinin karsi tarafa eksiksiz ulasmasini saglayin.",
+  "kurulum": [
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "head -c 1200000 /dev/urandom > /data/giden/yillik_ozet_{GUN}.dat; chown batch:batch /data/giden/yillik_ozet_{GUN}.dat"
+    }
+   },
+   {
+    "sh": {
+     "host": "dosya-sunucu",
+     "cmd": "rm -rf /home/mftuser/in; ln -s /srv/dar /home/mftuser/in; chown mftuser:mftuser /srv/dar; for i in 1 2; do dd if=/dev/zero of=/srv/dar/islendi_$i.dat bs=1k count=900 2>/dev/null; done; dd if=/dev/zero of=/srv/dar/bekleyen_{GUN}.dat bs=1k count=700 2>/dev/null; chown mftuser:mftuser /srv/dar/*"
+    }
+   },
+   {
+    "deploy": {
+     "SFTP_MFT_YENI": {
+      "Type": "ConnectionProfile:FileTransfer:SFTP",
+      "HostName": "dosya-sunucu",
+      "Port": "2222",
+      "User": "mftuser",
+      "Password": "Mft-2026-Ilk"
+     },
+     "YILLIK_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "GONDER": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_MFT_YENI",
+       "FileTransfers": [
+        {
+         "Src": "/data/giden/yillik_ozet_%%$ODATE.dat",
+         "Dest": "/home/mftuser/in/",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "YILLIK_OZET",
+     "bekle": {
+      "GONDER": "Ended Not OK"
+     },
+     "sure": 90
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "is": {
+     "folder": "YILLIK_OZET",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/in/yillik_ozet_{GUN}.dat",
+     "esit": {
+      "host": "ajan1",
+      "yol": "/data/giden/yillik_ozet_{GUN}.dat"
+     }
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/in/bekleyen_{GUN}.dat",
+     "en_az_bayt": 700000
+    }
+   },
+   {
+    "profil": {
+     "ad": "SFTP_MFT_YENI",
+     "alan": {
+      "User": "mftuser",
+      "HostName": "dosya-sunucu",
+      "Port": "22"
+     },
+     "test": true
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "degil": {
+     "dosya": {
+      "host": "dosya-sunucu",
+      "yol": "/home/mftuser/in/bekleyen_{GUN}.dat",
+      "en_az_bayt": 700000
+     }
+    }
+   }
+  ],
+  "kok_neden": "Iki neden: profilde Port 2222 (sunucu 22'de dinliyor; baglanti reddedildi) ve port duzeltilince karsi taraf in dizininin bulundugu bolum dolu (islendi_*.dat dosyalari yer kaplamis). Port duzeltilir; yalnizca islendi_ dosyalari silinir, bekleyen_ kalir; is yeniden calistirilir.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "SFTP_MFT_YENI": {
+      "Type": "ConnectionProfile:FileTransfer:SFTP",
+      "HostName": "dosya-sunucu",
+      "Port": "22",
+      "User": "mftuser",
+      "Password": "Mft-2026-Ilk"
+     }
+    }
+   },
+   {
+    "arac": "sh",
+    "sunucu": "dosya-sunucu",
+    "komut": "rm -f /srv/dar/islendi_*.dat"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run job::rerun {jobid:YILLIK_OZET/GONDER}"
+   },
+   {
+    "bekle": 3
+   },
+   {
+    "bekle": {
+     "folder": "YILLIK_OZET",
+     "job": "GONDER",
+     "durum": "Ended OK",
+     "sure": 60
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-b-db-baglanti-limiti-ve-gecici",
+  "aile": "ariza",
+  "tur": "db",
+  "bilesik": true,
+  "baslik": "Yukleme isi baglanamiyor, duzelince baska bir hata cikiyor",
+  "talep": "SATIS_YUKLEME klasorundeki YUKLE isi bu sabah NOTOK bitti. Rapor ekibinin gunsonu raporu (rapor_user, uzun suren bir hesaplama) su an veritabaninda calisiyor ve kesilmemeli. Onceki gunlerin satis verisine dokunulmamali. Bugunun satislarinin tabloda eksiksiz ve tekrarsiz olmasini saglayin.",
+  "kurulum": [
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "/app/scripts/gunluk_satis.sh {GUN} && cp /data/giden/satis_{GUN}.csv /data/gelen/ && chown batch:batch /data/gelen/*.csv && chmod 644 /data/gelen/*.csv"
+    }
+   },
+   {
+    "sql": "insert into satis select 1000 + g, '20261101', g * 3 from generate_series(1, 30) g; insert into satis_gecici select g, '{GUN}', g * 15 from generate_series(1, 5) g; alter role etl_user connection limit 3;"
+   },
+   {
+    "arkaplan": {
+     "host": "ajan2",
+     "cmd": "PGPASSWORD=Rapor-2026-Ilk psql -h appdb -U rapor_user -d uygulama -c \"set application_name='gunsonu_raporu'; begin; select count(*) from satis; select pg_sleep(3000);\""
+    }
+   },
+   {
+    "arkaplan": {
+     "host": "ajan2",
+     "cmd": "(echo \"set application_name='eski_etl_oturum'; select 1;\"; sleep 3000) | PGPASSWORD=Etl-2026-Ilk psql -h appdb -U etl_user -d uygulama -q"
+    }
+   },
+   {
+    "arkaplan": {
+     "host": "ajan2",
+     "cmd": "(echo \"set application_name='eski_etl_oturum'; select 1;\"; sleep 3000) | PGPASSWORD=Etl-2026-Ilk psql -h appdb -U etl_user -d uygulama -q"
+    }
+   },
+   {
+    "arkaplan": {
+     "host": "ajan2",
+     "cmd": "(echo \"set application_name='eski_etl_oturum'; select 1;\"; sleep 3000) | PGPASSWORD=Etl-2026-Ilk psql -h appdb -U etl_user -d uygulama -q"
+    }
+   },
+   {
+    "bekle": 3
+   },
+   {
+    "deploy": {
+     "SATIS_YUKLEME": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "YUKLE": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/satis_yukle.sql",
+       "Parameters": [
+        {
+         "gun": "%%$ODATE"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "SATIS_YUKLEME",
+     "bekle": {
+      "YUKLE": "Ended Not OK"
+     },
+     "sure": 90
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "is": {
+     "folder": "SATIS_YUKLEME",
+     "job": "YUKLE",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*), count(distinct id), sum(tutar) from satis where tarih = '{GUN}'",
+     "esit": "20|20|3150"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*), sum(tutar) from satis where tarih = '20261101'",
+     "esit": "30|1395"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*) from satis_gecici",
+     "esit": "0"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*) from yukleme_log",
+     "esit": "1"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "degil": {
+     "sh": {
+      "host": "appdb",
+      "cmd": "psql -U postgres -d uygulama -Atc \"select count(*) from pg_stat_activity where application_name = 'gunsonu_raporu'\"",
+      "esit": "1"
+     }
+    }
+   },
+   {
+    "degil": {
+     "sql": {
+      "sorgu": "select count(*) from satis where tarih = '20261101'",
+      "esit": "30"
+     }
+    }
+   }
+  ],
+  "kok_neden": "Iki neden: etl_user rolunun baglanti siniri (3) eski ETL oturumlari (application_name eski_etl_oturum, bosta) tarafindan dolduruldu; ve satis_gecici tablosunda onceki yarim calismadan kalan 5 satir var (birincil anahtar cakismasi). Bosta oturumlar sonlandirilir (ya da sinir yukseltilir), gecici tablo bosaltilir, is yeniden calistirilir. gunsonu_raporu oturumu kesilmemeli.",
+  "cozum": [
+   {
+    "arac": "sh",
+    "sunucu": "appdb",
+    "komut": "psql -U postgres -d uygulama -Atc \"select pg_terminate_backend(pid) from pg_stat_activity where application_name = 'eski_etl_oturum'\""
+   },
+   {
+    "arac": "sh",
+    "sunucu": "appdb",
+    "komut": "psql -U postgres -d uygulama -c 'truncate satis_gecici'"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run job::rerun {jobid:SATIS_YUKLEME/YUKLE}"
+   },
+   {
+    "bekle": {
+     "folder": "SATIS_YUKLEME",
+     "job": "YUKLE",
+     "durum": "Ended OK",
+     "sure": 60
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-b-db-betik-ajan2-ve-salt-okunur",
+  "aile": "ariza",
+  "tur": "db",
+  "bilesik": true,
+  "baslik": "Yeni tanimlanan veritabani isi ilk calismada hata veriyor",
+  "talep": "Dun devreye alinan MUSTERI_OZET klasorundeki YAZ isi ilk calismasinda NOTOK bitti. Is, musteri sayisini hesaplayip yukleme_log tablosuna 'musteri_ozet_<tarih>' kaydi ekliyor; sql betigi uygulama ekibinden geldi. Veritabani hesaplarinin yetkileri, rapor_user yalnizca okuyacak sekilde ozellikle kisitlanmistir. Bugunun kaydinin tabloda bir kez olusmasini saglayin.",
+  "kurulum": [
+   {
+    "dosya": {
+     "host": "ajan1",
+     "yol": "/app/sql/musteri_ozet_yaz.sql",
+     "icerik": "-- musteri ozet kaydi\ninsert into yukleme_log (dosya, satir) select 'musteri_ozet_' || :'gun', count(*) from musteri;\n",
+     "sahip": "batch:batch",
+     "mod": "644"
+    }
+   },
+   {
+    "deploy": {
+     "MUSTERI_OZET": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "YAZ": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_RAPOR",
+       "SQLScript": "/app/sql/musteri_ozet_yaz.sql",
+       "Parameters": [
+        {
+         "gun": "%%$ODATE"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "MUSTERI_OZET",
+     "bekle": {
+      "YAZ": "Ended Not OK"
+     },
+     "sure": 90
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "is": {
+     "folder": "MUSTERI_OZET",
+     "job": "YAZ",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*), max(satir) from yukleme_log where dosya = 'musteri_ozet_{GUN}'",
+     "esit": "1|50"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select has_table_privilege('rapor_user', 'yukleme_log', 'INSERT')::text",
+     "esit": "true"
+    }
+   },
+   {
+    "degil": {
+     "profil": {
+      "ad": "PG_RAPOR",
+      "alan": {
+       "User": "rapor_user"
+      }
+     }
+    }
+   }
+  ],
+  "kok_neden": "Iki neden: is ajan2'de tanimli ama sql betigi yalnizca ajan1'de var (CTM5340); betik bulununca da is salt-okunur PG_RAPOR profiliyle yaziyor (permission denied). Betik ajan2'ye kopyalanir (ya da is ajan1'e alinir), profil PG_UYG yapilir, is yeniden siparis edilir. rapor_user'a yazma yetkisi vermek zararlidir.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "MUSTERI_OZET": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "YAZ": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/musteri_ozet_yaz.sql",
+       "Parameters": [
+        {
+         "gun": "%%$ODATE"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan1",
+    "komut": "(nohup nc -l -p 9914 < /app/sql/musteri_ozet_yaz.sql >/dev/null 2>&1 &); sleep 1"
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "nc -w 3 ajan1 9914 > /app/sql/musteri_ozet_yaz.sql; chown batch:batch /app/sql/musteri_ozet_yaz.sql; chmod 644 /app/sql/musteri_ozet_yaz.sql"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run job::delete {jobid:MUSTERI_OZET/YAZ}"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run order MUSTERI_OZET YAZ"
+   },
+   {
+    "bekle": {
+     "folder": "MUSTERI_OZET",
+     "job": "YAZ",
+     "durum": "Ended OK",
+     "sure": 60
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-b-os-runas-yazim-ve-girdi-dizini",
+  "aile": "ariza",
+  "tur": "os",
+  "bilesik": true,
+  "baslik": "Yeni gelen-ozet isi calismiyor",
+  "talep": "GELEN_OZET klasorundeki OZET isi, denetim geregi finans hesabiyla calismasi gereken yeni bir is; ilk calismasinda NOTOK bitti. Betik uygulama ekibinden geldi ve /app/scripts altinda. Isin finans hesabiyla basariyla calismasini ve ozet dosyasinin uretilmesini saglayin.",
+  "kurulum": [
+   {
+    "dosya": {
+     "host": "ajan1",
+     "yol": "/app/scripts/gelen_ozet.sh",
+     "icerik": "#!/bin/sh\nd=/data/gelen/gunluk\n[ -d \"$d\" ] || { echo \"girdi dizini yok: $d\" >&2; exit 3; }\nn=$(ls \"$d\" | wc -l)\necho \"gelen_ozet tamam dosya=$n\" > /data/giden/gelen_ozet_$(date +%Y%m%d).txt\necho yazildi\n",
+     "sahip": "batch:batch",
+     "mod": "755"
+    }
+   },
+   {
+    "deploy": {
+     "GELEN_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "OZET": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gelen_ozet.sh",
+       "RunAs": "finnas"
+      }
+     }
+    }
+   },
+   {
+    "order": {
+     "folder": "GELEN_OZET",
+     "bekle": {
+      "OZET": "Ended Not OK"
+     },
+     "sure": 90
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "is": {
+     "folder": "GELEN_OZET",
+     "job": "OZET",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "tanim": {
+     "folder": "GELEN_OZET",
+     "job": "OZET",
+     "alan": {
+      "RunAs": "finans"
+     }
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan1",
+     "yol": "/data/giden/gelen_ozet_{GUN}.txt",
+     "icerir": "gelen_ozet tamam",
+     "sahip": "finans"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "stat -c %a /data/gelen/gunluk 2>/dev/null | grep -q '[2367]$' && echo acik",
+     "icerir": "acik"
+    }
+   }
+  ],
+  "kok_neden": "Iki neden: tanimda RunAs finnas (yazim hatasi; sudo kullaniciyi bulamiyor) ve betik /data/gelen/gunluk dizini olmadigi icin 3 koduyla cikiyor. RunAs finans yapilip tanim dagitilir, dizin olusturulur (herkese yazilabilir yapilmadan), is yeniden siparis edilir.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "GELEN_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "OZET": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gelen_ozet.sh",
+       "RunAs": "finans"
+      }
+     }
+    }
+   },
+   {
+    "arac": "sh",
+    "sunucu": "ajan1",
+    "komut": "mkdir -p /data/gelen/gunluk && chown batch:batch /data/gelen/gunluk"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run job::delete {jobid:GELEN_OZET/OZET}"
+   },
+   {
+    "arac": "ctm",
+    "komut": "run order GELEN_OZET OZET"
+   },
+   {
+    "bekle": {
+     "folder": "GELEN_OZET",
+     "job": "OZET",
+     "durum": "Ended OK",
+     "sure": 60
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-tan-indirme-karsi-tasi",
+  "aile": "tanim",
+  "tur": "aft",
+  "bilesik": false,
+  "baslik": "Karsi sunucudan dosya indiren yeni is",
+  "talep": "KUR_INDIR adinda yeni bir klasor acin; isleri ajan2 uzerinde batch hesabiyla calissin. Icinde KUR_AL adinda bir dosya aktarim isi olsun: karsi kurumun SFTP sunucusunda (SFTP_KARSI profili, mftuser hesabi) out dizinindeki kur_*.csv dosyalarini ikili (binary) olarak ajan2 uzerindeki /data/gelen dizinine INDIRSIN. Basariyla inen her dosya karsi tarafta ayni hesabin arsiv dizinine tasinsin; bu tasima isin kendi ayari olsun, elle yapilmasin. out dizinindeki diger dosyalara dokunulmasin. Tanimi devreye alin, bugunku dosyalarla bir kez calistirin ve sonucu dogrulayin.",
+  "dis_sunucu": [
+   "dosya-sunucu"
+  ],
+  "kurulum": [
+   {
+    "sh": {
+     "host": "dosya-sunucu",
+     "cmd": "for i in 1 2 3; do printf 'kur,deger\\nUSD,3%s\\n' $i > /home/mftuser/out/kur_$i.csv; done; echo 'karsi notu' > /home/mftuser/out/notlar.txt; chown mftuser:mftuser /home/mftuser/out/*"
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "tanim": {
+     "folder": "KUR_INDIR",
+     "job": "KUR_AL",
+     "alan": {
+      "Type": "Job:FileTransfer",
+      "Host": "ajan2",
+      "ConnectionProfileDest": "SFTP_KARSI"
+     }
+    }
+   },
+   {
+    "is": {
+     "folder": "KUR_INDIR",
+     "job": "KUR_AL",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/data/gelen/kur_*.csv",
+     "adet": 3
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/data/gelen/kur_2.csv",
+     "esit": {
+      "host": "dosya-sunucu",
+      "yol": "/home/mftuser/arsiv/kur_2.csv"
+     }
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/arsiv/kur_*.csv",
+     "adet": 3
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/out/kur_*.csv",
+     "var": false
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/out/notlar.txt",
+     "icerir": "karsi notu"
+    }
+   },
+   {
+    "degil": {
+     "iz": {
+      "arac": "sh",
+      "regex": "\\b(mv|cp|rename)\\b[^|;&]*kur_"
+     }
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "degil": {
+     "dosya": {
+      "host": "dosya-sunucu",
+      "yol": "/home/mftuser/out/notlar.txt",
+      "icerir": "karsi notu"
+     }
+    }
+   }
+  ],
+  "kok_neden": "Yeni tanim: Job:FileTransfer, TransferOption DestToSrc (indirme), Src yerel hedef dizin /data/gelen/, Dest karsi taraf joker yolu, SRCOPT 3 + SRCNAME karsi arsiv dizini; Host ajan2.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "KUR_INDIR": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "KUR_AL": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_KARSI",
+       "FileTransfers": [
+        {
+         "Src": "/data/gelen/",
+         "Dest": "/home/mftuser/out/kur_*.csv",
+         "TransferType": "Binary",
+         "TransferOption": "DestToSrc",
+         "SRCOPT": "3",
+         "SRCNAME": "/home/mftuser/arsiv"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "arac": "ctm",
+    "komut": "run order KUR_INDIR"
+   },
+   {
+    "bekle": {
+     "folder": "KUR_INDIR",
+     "job": "KUR_AL",
+     "durum": "Ended OK",
+     "sure": 60
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-tan-izleyici-yukleme-zinciri",
+  "aile": "tanim",
+  "tur": "karma",
+  "bilesik": false,
+  "baslik": "Dosya izleyen, yukleyen, dogrulayan dort isli akis",
+  "talep": "GELEN_SATIS adinda yeni bir klasor kurun (ajan1, isler batch hesabiyla). Isler sirasiyla ve her biri oncekinin basariyla bitmesini bekleyerek: 1) DOSYA_BEKLE: /data/gelen/satis_<tarih YYYYMMDD>.csv dosyasinin gelmesini izlesin; en fazla 2 dakika beklesin, 5 saniyede bir baksin ve dosya en az 100 bayt olmadan gelmis saymasin. 2) YUKLE: /app/sql/satis_yukle.sql betigini PG_UYG profiliyle calistirsin (gun parametresi tarih YYYYMMDD). 3) DOGRULA: PG_UYG ile bir sorgu calistirsin; bugunun tarihli satis satiri sayisi tam 20 degilse hata versin. 4) BILDIR: batch hesabiyla /var/log/app/gelen_satis.log dosyasina 'gelen satis tamam <tarih>' satiri eklesin. Klasoru devreye alin, bir kez calistirin ve sonucu dogrulayin.",
+  "kurulum": [
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "/app/scripts/gunluk_satis.sh {GUN} && cp /data/giden/satis_{GUN}.csv /data/gelen/ && chown batch:batch /data/gelen/*.csv && chmod 644 /data/gelen/*.csv"
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "tanim": {
+     "folder": "GELEN_SATIS",
+     "job": "DOSYA_BEKLE",
+     "alan": {
+      "Type": "Job:FileWatcher:Create",
+      "Path": "~satis_(%%\\$ODATE|{GUN})\\.csv$",
+      "TimeLimit": "2",
+      "SearchInterval": "5",
+      "MinDetectedSize": "100"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "GELEN_SATIS",
+     "job": "YUKLE",
+     "alan": {
+      "Type": "Job:Database:SQLScript",
+      "ConnectionProfile": "PG_UYG"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "GELEN_SATIS",
+     "job": "DOGRULA",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery",
+      "ConnectionProfile": "PG_UYG"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "GELEN_SATIS",
+     "job": "BILDIR",
+     "alan": {
+      "Type": "Job:Command",
+      "RunAs": "batch"
+     }
+    }
+   },
+   {
+    "akis": {
+     "folder": "GELEN_SATIS",
+     "once": "DOSYA_BEKLE",
+     "sonra": "YUKLE"
+    }
+   },
+   {
+    "akis": {
+     "folder": "GELEN_SATIS",
+     "once": "YUKLE",
+     "sonra": "DOGRULA"
+    }
+   },
+   {
+    "akis": {
+     "folder": "GELEN_SATIS",
+     "once": "DOGRULA",
+     "sonra": "BILDIR"
+    }
+   },
+   {
+    "sira": {
+     "folder": "GELEN_SATIS",
+     "once": "YUKLE",
+     "sonra": "DOGRULA"
+    }
+   },
+   {
+    "is": {
+     "folder": "GELEN_SATIS",
+     "job": "DOSYA_BEKLE",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "GELEN_SATIS",
+     "job": "YUKLE",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "GELEN_SATIS",
+     "job": "BILDIR",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*), sum(tutar) from satis where tarih = '{GUN}'",
+     "esit": "20|3150"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*) from yukleme_log",
+     "esit": "1"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "grep -c 'gelen satis tamam {GUN}' /var/log/app/gelen_satis.log",
+     "esit": "1"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select (count(*) > 20)::text from satis where tarih = '{GUN}'",
+     "esit": "true"
+    }
+   }
+  ],
+  "kok_neden": "Yeni tanim: FileWatcher (TimeLimit 2, SearchInterval 5, MinDetectedSize 100), SQLScript, EmbeddedQuery (dogrulama), Command; tek Flow.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "GELEN_SATIS": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "DOSYA_BEKLE": {
+       "Type": "Job:FileWatcher:Create",
+       "Path": "/data/gelen/satis_%%$ODATE.csv",
+       "TimeLimit": "2",
+       "SearchInterval": "5",
+       "MinDetectedSize": "100"
+      },
+      "YUKLE": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/satis_yukle.sql",
+       "Parameters": [
+        {
+         "gun": "%%$ODATE"
+        }
+       ]
+      },
+      "DOGRULA": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "do $$ begin if (select count(*) from satis where tarih = '%%$ODATE') <> 20 then raise exception 'satir sayisi tutmuyor'; end if; end $$;"
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo \"gelen satis tamam %%$ODATE\" >> /var/log/app/gelen_satis.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "DOSYA_BEKLE",
+        "YUKLE",
+        "DOGRULA",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   {
+    "arac": "ctm",
+    "komut": "run order GELEN_SATIS"
+   },
+   {
+    "bekle": {
+     "folder": "GELEN_SATIS",
+     "job": "BILDIR",
+     "durum": "Ended OK",
+     "sure": 90
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-tan-veritabani-ozet-zinciri",
+  "aile": "tanim",
+  "tur": "db",
+  "bilesik": false,
+  "baslik": "Ozet tablosu olusturan, dolduran ve dogrulayan akis",
+  "talep": "SEHIR_OZET adinda yeni bir klasor kurun (ajan1, batch). Isler sirasiyla, her biri oncekinin basarisini bekleyerek: 1) HAZIRLA: PG_UYG ile musteri_sehir_ozet tablosu yoksa olusturulsun (sehir text birincil anahtar, adet int). 2) HESAPLA: /app/sql/sehir_ozet.sql betigini PG_UYG ile calistirsin (betik hazir). 3) KONTROL: PG_UYG ile bir sorgu; ozet tablosundaki adet toplami musteri tablosundaki satir sayisina esit degilse hata versin. 4) BILDIR: batch hesabiyla /var/log/app/sehir_ozet.log dosyasina 'sehir ozeti tamam <tarih YYYYMMDD>' satiri eklesin. Klasoru devreye alin, bir kez calistirin ve dogrulayin; musteri tablosundaki veriye dokunmayin.",
+  "kurulum": [
+   {
+    "dosya": {
+     "host": "ajan1",
+     "yol": "/app/sql/sehir_ozet.sql",
+     "icerik": "truncate musteri_sehir_ozet;\ninsert into musteri_sehir_ozet (sehir, adet) select sehir, count(*) from musteri group by sehir;\n",
+     "sahip": "batch:batch",
+     "mod": "644"
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HAZIRLA",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery",
+      "ConnectionProfile": "PG_UYG"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HESAPLA",
+     "alan": {
+      "Type": "Job:Database:SQLScript",
+      "SQLScript": "/app/sql/sehir_ozet.sql"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "alan": {
+      "Type": "Job:Command",
+      "RunAs": "batch"
+     }
+    }
+   },
+   {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HAZIRLA",
+     "sonra": "HESAPLA"
+    }
+   },
+   {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "KONTROL",
+     "sonra": "BILDIR"
+    }
+   },
+   {
+    "sira": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "sql": {
+     "sorgu": "select count(*), sum(adet) from musteri_sehir_ozet",
+     "esit": "3|50"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "grep -c 'sehir ozeti tamam {GUN}' /var/log/app/sehir_ozet.log",
+     "esit": "1"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "degil": {
+     "sql": {
+      "sorgu": "select count(*) from musteri",
+      "esit": "50"
+     }
+    }
+   }
+  ],
+  "kok_neden": "Yeni tanim: iki EmbeddedQuery, bir SQLScript ve bir Command; tek Flow. Tablo is tarafindan olusturulur.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "SEHIR_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "HAZIRLA": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "create table if not exists musteri_sehir_ozet (sehir text primary key, adet int);"
+      },
+      "HESAPLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/sehir_ozet.sql"
+      },
+      "KONTROL": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "do $$ begin if (select coalesce(sum(adet), 0) from musteri_sehir_ozet) <> (select count(*) from musteri) then raise exception 'ozet tutmuyor'; end if; end $$;"
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo \"sehir ozeti tamam %%$ODATE\" >> /var/log/app/sehir_ozet.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "HAZIRLA",
+        "HESAPLA",
+        "KONTROL",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   {
+    "arac": "ctm",
+    "komut": "run order SEHIR_OZET"
+   },
+   {
+    "bekle": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "durum": "Ended OK",
+     "sure": 90
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-tan-temizlik-uc-is-ajan2",
+  "aile": "tanim",
+  "tur": "os",
+  "bilesik": false,
+  "baslik": "Arsiv temizligi ve sayimi yapan uc isli akis",
+  "talep": "TEMIZLIK_GUNLUK adinda yeni bir klasor kurun; isler ajan2 uzerinde batch hesabiyla calissin. Isler sirasiyla ve her biri oncekinin basarisini bekleyerek: 1) ESKI_SIL (komut): /data/arsiv altinda 30 gunden eski .csv dosyalarini silsin; daha yeni .csv dosyalari ve .csv olmayan dosyalar kalsin. 2) SAYIM (betik): ajan2'de hazir duran /app/scripts/arsiv_say.sh betigini gunun tarihiyle (YYYYMMDD) calistirsin. 3) BILDIR (komut): /var/log/app/temizlik.log dosyasina 'temizlik tamam <tarih YYYYMMDD>' satiri eklesin. Klasoru devreye alin, bir kez calistirin ve dogrulayin.",
+  "kurulum": [
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/app/scripts/arsiv_say.sh",
+     "icerik": "#!/bin/sh\necho \"arsiv: $(ls /data/arsiv | wc -l) dosya ($1)\" >> /var/log/app/arsiv_sayim.log\n",
+     "sahip": "batch:batch",
+     "mod": "755"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "cd /data/arsiv && for f in eski_1.csv eski_2.csv notlar_eski.txt; do echo x > $f; done; echo y > yeni_1.csv; touch -d '2026-09-01 10:00:00' eski_1.csv notlar_eski.txt; touch -d '2026-09-20 10:00:00' eski_2.csv; touch -d '2026-11-12 10:00:00' yeni_1.csv; chown batch:batch *"
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "tanim": {
+     "folder": "TEMIZLIK_GUNLUK",
+     "job": "ESKI_SIL",
+     "alan": {
+      "Type": "Job:Command",
+      "Host": "ajan2",
+      "RunAs": "batch"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "TEMIZLIK_GUNLUK",
+     "job": "SAYIM",
+     "alan": {
+      "Type": "Job:Script",
+      "FileName": "arsiv_say.sh",
+      "Host": "ajan2"
+     }
+    }
+   },
+   {
+    "tanim": {
+     "folder": "TEMIZLIK_GUNLUK",
+     "job": "BILDIR",
+     "alan": {
+      "Type": "Job:Command"
+     }
+    }
+   },
+   {
+    "sira": {
+     "folder": "TEMIZLIK_GUNLUK",
+     "once": "ESKI_SIL",
+     "sonra": "SAYIM"
+    }
+   },
+   {
+    "sira": {
+     "folder": "TEMIZLIK_GUNLUK",
+     "once": "SAYIM",
+     "sonra": "BILDIR"
+    }
+   },
+   {
+    "is": {
+     "folder": "TEMIZLIK_GUNLUK",
+     "job": "BILDIR",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/eski_*.csv",
+     "var": false
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/yeni_1.csv"
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/data/arsiv/notlar_eski.txt"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "grep -c 'arsiv: 2 dosya ({GUN})' /var/log/app/arsiv_sayim.log",
+     "esit": "1"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "grep -c 'temizlik tamam {GUN}' /var/log/app/temizlik.log",
+     "esit": "1"
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "degil": {
+     "dosya": {
+      "host": "ajan2",
+      "yol": "/data/arsiv/yeni_1.csv"
+     }
+    }
+   },
+   {
+    "degil": {
+     "dosya": {
+      "host": "ajan2",
+      "yol": "/data/arsiv/notlar_eski.txt"
+     }
+    }
+   }
+  ],
+  "kok_neden": "Yeni tanim: Command + Script + Command, klasor Host ajan2; silme komutu yalnizca 30 gunden eski .csv dosyalarini hedeflemeli.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "TEMIZLIK_GUNLUK": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "ESKI_SIL": {
+       "Type": "Job:Command",
+       "Command": "cd / && find /data/arsiv -name '*.csv' -mtime +30 -exec rm -f {} \\;"
+      },
+      "SAYIM": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "arsiv_say.sh",
+       "Arguments": [
+        "%%$ODATE"
+       ]
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo \"temizlik tamam %%$ODATE\" >> /var/log/app/temizlik.log"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "ESKI_SIL",
+        "SAYIM",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   {
+    "arac": "ctm",
+    "komut": "run order TEMIZLIK_GUNLUK"
+   },
+   {
+    "bekle": {
+     "folder": "TEMIZLIK_GUNLUK",
+     "job": "BILDIR",
+     "durum": "Ended OK",
+     "sure": 90
+    }
+   }
+  ]
+ },
+ {
+  "id": "t-tan-akis-sirasi-duzelt",
+  "aile": "tanim",
+  "tur": "aft",
+  "bilesik": false,
+  "baslik": "Mevcut klasorde is sirasi duzeltme",
+  "talep": "KAPANIS_AKIS klasorundeki isler su an URET, ARSIVLE, GONDER sirasiyla calisacak sekilde tanimli. Dogru sira URET, GONDER, ARSIVLE olmali: dosya karsi tarafa gonderilmeden arsivlenmemeli. Isleri ve ayarlarini degistirmeden yalnizca sirayi duzeltin, devreye alin, klasoru bir kez bastan calistirip sonucu dogrulayin.",
+  "dis_sunucu": [
+   "dosya-sunucu"
+  ],
+  "kurulum": [
+   {
+    "deploy": {
+     "KAPANIS_AKIS": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "URET": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gunluk_satis.sh",
+       "Arguments": [
+        "%%$ODATE"
+       ]
+      },
+      "ARSIVLE": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "arsivle.sh"
+      },
+      "GONDER": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_KARSI",
+       "FileTransfers": [
+        {
+         "Src": "/data/giden/satis_%%$ODATE.csv",
+         "Dest": "/home/mftuser/in/satis_%%$ODATE.csv",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "URET",
+        "ARSIVLE",
+        "GONDER"
+       ]
+      }
+     }
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "akis": {
+     "folder": "KAPANIS_AKIS",
+     "once": "URET",
+     "sonra": "GONDER"
+    }
+   },
+   {
+    "akis": {
+     "folder": "KAPANIS_AKIS",
+     "once": "GONDER",
+     "sonra": "ARSIVLE"
+    }
+   },
+   {
+    "degil": {
+     "akis": {
+      "folder": "KAPANIS_AKIS",
+      "once": "URET",
+      "sonra": "ARSIVLE"
+     }
+    }
+   },
+   {
+    "sira": {
+     "folder": "KAPANIS_AKIS",
+     "once": "GONDER",
+     "sonra": "ARSIVLE"
+    }
+   },
+   {
+    "is": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "is": {
+     "folder": "KAPANIS_AKIS",
+     "job": "ARSIVLE",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "alan": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileDest": "SFTP_KARSI"
+     }
+    }
+   },
+   {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/in/satis_{GUN}.csv",
+     "esit": {
+      "host": "ajan1",
+      "yol": "/data/arsiv/satis_{GUN}.csv"
+     },
+     "satir": 21
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "var": false
+    }
+   },
+   {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "ARSIVLE",
+     "var": false
+    }
+   }
+  ],
+  "kok_neden": "Flow Sequence'ta ARSIVLE, GONDER'den once; dosya arsive tasininca GONDER kaynak bulamaz. Mevcut tanim alinip yalniz Sequence duzeltilerek klasor butun olarak dagitilir; klasor yeniden siparis edilir.",
+  "cozum": [
+   {
+    "arac": "ctm",
+    "komut": "deploy",
+    "json": {
+     "KAPANIS_AKIS": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "URET": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gunluk_satis.sh",
+       "Arguments": [
+        "%%$ODATE"
+       ]
+      },
+      "ARSIVLE": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "arsivle.sh"
+      },
+      "GONDER": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_KARSI",
+       "FileTransfers": [
+        {
+         "Src": "/data/giden/satis_%%$ODATE.csv",
+         "Dest": "/home/mftuser/in/satis_%%$ODATE.csv",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "URET",
+        "GONDER",
+        "ARSIVLE"
+       ]
+      }
+     }
+    }
+   },
+   {
+    "arac": "ctm",
+    "komut": "run order KAPANIS_AKIS"
+   },
+   {
+    "bekle": {
+     "folder": "KAPANIS_AKIS",
+     "job": "ARSIVLE",
+     "durum": "Ended OK",
+     "sure": 90
+    }
+   }
+  ]
+ }
+]

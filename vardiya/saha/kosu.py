@@ -169,6 +169,7 @@ def main(argv=None):
             p.add_argument("--model", required=True)
             p.add_argument("--atla", action="store_true", help="skip episodes that already have a row")
             p.add_argument("--max-adim", type=int, default=ajan.MAX_ADIM)
+            p.add_argument("--parca", help="i/n: senaryolarin n parcadan i'incisi (paralel laboratuvar kopyalari icin)")
     p = sub.add_parser("rapor")
     p.add_argument("--ad", required=True)
     a = ap.parse_args(argv)
@@ -176,6 +177,9 @@ def main(argv=None):
         print(rapor(a.ad))
         return 0
     senaryolar = yukle(a.split, a.id)
+    if getattr(a, "parca", None):
+        i, n = (int(x) for x in a.parca.split("/"))
+        senaryolar = [s for k, s in enumerate(senaryolar) if k % n == i - 1]
     bad = {s.get("id", s["_dosya"]): dogrula_bicim(s) for s in senaryolar}
     bad = {k: v for k, v in bad.items() if v}
     if bad:
