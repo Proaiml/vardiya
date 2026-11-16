@@ -1,0 +1,401 @@
+{
+ "senaryo": "t-tan-veritabani-ozet-zinciri",
+ "kol": "yalin",
+ "model": "agy:gpt-oss-120b-medium",
+ "aile": "tanim",
+ "tur": "db",
+ "bilesik": false,
+ "zaman": "2026-11-16T14:03:50",
+ "sifirlama_sn": 8.5,
+ "kurulum": [
+  {
+   "adim": "dosya",
+   "sn": 0.4,
+   "not": "/app/sql/sehir_ozet.sql"
+  }
+ ],
+ "hukum": "dogru",
+ "tutan": 12,
+ "toplam": 12,
+ "kontroller": [
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HAZIRLA",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery",
+      "ConnectionProfile": "PG_UYG"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HESAPLA",
+     "alan": {
+      "Type": "Job:Database:SQLScript",
+      "SQLScript": "/app/sql/sehir_ozet.sql"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "alan": {
+      "Type": "Job:Command",
+      "RunAs": "batch"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HAZIRLA",
+     "sonra": "HESAPLA"
+    }
+   },
+   "tutar": true,
+   "gorulen": "HAZIRLA -> HESAPLA: bagli"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   "tutar": true,
+   "gorulen": "HESAPLA -> KONTROL: bagli"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "KONTROL",
+     "sonra": "BILDIR"
+    }
+   },
+   "tutar": true,
+   "gorulen": "KONTROL -> BILDIR: bagli"
+  },
+  {
+   "kontrol": {
+    "sira": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   "tutar": true,
+   "gorulen": "HESAPLA bitis 11:04:23 / KONTROL baslangic 11:04:23"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": true,
+   "gorulen": "Ended OK"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": true,
+   "gorulen": "Ended OK"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*), sum(adet) from musteri_sehir_ozet",
+     "esit": "3|50"
+    }
+   },
+   "tutar": true,
+   "gorulen": "3|50"
+  },
+  {
+   "kontrol": {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "grep -c 'sehir ozeti tamam 20261116' /var/log/app/sehir_ozet.log",
+     "esit": "1"
+    }
+   },
+   "tutar": true,
+   "gorulen": "rc=0 1"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "sql": {
+      "sorgu": "select count(*) from musteri",
+      "esit": "50"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "50"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:001ea",
+   "folder": "SEHIR_OZET",
+   "name": "HAZIRLA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/HAZIRLA saha:001ea kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__HAZIRLA, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=HAZIRLA tip=Job:Database:EmbeddedQuery RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nCREATE TABLE\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001eb",
+   "folder": "SEHIR_OZET",
+   "name": "HESAPLA",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/HESAPLA saha:001eb kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__HESAPLA, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=HESAPLA tip=Job:Database:SQLScript RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nTRUNCATE TABLE\nINSERT 0 3\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001ec",
+   "folder": "SEHIR_OZET",
+   "name": "KONTROL",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/KONTROL saha:001ec kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__KONTROL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=KONTROL tip=Job:Database:EmbeddedQuery RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nDO\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001ed",
+   "folder": "SEHIR_OZET",
+   "name": "BILDIR",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/BILDIR saha:001ed kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__BILDIR, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=BILDIR tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  }
+ ],
+ "rapor": "SEHIR_OZET klasörü oluşturuldu ve dağıtıldı. HAZIRLA (musteri_sehir_ozet tablosu oluşturuldu), HESAPLA (sehir_ozet.sql çalıştırıldı), KONTROL (satır sayısı tutarlılığı doğrulandı) ve BILDIR (log dosyasına 'sehir ozeti tamam 20261116' eklendi) tümü Ended OK durumunda. Veritabanı muster i tablosuna dokunulmadı. İş akışı bir kez çalıştırıldı ve doğrulandı.",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "SEHIR_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "Variables": [],
+      "HAZIRLA": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "CREATE TABLE IF NOT EXISTS musteri_sehir_ozet (sehir text PRIMARY KEY, adet int);",
+       "Autocommit": "Y"
+      },
+      "HESAPLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/sehir_ozet.sql",
+       "Parameters": []
+      },
+      "KONTROL": {
+       "Type": "Job:Database:EmbeddedQuery",
+       "ConnectionProfile": "PG_UYG",
+       "Query": "DO $$ DECLARE cnt int; DECLARE sum_adet int; BEGIN SELECT count(*) INTO cnt FROM musteri; SELECT coalesce(sum(adet),0) INTO sum_adet FROM musteri_sehir_ozet; IF sum_adet <> cnt THEN RAISE EXCEPTION 'Özet tutarsız: % vs %', sum_adet, cnt; END IF; END $$;",
+       "Autocommit": "Y"
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo sehir ozeti tamam $(date +%Y%m%d) >> /var/log/app/sehir_ozet.log",
+       "RunAs": "batch"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "HAZIRLA",
+        "HESAPLA",
+        "KONTROL",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.8,
+   "cikti": "{\n \"deployedFolders\": [\n  \"SEHIR_OZET\"\n ],\n \"deployedJobs\": [\n  \"SEHIR_OZET/HAZIRLA\",\n  \"SEHIR_OZET/HESAPLA\",\n  \"SEHIR_OZET/KONTROL\",\n  \"SEHIR_OZET/BILDIR\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order SEHIR_OZET"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{\n \"runId\": \"0489\",\n \"statusURI\": \"run status 0489\",\n \"jobIds\": [\n  \"saha:001ea\",\n  \"saha:001eb\",\n  \"saha:001ec\",\n  \"saha:001ed\"\n ]\n}"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:001ea"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001ea\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"HAZIRLA\",\n   \"type\": \"Database:EmbeddedQuery\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 4,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:001eb"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001eb\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"HESAPLA\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 5,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:001ec"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001ec\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"KONTROL\",\n   \"type\": \"Database:EmbeddedQuery\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 6,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:001ed"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001ed\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"BILDIR\",\n   \"type\": \"Command\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 7,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "grep -q \"sehir ozeti tamam 20261116\" /var/log/app/sehir_ozet.log"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "[cikis kodu 0]\n"
+  },
+  {
+   "n": 8,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run status 0489"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001ea\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"HAZIRLA\",\n   \"type\": \"Database:EmbeddedQuery\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:001eb\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"HESAPLA\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:001ec\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"KONTROL\",\n   \"type\": \"Database:EmbeddedQuery\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:001ed\",\n   \"folder\": \"SEHIR_OZET\",\n   \"name\": \"BILDIR\",\n   \"type\": \"Command\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 4,\n \"total\": 4\n}"
+  }
+ ],
+ "denetim": [
+  [
+   "14:04:14",
+   "deploy",
+   {
+    "deployedFolders": [
+     "SEHIR_OZET"
+    ],
+    "deployedJobs": [
+     "SEHIR_OZET/HAZIRLA",
+     "SEHIR_OZET/HESAPLA",
+     "SEHIR_OZET/KONTROL",
+     "SEHIR_OZET/BILDIR"
+    ]
+   }
+  ],
+  [
+   "14:04:22",
+   "order",
+   {
+    "folder": "SEHIR_OZET",
+    "job": null,
+    "jobIds": [
+     "saha:001ea",
+     "saha:001eb",
+     "saha:001ec",
+     "saha:001ed"
+    ]
+   }
+  ]
+ ],
+ "arac_cagrisi": 8,
+ "saniye": 85.3,
+ "adim": 9,
+ "bitis": "bitir",
+ "cagri": 9,
+ "mesaj_sayisi": 19,
+ "talep": "SEHIR_OZET adinda yeni bir klasor kurun (ajan1, batch). Isler sirasiyla, her biri oncekinin basarisini bekleyerek: 1) HAZIRLA: PG_UYG ile musteri_sehir_ozet tablosu yoksa olusturulsun (sehir text birincil anahtar, adet int). 2) HESAPLA: /app/sql/sehir_ozet.sql betigini PG_UYG ile calistirsin (betik hazir). 3) KONTROL: PG_UYG ile bir sorgu; ozet tablosundaki adet toplami musteri tablosundaki satir sayisina esit degilse hata versin. 4) BILDIR: batch hesabiyla /var/log/app/sehir_ozet.log dosyasina 'sehir ozeti tamam <tarih YYYYMMDD>' satiri eklesin. Klasoru devreye alin, bir kez calistirin ve dogrulayin; musteri tablosundaki veriye dokunmayin.",
+ "kok_neden": "Yeni tanim: iki EmbeddedQuery, bir SQLScript ve bir Command; tek Flow. Tablo is tarafindan olusturulur."
+}

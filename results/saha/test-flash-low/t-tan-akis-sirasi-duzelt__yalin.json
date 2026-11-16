@@ -1,0 +1,166 @@
+{
+ "senaryo": "t-tan-akis-sirasi-duzelt",
+ "kol": "yalin",
+ "model": "agy:gemini-3.8-flash-low",
+ "aile": "tanim",
+ "tur": "aft",
+ "bilesik": false,
+ "zaman": "2026-11-16T13:29:34",
+ "sifirlama_sn": 4.0,
+ "kurulum": [
+  {
+   "adim": "deploy",
+   "sn": 0.5,
+   "not": "{'deployedFolders': ['KAPANIS_AKIS'], 'deployedJobs': ['KAPANIS_AKIS/URET', 'KAPANIS_AKIS/ARSIVLE', 'KAPANIS_AKIS/GONDER'], 'deployedConnectionProfiles': [], 'removedJobs': []}"
+  }
+ ],
+ "hata": "model_hatasi: <urlopen error agy durumu: ERROR: Individual quota reached. Please upgrade your subscription to increase your limits. Re",
+ "hukum": "kurulamadi",
+ "tutan": 1,
+ "toplam": 8,
+ "kontroller": [
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "KAPANIS_AKIS",
+     "once": "URET",
+     "sonra": "GONDER"
+    }
+   },
+   "tutar": false,
+   "gorulen": "URET -> GONDER: bagli degil"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "KAPANIS_AKIS",
+     "once": "GONDER",
+     "sonra": "ARSIVLE"
+    }
+   },
+   "tutar": false,
+   "gorulen": "GONDER -> ARSIVLE: bagli degil"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "akis": {
+      "folder": "KAPANIS_AKIS",
+      "once": "URET",
+      "sonra": "ARSIVLE"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "URET -> ARSIVLE: bagli"
+  },
+  {
+   "kontrol": {
+    "sira": {
+     "folder": "KAPANIS_AKIS",
+     "once": "GONDER",
+     "sonra": "ARSIVLE"
+    }
+   },
+   "tutar": false,
+   "gorulen": "GONDER aktif ortamda yok"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "aktif ortamda yok"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "KAPANIS_AKIS",
+     "job": "ARSIVLE",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "aktif ortamda yok"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "alan": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileDest": "SFTP_KARSI"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/in/satis_20261116.csv",
+     "esit": {
+      "host": "ajan1",
+      "yol": "/data/arsiv/satis_20261116.csv"
+     },
+     "satir": 21
+    }
+   },
+   "tutar": false,
+   "gorulen": "dosya yok"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "var": false
+    }
+   },
+   "tutar": false,
+   "gorulen": "is tanimi var"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "ARSIVLE",
+     "var": false
+    }
+   },
+   "tutar": false,
+   "gorulen": "is tanimi var"
+  }
+ ],
+ "isler": [],
+ "rapor": "",
+ "iz": [],
+ "denetim": [],
+ "arac_cagrisi": 0,
+ "saniye": 35.7,
+ "adim": 1,
+ "bitis": "model_hatasi: <urlopen error agy durumu: ERROR: Individual quota reached. Please upgrade your subscription to increase your limits. Re",
+ "cagri": 0,
+ "mesaj_sayisi": 2,
+ "talep": "KAPANIS_AKIS klasorundeki isler su an URET, ARSIVLE, GONDER sirasiyla calisacak sekilde tanimli. Dogru sira URET, GONDER, ARSIVLE olmali: dosya karsi tarafa gonderilmeden arsivlenmemeli. Isleri ve ayarlarini degistirmeden yalnizca sirayi duzeltin, devreye alin, klasoru bir kez bastan calistirip sonucu dogrulayin.",
+ "kok_neden": "Flow Sequence'ta ARSIVLE, GONDER'den once; dosya arsive tasininca GONDER kaynak bulamaz. Mevcut tanim alinip yalniz Sequence duzeltilerek klasor butun olarak dagitilir; klasor yeniden siparis edilir."
+}

@@ -1,0 +1,350 @@
+{
+ "senaryo": "t-tan-akis-sirasi-duzelt",
+ "kol": "yalin",
+ "model": "agy:gpt-oss-120b-medium",
+ "aile": "tanim",
+ "tur": "aft",
+ "bilesik": false,
+ "zaman": "2026-11-16T14:07:47",
+ "sifirlama_sn": 6.1,
+ "kurulum": [
+  {
+   "adim": "deploy",
+   "sn": 0.5,
+   "not": "{'deployedFolders': ['KAPANIS_AKIS'], 'deployedJobs': ['KAPANIS_AKIS/URET', 'KAPANIS_AKIS/ARSIVLE', 'KAPANIS_AKIS/GONDER'], 'deployedConnectionProfiles': [], 'removedJobs': []}"
+  }
+ ],
+ "hukum": "dogru",
+ "tutan": 8,
+ "toplam": 8,
+ "kontroller": [
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "KAPANIS_AKIS",
+     "once": "URET",
+     "sonra": "GONDER"
+    }
+   },
+   "tutar": true,
+   "gorulen": "URET -> GONDER: bagli"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "KAPANIS_AKIS",
+     "once": "GONDER",
+     "sonra": "ARSIVLE"
+    }
+   },
+   "tutar": true,
+   "gorulen": "GONDER -> ARSIVLE: bagli"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "akis": {
+      "folder": "KAPANIS_AKIS",
+      "once": "URET",
+      "sonra": "ARSIVLE"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "URET -> ARSIVLE: bagli degil"
+  },
+  {
+   "kontrol": {
+    "sira": {
+     "folder": "KAPANIS_AKIS",
+     "once": "GONDER",
+     "sonra": "ARSIVLE"
+    }
+   },
+   "tutar": true,
+   "gorulen": "GONDER bitis 11:08:18 / ARSIVLE baslangic 11:08:18"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": true,
+   "gorulen": "Ended OK"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "KAPANIS_AKIS",
+     "job": "ARSIVLE",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": true,
+   "gorulen": "Ended OK"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "alan": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileDest": "SFTP_KARSI"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/in/satis_20261116.csv",
+     "esit": {
+      "host": "ajan1",
+      "yol": "/data/arsiv/satis_20261116.csv"
+     },
+     "satir": 21
+    }
+   },
+   "tutar": true,
+   "gorulen": {
+    "dosya": 1,
+    "sha256": [
+     "474aed33bbf5cfee",
+     "474aed33bbf5cfee"
+    ],
+    "satir": "21"
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "GONDER",
+     "var": false
+    }
+   },
+   "tutar": false,
+   "gorulen": "is tanimi var"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "KAPANIS_AKIS",
+     "job": "ARSIVLE",
+     "var": false
+    }
+   },
+   "tutar": false,
+   "gorulen": "is tanimi var"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:001f9",
+   "folder": "KAPANIS_AKIS",
+   "name": "URET",
+   "type": "Script",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# KAPANIS_AKIS/URET saha:001f9 kosu 1/1\n[MAIN] [Start] Job=KAPANIS_AKIS__URET, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=KAPANIS_AKIS is=URET tip=Job:Script RunAs=batch ODATE=20261116 kosu=1 ==\nuretildi: /data/giden/satis_20261116.csv 21 satir\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001fa",
+   "folder": "KAPANIS_AKIS",
+   "name": "ARSIVLE",
+   "type": "Script",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# KAPANIS_AKIS/ARSIVLE saha:001fa kosu 1/1\n[MAIN] [Start] Job=KAPANIS_AKIS__ARSIVLE, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=KAPANIS_AKIS is=ARSIVLE tip=Job:Script RunAs=batch ODATE=20261116 kosu=1 ==\narsivlenen dosya: 1\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001fb",
+   "folder": "KAPANIS_AKIS",
+   "name": "GONDER",
+   "type": "FileTransfer",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# KAPANIS_AKIS/GONDER saha:001fb kosu 1/1\n[MAIN] [Start] Job=KAPANIS_AKIS__GONDER, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=KAPANIS_AKIS is=GONDER tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] YEREL_BATCH:/data/giden/satis_20261116.csv -> SFTP_KARSI:/home/mftuser/in/satis_20261116.csv (Binary)\ntamam: satis_20261116.csv 320 bayt\naktarilan dosya: 1\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  }
+ ],
+ "rapor": "KAPANIS_AKIS klasörünün akış sırası URET->GONDER->ARSIVLE olarak düzeltildi, dağıtıldı ve bir kez çalıştırıldı; URET, GONDER ve ARSIVLE işleri her biri Ended OK ile tamamlandı, dosya transferi başarıyla gerçekleşti.",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s \"folder=KAPANIS_AKIS\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"KAPANIS_AKIS\": {\n  \"Type\": \"Folder\",\n  \"Host\": \"ajan1\",\n  \"RunAs\": \"batch\",\n  \"URET\": {\n   \"Type\": \"Job:Script\",\n   \"FilePath\": \"/app/scripts\",\n   \"FileName\": \"gunluk_satis.sh\",\n   \"Arguments\": [\n    \"%%$ODATE\"\n   ]\n  },\n  \"ARSIVLE\": {\n   \"Type\": \"Job:Script\",\n   \"FilePath\": \"/app/scripts\",\n   \"FileName\": \"arsivle.sh\"\n  },\n  \"GONDER\": {\n   \"Type\": \"Job:FileTransfer\",\n   \"ConnectionProfileSrc\": \"YEREL_BATCH\",\n   \"ConnectionProfileDest\": \"SFTP_KARSI\",\n   \"FileTransfers\": [\n    {\n     \"Src\": \"/data/giden/satis_%%$ODATE.csv\",\n     \"Dest\": \"/home/mftuser/in/satis_%%$ODATE.csv\",\n     \"TransferType\": \"Binary\",\n     \"TransferOption\": \"SrcToDest\"\n    }\n   ]\n  },\n  \"akis\": {\n   \"Type\": \"Flow\",\n   \"Sequence\": [\n    \"URET\",\n    \"ARSIVLE\",\n    \"GONDER\"\n   ]\n  }\n }\n}"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "KAPANIS_AKIS": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "URET": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gunluk_satis.sh",
+       "Arguments": [
+        "%%$ODATE"
+       ]
+      },
+      "ARSIVLE": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "arsivle.sh"
+      },
+      "GONDER": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_KARSI",
+       "FileTransfers": [
+        {
+         "Src": "/data/giden/satis_%%$ODATE.csv",
+         "Dest": "/home/mftuser/in/satis_%%$ODATE.csv",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "URET",
+        "GONDER",
+        "ARSIVLE"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.8,
+   "cikti": "{\n \"deployedFolders\": [\n  \"KAPANIS_AKIS\"\n ],\n \"deployedJobs\": [\n  \"KAPANIS_AKIS/URET\",\n  \"KAPANIS_AKIS/ARSIVLE\",\n  \"KAPANIS_AKIS/GONDER\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order KAPANIS_AKIS"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{\n \"runId\": \"0504\",\n \"statusURI\": \"run status 0504\",\n \"jobIds\": [\n  \"saha:001f9\",\n  \"saha:001fa\",\n  \"saha:001fb\"\n ]\n}"
+  },
+  {
+   "n": 4,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:001f9"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001f9\",\n   \"folder\": \"KAPANIS_AKIS\",\n   \"name\": \"URET\",\n   \"type\": \"Script\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 5,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:001fa"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001fa\",\n   \"folder\": \"KAPANIS_AKIS\",\n   \"name\": \"ARSIVLE\",\n   \"type\": \"Script\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 6,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:001fb"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:001fb\",\n   \"folder\": \"KAPANIS_AKIS\",\n   \"name\": \"GONDER\",\n   \"type\": \"FileTransfer\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 7,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:output::get saha:001fb"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "# KAPANIS_AKIS/GONDER saha:001fb kosu 1/1\n[MAIN] [Start] Job=KAPANIS_AKIS__GONDER, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=KAPANIS_AKIS is=GONDER tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] YEREL_BATCH:/data/giden/satis_20261116.csv -> SFTP_KARSI:/home/mftuser/in/satis_20261116.csv (Binary)\ntamam: satis_20261116.csv 320 bayt\naktarilan dosya: 1\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  }
+ ],
+ "denetim": [
+  [
+   "14:08:09",
+   "deploy",
+   {
+    "deployedFolders": [
+     "KAPANIS_AKIS"
+    ],
+    "deployedJobs": [
+     "KAPANIS_AKIS/URET",
+     "KAPANIS_AKIS/ARSIVLE",
+     "KAPANIS_AKIS/GONDER"
+    ]
+   }
+  ],
+  [
+   "14:08:17",
+   "order",
+   {
+    "folder": "KAPANIS_AKIS",
+    "job": null,
+    "jobIds": [
+     "saha:001f9",
+     "saha:001fa",
+     "saha:001fb"
+    ]
+   }
+  ]
+ ],
+ "arac_cagrisi": 7,
+ "saniye": 70.9,
+ "adim": 8,
+ "bitis": "bitir",
+ "cagri": 8,
+ "mesaj_sayisi": 17,
+ "talep": "KAPANIS_AKIS klasorundeki isler su an URET, ARSIVLE, GONDER sirasiyla calisacak sekilde tanimli. Dogru sira URET, GONDER, ARSIVLE olmali: dosya karsi tarafa gonderilmeden arsivlenmemeli. Isleri ve ayarlarini degistirmeden yalnizca sirayi duzeltin, devreye alin, klasoru bir kez bastan calistirip sonucu dogrulayin.",
+ "kok_neden": "Flow Sequence'ta ARSIVLE, GONDER'den once; dosya arsive tasininca GONDER kaynak bulamaz. Mevcut tanim alinip yalniz Sequence duzeltilerek klasor butun olarak dagitilir; klasor yeniden siparis edilir."
+}

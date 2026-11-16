@@ -1,0 +1,255 @@
+{
+ "senaryo": "t-aft-joker-dosya-hedef",
+ "kol": "usta",
+ "model": "agy:gemini-3.8-flash-low",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": false,
+ "zaman": "2026-11-16T12:33:43",
+ "sifirlama_sn": 10.1,
+ "kurulum": [
+  {
+   "adim": "sh",
+   "sn": 0.2,
+   "not": ""
+  },
+  {
+   "adim": "deploy",
+   "sn": 0.4,
+   "not": "{'deployedFolders': ['EKSTRE_TOPLU'], 'deployedJobs': ['EKSTRE_TOPLU/GONDER'], 'deployedConnectionProfiles': [], 'removedJobs': []}"
+  },
+  {
+   "adim": "order",
+   "sn": 0.6,
+   "not": "{'GONDER': 'Ended Not OK'}"
+  }
+ ],
+ "usta": {
+  "sayac": {
+   "red": 0,
+   "onay_istendi": 0,
+   "onucus_red": 0,
+   "onucus_uyari": 0,
+   "kart": 3,
+   "takip": 1,
+   "dongu": 0,
+   "bitis_red": 0,
+   "elestiri": 1,
+   "yoklama": 17
+  },
+  "kartlar": [
+   "aft-hedef",
+   "betik-izin",
+   "tanim-yeni"
+  ],
+  "bitis_notlari": []
+ },
+ "hukum": "dogru",
+ "tutan": 4,
+ "toplam": 4,
+ "kontroller": [
+  {
+   "kontrol": {
+    "is": {
+     "folder": "EKSTRE_TOPLU",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": true,
+   "gorulen": "Ended OK"
+  },
+  {
+   "kontrol": {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/banka/in/ekstre_*.csv",
+     "adet": 3
+    }
+   },
+   "tutar": true,
+   "gorulen": {
+    "dosya": 3
+   }
+  },
+  {
+   "kontrol": {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/banka/in/ekstre_2.csv",
+     "esit": {
+      "host": "ajan1",
+      "yol": "/data/giden/ekstre_2.csv"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": {
+    "dosya": 1,
+    "sha256": [
+     "f7df03c26e132ccb",
+     "f7df03c26e132ccb"
+    ]
+   }
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "EKSTRE_TOPLU",
+     "job": "GONDER",
+     "alan": {
+      "FileTransfers": [
+       {
+        "Dest": "~/home/banka/in/?$"
+       }
+      ]
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:0014e",
+   "folder": "EKSTRE_TOPLU",
+   "name": "GONDER",
+   "type": "FileTransfer",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# EKSTRE_TOPLU/GONDER saha:0014e kosu 1/1\n[MAIN] [Start] Job=EKSTRE_TOPLU__GONDER, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=EKSTRE_TOPLU is=GONDER tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] YEREL_BATCH:/data/giden/ekstre_*.csv -> SFTP_BANKA:/home/banka/in/ (Binary)\ntamam: ekstre_1.csv 18 bayt\n  tamam: ekstre_2.csv 18 bayt\n  tamam: ekstre_3.csv 18 bayt\naktarilan dosya: 3\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  }
+ ],
+ "rapor": "Kok Neden: EKSTRE_TOPLU/GONDER isinin taniminda kaynak jokerli ('/data/giden/ekstre_*.csv') olmasina ragmen hedef parametresi dizin yerine tek bir dosya adi ('/home/banka/in/ekstre.csv') olarak belirtilmisti; bu nedenle coklu dosya aktarimi gerceklestirilemeyip hata alindi.\n\nYapilan Degisiklikler:\n1. EKSTRE_TOPLU klasoru icindeki GONDER is taniminda 'Dest' alani '/home/banka/in/' olarak duzeltildi ve deploy edildi.\n2. Eski hatali aktif is (saha:0014c) silindi.\n3. GONDER isi yeni tanimla tekrar siparis edildi (saha:0014e) ve 'Ended OK' ile basariyla tamamlandi.\n\nDogrulama Kaniti:\nSFTP_BANKA profili ile /home/banka/in dizini sorgulanmis olup kaynakta bulunan 3 dosyanin tamamnin (ekstre_1.csv [18 byte], ekstre_2.csv [18 byte], ekstre_3.csv [18 byte]) hedefe eksiksiz ve ayni boyutlarda ulastigi dogrulanmistir.",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "ls -la /data/giden/ekstre_*.csv && python3 /opt/ctm/bin/runjob.py ls SFTP_BANKA /home/banka/in"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.7,
+   "cikti": "[cikis kodu 0]\n-rw-r--r-- 1 batch batch 18 Nov 16 12:33 /data/giden/ekstre_1.csv\n-rw-r--r-- 1 batch batch 18 Nov 16 12:33 /data/giden/ekstre_2.csv\n-rw-r--r-- 1 batch batch 18 Nov 16 12:33 /data/giden/ekstre_3.csv\ntoplam 0 dosya"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "EKSTRE_TOPLU": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "GONDER": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_BANKA",
+       "FileTransfers": [
+        {
+         "Src": "/data/giden/ekstre_*.csv",
+         "Dest": "/home/banka/in/",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.5,
+   "cikti": "{\n \"deployedFolders\": [\n  \"EKSTRE_TOPLU\"\n ],\n \"deployedJobs\": [\n  \"EKSTRE_TOPLU/GONDER\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::delete saha:0014c"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:0014c aktif ortamdan silindi\"\n}"
+  },
+  {
+   "n": 4,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order EKSTRE_TOPLU GONDER"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"0333\",\n \"statusURI\": \"run status 0333\",\n \"jobIds\": [\n  \"saha:0014e\"\n ]\n}"
+  },
+  {
+   "n": 5,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py ls SFTP_BANKA /home/banka/in"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.3,
+   "cikti": "[cikis kodu 0]\n        18 ekstre_1.csv\n        18 ekstre_2.csv\n        18 ekstre_3.csv\ntoplam 3 dosya"
+  }
+ ],
+ "denetim": [
+  [
+   "12:34:16",
+   "deploy",
+   {
+    "deployedFolders": [
+     "EKSTRE_TOPLU"
+    ],
+    "deployedJobs": [
+     "EKSTRE_TOPLU/GONDER"
+    ]
+   }
+  ],
+  [
+   "12:34:22",
+   "delete_job",
+   "saha:0014c"
+  ],
+  [
+   "12:34:28",
+   "order",
+   {
+    "folder": "EKSTRE_TOPLU",
+    "job": "GONDER",
+    "jobIds": [
+     "saha:0014e"
+    ]
+   }
+  ]
+ ],
+ "arac_cagrisi": 5,
+ "saniye": 59.0,
+ "adim": 6,
+ "bitis": "bitir",
+ "cagri": 7,
+ "mesaj_sayisi": 13,
+ "talep": "Dun devreye aldigimiz EKSTRE_TOPLU klasorundeki GONDER isi ilk calismasinda NOTOK bitti. Is, /data/giden altindaki ekstre_*.csv dosyalarini bankanin SFTP sunucusundaki in dizinine gonderecek. Bankaya uc ekstre dosyasinin ulasmasini ve tanimin bundan sonra da dogru calismasini saglayin.",
+ "kok_neden": "Src joker iceriyor ama Dest bir dosya adi (ekstre.csv); coklu dosya aktariminda Dest dizin olmali (CTM5323). Tanimda Dest /home/banka/in/ yapilir, dagitilir; siparis edilmis kopya eski oldugu icin is silinip yeniden siparis edilir."
+}

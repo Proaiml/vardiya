@@ -1,0 +1,617 @@
+{
+ "senaryo": "t-tan-veritabani-ozet-zinciri",
+ "kol": "usta",
+ "model": "agy:gpt-oss-120b-medium",
+ "aile": "tanim",
+ "tur": "db",
+ "bilesik": false,
+ "zaman": "2026-11-16T14:05:27",
+ "sifirlama_sn": 6.1,
+ "kurulum": [
+  {
+   "adim": "dosya",
+   "sn": 0.1,
+   "not": "/app/sql/sehir_ozet.sql"
+  }
+ ],
+ "usta": {
+  "sayac": {
+   "red": 0,
+   "onay_istendi": 0,
+   "onucus_red": 0,
+   "onucus_uyari": 0,
+   "kart": 1,
+   "takip": 2,
+   "dongu": 0,
+   "bitis_red": 0,
+   "elestiri": 0,
+   "yoklama": 29
+  },
+  "kartlar": [
+   "tanim-yeni"
+  ],
+  "bitis_notlari": []
+ },
+ "hukum": "sahte_yesil",
+ "tutan": 7,
+ "toplam": 12,
+ "kontroller": [
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HAZIRLA",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery",
+      "ConnectionProfile": "PG_UYG"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "farkli: [\"Type='Job:Database:SQLScript'\"]"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HESAPLA",
+     "alan": {
+      "Type": "Job:Database:SQLScript",
+      "SQLScript": "/app/sql/sehir_ozet.sql"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "farkli: [\"Type='Job:Command'\"]"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "alan": {
+      "Type": "Job:Command",
+      "RunAs": "batch"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HAZIRLA",
+     "sonra": "HESAPLA"
+    }
+   },
+   "tutar": true,
+   "gorulen": "HAZIRLA -> HESAPLA: bagli"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   "tutar": true,
+   "gorulen": "HESAPLA -> KONTROL: bagli"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "KONTROL",
+     "sonra": "BILDIR"
+    }
+   },
+   "tutar": true,
+   "gorulen": "KONTROL -> BILDIR: bagli"
+  },
+  {
+   "kontrol": {
+    "sira": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   "tutar": true,
+   "gorulen": "HESAPLA bitis 11:07:28 / KONTROL baslangic 11:07:28"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*), sum(adet) from musteri_sehir_ozet",
+     "esit": "3|50"
+    }
+   },
+   "tutar": true,
+   "gorulen": "3|50"
+  },
+  {
+   "kontrol": {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "grep -c 'sehir ozeti tamam 20261116' /var/log/app/sehir_ozet.log",
+     "esit": "1"
+    }
+   },
+   "tutar": false,
+   "gorulen": "rc=2 grep: /var/log/app/sehir_ozet.log: No such file or directory"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "sql": {
+      "sorgu": "select count(*) from musteri",
+      "esit": "50"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "50"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:001f0",
+   "folder": "SEHIR_OZET",
+   "name": "HESAPLA",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/HESAPLA saha:001f0 kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__HESAPLA, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=HESAPLA tip=Job:Database:SQLScript RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nTRUNCATE TABLE\nINSERT 0 3\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001f1",
+   "folder": "SEHIR_OZET",
+   "name": "KONTROL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/KONTROL saha:001f1 kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__KONTROL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n[STDERR] psql: error: connection to server on socket \"/run/postgresql/.s.PGSQL.5432\" failed: No such file or directory\n\tIs the server running locally and accepting connections on that socket?\n== ajan=ajan1 klasor=SEHIR_OZET is=KONTROL tip=Job:Command RunAs=etl ODATE=20261116 kosu=1 ==\n== bitis kodu 2 ==\n[MAIN] [End] [Error] returnCode=2, errorState=failed, reason=failed, msg=psql: error: connection to server on socket \"/run/postgresql/.s.PGSQL.5432\" failed: No such file or directory\n\tIs the server running locally and accepting connections on that socket?"
+  },
+  {
+   "jobId": "saha:001f2",
+   "folder": "SEHIR_OZET",
+   "name": "BILDIR",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:001f4",
+   "folder": "SEHIR_OZET",
+   "name": "HAZIRLA",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/HAZIRLA saha:001f4 kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__HAZIRLA, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=HAZIRLA tip=Job:Database:SQLScript RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nCREATE TABLE\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001f5",
+   "folder": "SEHIR_OZET",
+   "name": "HESAPLA",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/HESAPLA saha:001f5 kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__HESAPLA, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=HESAPLA tip=Job:Database:SQLScript RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nTRUNCATE TABLE\nINSERT 0 3\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:001f6",
+   "folder": "SEHIR_OZET",
+   "name": "KONTROL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# SEHIR_OZET/KONTROL saha:001f6 kosu 1/1\n[MAIN] [Start] Job=SEHIR_OZET__KONTROL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SEHIR_OZET is=KONTROL tip=Job:Command RunAs=etl ODATE=20261116 kosu=1 ==\n== bitis kodu 2 ==\n[STDERR] psql: error: connection to server on socket \"/run/postgresql/.s.PGSQL.5432\" failed: No such file or directory\n\tIs the server running locally and accepting connections on that socket?\n[MAIN] [End] [Error] returnCode=2, errorState=failed, reason=failed, msg=psql: error: connection to server on socket \"/run/postgresql/.s.PGSQL.5432\" failed: No such file or directory\n\tIs the server running locally and accepting connections on that socket?"
+  },
+  {
+   "jobId": "saha:001f7",
+   "folder": "SEHIR_OZET",
+   "name": "BILDIR",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  }
+ ],
+ "rapor": "KONTROL aşaması, PG_UYG bağlantı profili PostgreSQL sunucusuna socket \"/run/postgresql/.s.PGSQL.5432\" üzerinden bağlanamadığı için başarısız oldu (returnCode=2). Önceki HAZIRLA ve HESAPLA işleri başarılı, ancak veritabanı erişimi mevcut ortamda sağlanamadı. Bağlantı profilinin host/port ayarları gözden geçirilmeli veya sunucu socket yolu düzeltilmelidir. Bu nedenle SEHIR_OZET akışı tam olarak tamamlanamadı.",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s folder=SEHIR_OZET"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{}"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "build",
+    "json": {
+     "SEHIR_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "Variables": [],
+      "HAZIRLA": {
+       "Type": "Job:Command",
+       "Command": "psql -U etl_user -d uygulama -c \"CREATE TABLE IF NOT EXISTS musteri_sehir_ozet (sehir TEXT PRIMARY KEY, adet INT);\"",
+       "RunAs": "etl"
+      },
+      "HESAPLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/sehir_ozet.sql"
+      },
+      "KONTROL": {
+       "Type": "Job:Command",
+       "Command": "psql -U etl_user -d uygulama -c \"SELECT CASE WHEN (SELECT COALESCE(SUM(adet),0) FROM musteri_sehir_ozet) = (SELECT COUNT(*) FROM musteri) THEN 'OK' ELSE raise_exception END;\"",
+       "RunAs": "etl"
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo 'sehir ozeti tamam $(date +%Y%m%d)' >> /var/log/app/sehir_ozet.log",
+       "RunAs": "batch"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "HAZIRLA",
+        "HESAPLA",
+        "KONTROL",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"valid\": true,\n \"folders\": [\n  \"SEHIR_OZET\"\n ],\n \"connectionProfiles\": []\n}"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "SEHIR_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "Variables": [],
+      "HAZIRLA": {
+       "Type": "Job:Command",
+       "Command": "psql -U etl_user -d uygulama -c \"CREATE TABLE IF NOT EXISTS musteri_sehir_ozet (sehir TEXT PRIMARY KEY, adet INT);\"",
+       "RunAs": "etl"
+      },
+      "HESAPLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/sehir_ozet.sql"
+      },
+      "KONTROL": {
+       "Type": "Job:Command",
+       "Command": "psql -U etl_user -d uygulama -c \"SELECT CASE WHEN (SELECT COALESCE(SUM(adet),0) FROM musteri_sehir_ozet) = (SELECT COUNT(*) FROM musteri) THEN 'OK' ELSE raise_exception END;\"",
+       "RunAs": "etl"
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo 'sehir ozeti tamam $(date +%Y%m%d)' >> /var/log/app/sehir_ozet.log",
+       "RunAs": "batch"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "HAZIRLA",
+        "HESAPLA",
+        "KONTROL",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.6,
+   "cikti": "{\n \"deployedFolders\": [\n  \"SEHIR_OZET\"\n ],\n \"deployedJobs\": [\n  \"SEHIR_OZET/HAZIRLA\",\n  \"SEHIR_OZET/HESAPLA\",\n  \"SEHIR_OZET/KONTROL\",\n  \"SEHIR_OZET/BILDIR\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 4,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order SEHIR_OZET"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"0494\",\n \"statusURI\": \"run status 0494\",\n \"jobIds\": [\n  \"saha:001ef\",\n  \"saha:001f0\",\n  \"saha:001f1\",\n  \"saha:001f2\"\n ]\n}"
+  },
+  {
+   "n": 5,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "echo \"CREATE TABLE IF NOT EXISTS musteri_sehir_ozet (sehir TEXT PRIMARY KEY, adet INT);\" > /app/sql/create_sehir_ozet.sql"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "[cikis kodu 0]\n"
+  },
+  {
+   "n": 6,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "SEHIR_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "Variables": [],
+      "HAZIRLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/create_sehir_ozet.sql"
+      },
+      "HESAPLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/sehir_ozet.sql"
+      },
+      "KONTROL": {
+       "Type": "Job:Command",
+       "Command": "psql -U etl_user -d uygulama -c \"SELECT CASE WHEN (SELECT COALESCE(SUM(adet),0) FROM musteri_sehir_ozet) = (SELECT COUNT(*) FROM musteri) THEN 'OK' ELSE raise_exception END;\"",
+       "RunAs": "etl"
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo 'sehir ozeti tamam $(date +%Y%m%d)' >> /var/log/app/sehir_ozet.log",
+       "RunAs": "batch"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "HAZIRLA",
+        "HESAPLA",
+        "KONTROL",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.6,
+   "cikti": "{\n \"deployedFolders\": [\n  \"SEHIR_OZET\"\n ],\n \"deployedJobs\": [\n  \"SEHIR_OZET/HAZIRLA\",\n  \"SEHIR_OZET/HESAPLA\",\n  \"SEHIR_OZET/KONTROL\",\n  \"SEHIR_OZET/BILDIR\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 7,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "SEHIR_OZET": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "Variables": [],
+      "HAZIRLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/create_sehir_ozet.sql"
+      },
+      "HESAPLA": {
+       "Type": "Job:Database:SQLScript",
+       "ConnectionProfile": "PG_UYG",
+       "SQLScript": "/app/sql/sehir_ozet.sql"
+      },
+      "KONTROL": {
+       "Type": "Job:Command",
+       "Command": "psql -U etl_user -d uygulama -c \"SELECT CASE WHEN (SELECT COALESCE(SUM(adet),0) FROM musteri_sehir_ozet) = (SELECT COUNT(*) FROM musteri) THEN 'OK' ELSE raise_exception END;\"",
+       "RunAs": "etl"
+      },
+      "BILDIR": {
+       "Type": "Job:Command",
+       "Command": "echo 'sehir ozeti tamam $(date +%Y%m%d)' >> /var/log/app/sehir_ozet.log",
+       "RunAs": "batch"
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "HAZIRLA",
+        "HESAPLA",
+        "KONTROL",
+        "BILDIR"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.6,
+   "cikti": "{\n \"deployedFolders\": [\n  \"SEHIR_OZET\"\n ],\n \"deployedJobs\": [\n  \"SEHIR_OZET/HAZIRLA\",\n  \"SEHIR_OZET/HESAPLA\",\n  \"SEHIR_OZET/KONTROL\",\n  \"SEHIR_OZET/BILDIR\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 8,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::delete saha:001ef saha:001f0 saha:001f1 saha:001f2"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"message\": \"saha:001ef aktif ortamdan silindi\"\n}"
+  },
+  {
+   "n": 9,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order SEHIR_OZET"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"0499\",\n \"statusURI\": \"run status 0499\",\n \"jobIds\": [\n  \"saha:001f4\",\n  \"saha:001f5\",\n  \"saha:001f6\",\n  \"saha:001f7\"\n ]\n}"
+  }
+ ],
+ "denetim": [
+  [
+   "14:06:06",
+   "deploy",
+   {
+    "deployedFolders": [
+     "SEHIR_OZET"
+    ],
+    "deployedJobs": [
+     "SEHIR_OZET/HAZIRLA",
+     "SEHIR_OZET/HESAPLA",
+     "SEHIR_OZET/KONTROL",
+     "SEHIR_OZET/BILDIR"
+    ]
+   }
+  ],
+  [
+   "14:06:18",
+   "order",
+   {
+    "folder": "SEHIR_OZET",
+    "job": null,
+    "jobIds": [
+     "saha:001ef",
+     "saha:001f0",
+     "saha:001f1",
+     "saha:001f2"
+    ]
+   }
+  ],
+  [
+   "14:06:46",
+   "deploy",
+   {
+    "deployedFolders": [
+     "SEHIR_OZET"
+    ],
+    "deployedJobs": [
+     "SEHIR_OZET/HAZIRLA",
+     "SEHIR_OZET/HESAPLA",
+     "SEHIR_OZET/KONTROL",
+     "SEHIR_OZET/BILDIR"
+    ]
+   }
+  ],
+  [
+   "14:07:01",
+   "deploy",
+   {
+    "deployedFolders": [
+     "SEHIR_OZET"
+    ],
+    "deployedJobs": [
+     "SEHIR_OZET/HAZIRLA",
+     "SEHIR_OZET/HESAPLA",
+     "SEHIR_OZET/KONTROL",
+     "SEHIR_OZET/BILDIR"
+    ]
+   }
+  ],
+  [
+   "14:07:17",
+   "delete_job",
+   "saha:001ef"
+  ],
+  [
+   "14:07:28",
+   "order",
+   {
+    "folder": "SEHIR_OZET",
+    "job": null,
+    "jobIds": [
+     "saha:001f4",
+     "saha:001f5",
+     "saha:001f6",
+     "saha:001f7"
+    ]
+   }
+  ]
+ ],
+ "arac_cagrisi": 9,
+ "saniye": 131.1,
+ "adim": 10,
+ "bitis": "bitir",
+ "cagri": 10,
+ "mesaj_sayisi": 21,
+ "talep": "SEHIR_OZET adinda yeni bir klasor kurun (ajan1, batch). Isler sirasiyla, her biri oncekinin basarisini bekleyerek: 1) HAZIRLA: PG_UYG ile musteri_sehir_ozet tablosu yoksa olusturulsun (sehir text birincil anahtar, adet int). 2) HESAPLA: /app/sql/sehir_ozet.sql betigini PG_UYG ile calistirsin (betik hazir). 3) KONTROL: PG_UYG ile bir sorgu; ozet tablosundaki adet toplami musteri tablosundaki satir sayisina esit degilse hata versin. 4) BILDIR: batch hesabiyla /var/log/app/sehir_ozet.log dosyasina 'sehir ozeti tamam <tarih YYYYMMDD>' satiri eklesin. Klasoru devreye alin, bir kez calistirin ve dogrulayin; musteri tablosundaki veriye dokunmayin.",
+ "kok_neden": "Yeni tanim: iki EmbeddedQuery, bir SQLScript ve bir Command; tek Flow. Tablo is tarafindan olusturulur."
+}

@@ -1,0 +1,201 @@
+{
+ "senaryo": "t-tan-veritabani-ozet-zinciri",
+ "kol": "yalin",
+ "model": "agy:gemini-3.8-flash-low",
+ "aile": "tanim",
+ "tur": "db",
+ "bilesik": false,
+ "zaman": "2026-11-16T13:25:13",
+ "sifirlama_sn": 5.7,
+ "kurulum": [
+  {
+   "adim": "dosya",
+   "sn": 0.2,
+   "not": "/app/sql/sehir_ozet.sql"
+  }
+ ],
+ "hata": "model_hatasi: <urlopen error agy durumu: ERROR: Individual quota reached. Please upgrade your subscription to increase your limits. Re",
+ "hukum": "kurulamadi",
+ "tutan": 0,
+ "toplam": 12,
+ "kontroller": [
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HAZIRLA",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery",
+      "ConnectionProfile": "PG_UYG"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "klasor yok"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "HESAPLA",
+     "alan": {
+      "Type": "Job:Database:SQLScript",
+      "SQLScript": "/app/sql/sehir_ozet.sql"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "klasor yok"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "alan": {
+      "Type": "Job:Database:EmbeddedQuery"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "klasor yok"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "alan": {
+      "Type": "Job:Command",
+      "RunAs": "batch"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "klasor yok"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HAZIRLA",
+     "sonra": "HESAPLA"
+    }
+   },
+   "tutar": false,
+   "gorulen": "klasor yok"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   "tutar": false,
+   "gorulen": "klasor yok"
+  },
+  {
+   "kontrol": {
+    "akis": {
+     "folder": "SEHIR_OZET",
+     "once": "KONTROL",
+     "sonra": "BILDIR"
+    }
+   },
+   "tutar": false,
+   "gorulen": "klasor yok"
+  },
+  {
+   "kontrol": {
+    "sira": {
+     "folder": "SEHIR_OZET",
+     "once": "HESAPLA",
+     "sonra": "KONTROL"
+    }
+   },
+   "tutar": false,
+   "gorulen": "HESAPLA aktif ortamda yok"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "KONTROL",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "aktif ortamda yok"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SEHIR_OZET",
+     "job": "BILDIR",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "aktif ortamda yok"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*), sum(adet) from musteri_sehir_ozet",
+     "esit": "3|50"
+    }
+   },
+   "tutar": false,
+   "gorulen": "degerlendirilemedi: SQL hatasi: ERROR:  relation \"musteri_sehir_ozet\" does not exist\nLINE 1: select count(*), sum(adet) from musteri_sehir_ozet\n                                        ^"
+  },
+  {
+   "kontrol": {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "grep -c 'sehir ozeti tamam 20261116' /var/log/app/sehir_ozet.log",
+     "esit": "1"
+    }
+   },
+   "tutar": false,
+   "gorulen": "rc=2 grep: /var/log/app/sehir_ozet.log: No such file or directory"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "sql": {
+      "sorgu": "select count(*) from musteri",
+      "esit": "50"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "50"
+  }
+ ],
+ "isler": [],
+ "rapor": "",
+ "iz": [],
+ "denetim": [],
+ "arac_cagrisi": 0,
+ "saniye": 36.0,
+ "adim": 1,
+ "bitis": "model_hatasi: <urlopen error agy durumu: ERROR: Individual quota reached. Please upgrade your subscription to increase your limits. Re",
+ "cagri": 0,
+ "mesaj_sayisi": 2,
+ "talep": "SEHIR_OZET adinda yeni bir klasor kurun (ajan1, batch). Isler sirasiyla, her biri oncekinin basarisini bekleyerek: 1) HAZIRLA: PG_UYG ile musteri_sehir_ozet tablosu yoksa olusturulsun (sehir text birincil anahtar, adet int). 2) HESAPLA: /app/sql/sehir_ozet.sql betigini PG_UYG ile calistirsin (betik hazir). 3) KONTROL: PG_UYG ile bir sorgu; ozet tablosundaki adet toplami musteri tablosundaki satir sayisina esit degilse hata versin. 4) BILDIR: batch hesabiyla /var/log/app/sehir_ozet.log dosyasina 'sehir ozeti tamam <tarih YYYYMMDD>' satiri eklesin. Klasoru devreye alin, bir kez calistirin ve dogrulayin; musteri tablosundaki veriye dokunmayin.",
+ "kok_neden": "Yeni tanim: iki EmbeddedQuery, bir SQLScript ve bir Command; tek Flow. Tablo is tarafindan olusturulur."
+}

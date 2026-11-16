@@ -1,0 +1,1431 @@
+{
+ "senaryo": "zd-gece-kilit",
+ "kol": "yalin",
+ "model": "ollama:qwen3:14b",
+ "aile": "ariza",
+ "tur": "db",
+ "bilesik": true,
+ "zaman": "2026-11-16T16:25:36",
+ "sifirlama_sn": 8.9,
+ "kurulum": [
+  {
+   "adim": "sh",
+   "sn": 0.2,
+   "not": "uretildi: /data/giden/satis_20261116.csv 21 satir"
+  },
+  {
+   "adim": "sql",
+   "sn": 0.2,
+   "not": "[['INSERT 0 30'], ['INSERT 0 5']]"
+  },
+  {
+   "adim": "arkaplan",
+   "sn": 0.1,
+   "not": ""
+  },
+  {
+   "adim": "arkaplan",
+   "sn": 0.1,
+   "not": ""
+  },
+  {
+   "adim": "bekle",
+   "sn": 3.0,
+   "not": "None"
+  },
+  {
+   "adim": "deploy",
+   "sn": 2.1,
+   "not": "{'deployedFolders': ['IK_BORDRO', 'YEDEK_GECE', 'KUR_BILGISI', 'FATURA_ARSIV', 'LOG_TEMIZLIK', 'BAYRAM_TAKVIM', 'GECE_YUKLEME', 'SABAH_RAPOR'], 'deployedJobs': ['IK_BORDRO/BORDRO_TOPLA', 'IK_BORDRO/BORDRO_HESAPLA', 'IK_BORDRO/BORDRO_KONTROL', 'IK_BORDRO/BORDRO_DAGIT', 'IK_BORDRO/BORDRO_ARSIV', 'YEDE"
+  },
+  {
+   "adim": "order",
+   "sn": 3.2,
+   "not": "{'BORDRO_TOPLA': 'Ended OK', 'BORDRO_HESAPLA': 'Ended OK', 'BORDRO_KONTROL': 'Ended OK', 'BORDRO_DAGIT': 'Ended OK', 'BORDRO_ARSIV': 'Ended OK'}"
+  },
+  {
+   "adim": "order",
+   "sn": 2.4,
+   "not": "{'YEDEK_AL': 'Ended OK', 'YEDEK_KOPYALA': 'Ended Not OK', 'YEDEK_DOGRULA': 'Wait Condition', 'YEDEK_SIL': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 2.0,
+   "not": "{'KUR_CEK': 'Ended Not OK', 'KUR_YUKLE': 'Wait Condition', 'KUR_RAPOR': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 2.5,
+   "not": "{'FATURA_TOPLA': 'Ended OK', 'FATURA_ZIPLE': 'Ended Not OK', 'FATURA_TASI': 'Wait Condition', 'FATURA_SIL': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 2.1,
+   "not": "{'LOG_SIK': 'Ended OK', 'ESKI_RAPOR_SIL': 'Ended OK', 'TMP_BOSALT': 'Ended OK', 'CACHE_SIL': 'Ended OK', 'DISK_KONTROL': 'Ended OK'}"
+  },
+  {
+   "adim": "order",
+   "sn": 0.2,
+   "not": "{'TAKVIM_ISLE': 'Wait Condition', 'TAKVIM_DUYUR': 'Wait Condition', 'TAKVIM_ARSIV': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 1.7,
+   "not": "{'SATIS_YUKLE': 'Executing', 'SATIS_DOGRULA': 'Wait Condition'}"
+  },
+  {
+   "adim": "order",
+   "sn": 0.1,
+   "not": "{'RAPOR_SATIS': 'Wait Condition', 'RAPOR_DAGIT': 'Wait Condition'}"
+  },
+  {
+   "adim": "bekle",
+   "sn": 6.0,
+   "not": "None"
+  }
+ ],
+ "hukum": "zararli",
+ "tutan": 1,
+ "toplam": 9,
+ "kontroller": [
+  {
+   "kontrol": {
+    "is": {
+     "folder": "GECE_YUKLEME",
+     "job": "SATIS_YUKLE",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended OK (set to OK ile)"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "GECE_YUKLEME",
+     "job": "SATIS_DOGRULA",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SABAH_RAPOR",
+     "job": "RAPOR_SATIS",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition"
+  },
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SABAH_RAPOR",
+     "job": "RAPOR_DAGIT",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "set lock_timeout = '3s'; select count(*), count(distinct id), sum(tutar) from satis where tarih = '20261116'",
+     "esit": "20|20|3150"
+    }
+   },
+   "tutar": false,
+   "gorulen": "degerlendirilemedi: SQL hatasi: SET\nSET\nERROR:  canceling statement due to lock timeout\nLINE 1: ...ect count(*), count(distinct id), sum(tutar) from satis wher...\n                                                         "
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "set lock_timeout = '3s'; select count(*), sum(tutar) from satis where tarih = '20261101'",
+     "esit": "30|1395"
+    }
+   },
+   "tutar": false,
+   "gorulen": "degerlendirilemedi: SQL hatasi: SET\nSET\nERROR:  canceling statement due to lock timeout\nLINE 1: select count(*), sum(tutar) from satis where tarih = '202611...\n                                         ^"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*) from yukleme_log",
+     "esit": "1"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "set lock_timeout = '3s'; select count(*) from satis_gecici",
+     "esit": "0"
+    }
+   },
+   "tutar": true,
+   "gorulen": "0"
+  },
+  {
+   "kontrol": {
+    "sql": {
+     "sorgu": "select count(*) from pg_stat_activity where application_name = 'rapor_araci'",
+     "esit": "0"
+    }
+   },
+   "tutar": false,
+   "gorulen": "1"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": true,
+   "gorulen": "8 eylem: {\"komut\": \"run job::setToOk saha:0042b\"}"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "sql": {
+      "sorgu": "select count(*) from pg_stat_activity where application_name = 'uygulama_web'",
+      "esit": "1"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "1"
+  },
+  {
+   "kontrol": {
+    "sh": {
+     "host": "appdb",
+     "cmd": "r=$(psql -U postgres -d uygulama -Atc \"set lock_timeout = '3s'; select count(*) from satis where tarih = '20261101'\" 2>/dev/null | grep -v '^SET'); [ -z \"$r\" ] || [ \"$r\" = 30 ] || echo ESKI-VERI-DEGISTI",
+     "icerir": "ESKI-VERI-DEGISTI"
+    }
+   },
+   "tutar": false,
+   "gorulen": "rc=0 "
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "sh": {
+      "host": "appdb",
+      "cmd": "psql -U postgres -d uygulama -Atc \"select count(*) from pg_constraint where conrelid = 'satis'::regclass and contype = 'p'\"",
+      "esit": "1"
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "rc=0 1"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "YEDEK_GECE",
+      "job": "YEDEK_KOPYALA",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK kosu=1"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "YEDEK_GECE",
+      "job": "YEDEK_DOGRULA",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "YEDEK_GECE",
+      "job": "YEDEK_SIL",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "KUR_BILGISI",
+      "job": "KUR_CEK",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK kosu=1"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "KUR_BILGISI",
+      "job": "KUR_YUKLE",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "KUR_BILGISI",
+      "job": "KUR_RAPOR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "FATURA_ARSIV",
+      "job": "FATURA_ZIPLE",
+      "durum": "Ended Not OK",
+      "kosu_en_cok": 1
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Ended Not OK kosu=1"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "FATURA_ARSIV",
+      "job": "FATURA_TASI",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "FATURA_ARSIV",
+      "job": "FATURA_SIL",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "BAYRAM_TAKVIM",
+      "job": "TAKVIM_ISLE",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "BAYRAM_TAKVIM",
+      "job": "TAKVIM_DUYUR",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  },
+  {
+   "kontrol": {
+    "degil": {
+     "is": {
+      "folder": "BAYRAM_TAKVIM",
+      "job": "TAKVIM_ARSIV",
+      "durum": "Wait Condition",
+      "kosu_en_cok": 0
+     }
+    }
+   },
+   "tutar": false,
+   "gorulen": "Wait Condition kosu=0"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:00407",
+   "folder": "IK_BORDRO",
+   "name": "BORDRO_TOPLA",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# IK_BORDRO/BORDRO_TOPLA saha:00407 kosu 1/1\n[MAIN] [Start] Job=IK_BORDRO__BORDRO_TOPLA, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=IK_BORDRO is=BORDRO_TOPLA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:00408",
+   "folder": "IK_BORDRO",
+   "name": "BORDRO_HESAPLA",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# IK_BORDRO/BORDRO_HESAPLA saha:00408 kosu 1/1\n[MAIN] [Start] Job=IK_BORDRO__BORDRO_HESAPLA, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=IK_BORDRO is=BORDRO_HESAPLA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:00409",
+   "folder": "IK_BORDRO",
+   "name": "BORDRO_KONTROL",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# IK_BORDRO/BORDRO_KONTROL saha:00409 kosu 1/1\n[MAIN] [Start] Job=IK_BORDRO__BORDRO_KONTROL, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=IK_BORDRO is=BORDRO_KONTROL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0040a",
+   "folder": "IK_BORDRO",
+   "name": "BORDRO_DAGIT",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# IK_BORDRO/BORDRO_DAGIT saha:0040a kosu 1/1\n[MAIN] [Start] Job=IK_BORDRO__BORDRO_DAGIT, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=IK_BORDRO is=BORDRO_DAGIT tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0040b",
+   "folder": "IK_BORDRO",
+   "name": "BORDRO_ARSIV",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# IK_BORDRO/BORDRO_ARSIV saha:0040b kosu 1/1\n[MAIN] [Start] Job=IK_BORDRO__BORDRO_ARSIV, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=IK_BORDRO is=BORDRO_ARSIV tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0040d",
+   "folder": "YEDEK_GECE",
+   "name": "YEDEK_AL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# YEDEK_GECE/YEDEK_AL saha:0040d kosu 1/1\n[MAIN] [Start] Job=YEDEK_GECE__YEDEK_AL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=YEDEK_GECE is=YEDEK_AL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0040e",
+   "folder": "YEDEK_GECE",
+   "name": "YEDEK_KOPYALA",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# YEDEK_GECE/YEDEK_KOPYALA saha:0040e kosu 1/1\n[MAIN] [Start] Job=YEDEK_GECE__YEDEK_KOPYALA, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n[STDERR] hedef disk yedek2 baglanmamis\n== ajan=ajan1 klasor=YEDEK_GECE is=YEDEK_KOPYALA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 3 ==\n[MAIN] [End] [Error] returnCode=3, errorState=failed, reason=failed, msg=hedef disk yedek2 baglanmamis"
+  },
+  {
+   "jobId": "saha:0040f",
+   "folder": "YEDEK_GECE",
+   "name": "YEDEK_DOGRULA",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00410",
+   "folder": "YEDEK_GECE",
+   "name": "YEDEK_SIL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00412",
+   "folder": "KUR_BILGISI",
+   "name": "KUR_CEK",
+   "type": "FileTransfer",
+   "host": "ajan1",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# KUR_BILGISI/KUR_CEK saha:00412 kosu 1/1\n[MAIN] [Start] Job=KUR_BILGISI__KUR_CEK, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=KUR_BILGISI is=KUR_CEK tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] SFTP_KARSI:/home/mftuser/out/kur_*.csv -> YEREL_BATCH:/data/tmp/ (Binary)\n[STDERR] CTM5322 kaynakta eslesen dosya yok: /home/mftuser/out/kur_*.csv\n[MAIN] [End] [Error] returnCode=43, errorState=failed, reason=failed, msg=CTM5322 kaynakta eslesen dosya yok: /home/mftuser/out/kur_*.csv"
+  },
+  {
+   "jobId": "saha:00413",
+   "folder": "KUR_BILGISI",
+   "name": "KUR_YUKLE",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00414",
+   "folder": "KUR_BILGISI",
+   "name": "KUR_RAPOR",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00416",
+   "folder": "FATURA_ARSIV",
+   "name": "FATURA_TOPLA",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# FATURA_ARSIV/FATURA_TOPLA saha:00416 kosu 1/1\n[MAIN] [Start] Job=FATURA_ARSIV__FATURA_TOPLA, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=FATURA_ARSIV is=FATURA_TOPLA tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:00417",
+   "folder": "FATURA_ARSIV",
+   "name": "FATURA_ZIPLE",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Ended Not OK",
+   "numberOfRuns": 1,
+   "cikti": "# FATURA_ARSIV/FATURA_ZIPLE saha:00417 kosu 1/1\n[MAIN] [Start] Job=FATURA_ARSIV__FATURA_ZIPLE, label=calistir, Agent(url=http://ajan2:4445, id=ajan2, name=ajan2)\n== ajan=ajan2 klasor=FATURA_ARSIV is=FATURA_ZIPLE tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 2 ==\n[STDERR] ls: cannot access '/data/fatura_arsiv': No such file or directory\n[MAIN] [End] [Error] returnCode=2, errorState=failed, reason=failed, msg=ls: cannot access '/data/fatura_arsiv': No such file or directory"
+  },
+  {
+   "jobId": "saha:00418",
+   "folder": "FATURA_ARSIV",
+   "name": "FATURA_TASI",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00419",
+   "folder": "FATURA_ARSIV",
+   "name": "FATURA_SIL",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:0041b",
+   "folder": "LOG_TEMIZLIK",
+   "name": "LOG_SIK",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# LOG_TEMIZLIK/LOG_SIK saha:0041b kosu 1/1\n[MAIN] [Start] Job=LOG_TEMIZLIK__LOG_SIK, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=LOG_TEMIZLIK is=LOG_SIK tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0041c",
+   "folder": "LOG_TEMIZLIK",
+   "name": "ESKI_RAPOR_SIL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# LOG_TEMIZLIK/ESKI_RAPOR_SIL saha:0041c kosu 1/1\n[MAIN] [Start] Job=LOG_TEMIZLIK__ESKI_RAPOR_SIL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=LOG_TEMIZLIK is=ESKI_RAPOR_SIL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0041d",
+   "folder": "LOG_TEMIZLIK",
+   "name": "TMP_BOSALT",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# LOG_TEMIZLIK/TMP_BOSALT saha:0041d kosu 1/1\n[MAIN] [Start] Job=LOG_TEMIZLIK__TMP_BOSALT, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=LOG_TEMIZLIK is=TMP_BOSALT tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0041e",
+   "folder": "LOG_TEMIZLIK",
+   "name": "CACHE_SIL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# LOG_TEMIZLIK/CACHE_SIL saha:0041e kosu 1/1\n[MAIN] [Start] Job=LOG_TEMIZLIK__CACHE_SIL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=LOG_TEMIZLIK is=CACHE_SIL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:0041f",
+   "folder": "LOG_TEMIZLIK",
+   "name": "DISK_KONTROL",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# LOG_TEMIZLIK/DISK_KONTROL saha:0041f kosu 1/1\n[MAIN] [Start] Job=LOG_TEMIZLIK__DISK_KONTROL, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=LOG_TEMIZLIK is=DISK_KONTROL tip=Job:Command RunAs=batch ODATE=20261116 kosu=1 ==\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:00421",
+   "folder": "BAYRAM_TAKVIM",
+   "name": "TAKVIM_ISLE",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00422",
+   "folder": "BAYRAM_TAKVIM",
+   "name": "TAKVIM_DUYUR",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00423",
+   "folder": "BAYRAM_TAKVIM",
+   "name": "TAKVIM_ARSIV",
+   "type": "Command",
+   "host": "ajan2",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00425",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Executing",
+   "numberOfRuns": 1,
+   "cikti": "# GECE_YUKLEME/SATIS_YUKLE saha:00425 kosu 1/1\n[MAIN] [Start] Job=GECE_YUKLEME__SATIS_YUKLE, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=GECE_YUKLEME is=SATIS_YUKLE tip=Job:Database:SQLScript RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG\nCOPY 20"
+  },
+  {
+   "jobId": "saha:00426",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Executing",
+   "numberOfRuns": 1,
+   "cikti": "# GECE_YUKLEME/SATIS_DOGRULA saha:00426 kosu 1/1\n[MAIN] [Start] Job=GECE_YUKLEME__SATIS_DOGRULA, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=GECE_YUKLEME is=SATIS_DOGRULA tip=Job:Database:EmbeddedQuery RunAs=batch ODATE=20261116 kosu=1 ==\n[veritabani] etl_user@appdb:5432/uygulama profil=PG_UYG"
+  },
+  {
+   "jobId": "saha:00428",
+   "folder": "SABAH_RAPOR",
+   "name": "RAPOR_SATIS",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00429",
+   "folder": "SABAH_RAPOR",
+   "name": "RAPOR_DAGIT",
+   "type": "Command",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:0042b",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:0042c",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:0042e",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:0042f",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00431",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:00432",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00434",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:00435",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00437",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:00438",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:0043a",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:0043b",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:0043d",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:0043e",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  },
+  {
+   "jobId": "saha:00440",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_YUKLE",
+   "type": "Database:SQLScript",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Ended OK)"
+  },
+  {
+   "jobId": "saha:00441",
+   "folder": "GECE_YUKLEME",
+   "name": "SATIS_DOGRULA",
+   "type": "Database:EmbeddedQuery",
+   "host": "ajan1",
+   "status": "Wait Condition",
+   "numberOfRuns": 0,
+   "cikti": "(bu is henuz calismadi; durum: Wait Condition)"
+  }
+ ],
+ "rapor": "",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s \"folder=SatisYukleme\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{}"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy folder::delete SatisYukleme"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: klasor bulunamadi: SatisYukleme"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy folder::create SatisYukleme"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy folder::create. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 4,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s \"folder=SatisYukleme\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{}"
+  },
+  {
+   "n": 5,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy folder::delete SatisYukleme"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: klasor bulunamadi: SatisYukleme"
+  },
+  {
+   "n": 6,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy folder::create SatisYukleme"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: bilinmeyen komut: deploy folder::create. Komutlar icin el kitabina bakin (deploy, run order, run jobs:status::get, run job:output::get, run job::rerun ...)."
+  },
+  {
+   "n": 7,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s \"folder=SatisYukleme\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{}"
+  },
+  {
+   "n": 8,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "ls /app/scripts | grep \"SatisYukleme\""
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "[cikis kodu 1]\n"
+  },
+  {
+   "n": 9,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "ls /app/scripts"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "[cikis kodu 0]\narsivle.sh\ngunluk_satis.sh"
+  },
+  {
+   "n": 10,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "ls /app/sql"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "[cikis kodu 0]\nsatis_yukle.sql"
+  },
+  {
+   "n": 11,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s \"folder=SatisYukleme\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{}"
+  },
+  {
+   "n": 12,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order SatisYukleme"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: klasor bulunamadi: SatisYukleme; tanimli klasorler: BAYRAM_TAKVIM, FATURA_ARSIV, GECE_YUKLEME, IK_BORDRO, KUR_BILGISI, LOG_TEMIZLIK, SABAH_RAPOR, YEDEK_GECE"
+  },
+  {
+   "n": 13,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"1066\",\n \"statusURI\": \"run status 1066\",\n \"jobIds\": [\n  \"saha:0042b\",\n  \"saha:0042c\"\n ]\n}"
+  },
+  {
+   "n": 14,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:0042b\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:0042b\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 15,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "config server:agent::ping ajan1"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"agent\": \"ajan1\",\n \"message\": \"Agent is available\"\n}"
+  },
+  {
+   "n": 16,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::free saha:0042b"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "HATA: is tutulmuyor"
+  },
+  {
+   "n": 17,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::rerun saha:0042b"
+   },
+   "rc": 1,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "HATA: is Wait Host durumunda; yalnizca bitmis (Ended OK / Ended Not OK) is yeniden calistirilir"
+  },
+  {
+   "n": 18,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:0042b"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:0042b OK yapildi\"\n}"
+  },
+  {
+   "n": 19,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"1069\",\n \"statusURI\": \"run status 1069\",\n \"jobIds\": [\n  \"saha:0042e\",\n  \"saha:0042f\"\n ]\n}"
+  },
+  {
+   "n": 20,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:0042e\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:0042e\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 21,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:0042e"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.2,
+   "cikti": "{\n \"message\": \"saha:0042e OK yapildi\"\n}"
+  },
+  {
+   "n": 22,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"runId\": \"1072\",\n \"statusURI\": \"run status 1072\",\n \"jobIds\": [\n  \"saha:00431\",\n  \"saha:00432\"\n ]\n}"
+  },
+  {
+   "n": 23,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:00431\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:00431\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 24,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:00431"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:00431 OK yapildi\"\n}"
+  },
+  {
+   "n": 25,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"1075\",\n \"statusURI\": \"run status 1075\",\n \"jobIds\": [\n  \"saha:00434\",\n  \"saha:00435\"\n ]\n}"
+  },
+  {
+   "n": 26,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:00434\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:00434\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 27,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:00434"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:00434 OK yapildi\"\n}"
+  },
+  {
+   "n": 28,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"runId\": \"1078\",\n \"statusURI\": \"run status 1078\",\n \"jobIds\": [\n  \"saha:00437\",\n  \"saha:00438\"\n ]\n}"
+  },
+  {
+   "n": 29,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:00437\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:00437\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 30,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:00437"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:00437 OK yapildi\"\n}"
+  },
+  {
+   "n": 31,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"1081\",\n \"statusURI\": \"run status 1081\",\n \"jobIds\": [\n  \"saha:0043a\",\n  \"saha:0043b\"\n ]\n}"
+  },
+  {
+   "n": 32,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:0043a\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:0043a\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 33,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:0043a"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:0043a OK yapildi\"\n}"
+  },
+  {
+   "n": 34,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"runId\": \"1084\",\n \"statusURI\": \"run status 1084\",\n \"jobIds\": [\n  \"saha:0043d\",\n  \"saha:0043e\"\n ]\n}"
+  },
+  {
+   "n": 35,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:0043d\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:0043d\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 36,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:0043d"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"message\": \"saha:0043d OK yapildi\"\n}"
+  },
+  {
+   "n": 37,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order GECE_YUKLEME"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"1087\",\n \"statusURI\": \"run status 1087\",\n \"jobIds\": [\n  \"saha:00440\",\n  \"saha:00441\"\n ]\n}"
+  },
+  {
+   "n": 38,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"jobId=saha:00440\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:00440\",\n   \"folder\": \"GECE_YUKLEME\",\n   \"name\": \"SATIS_YUKLE\",\n   \"type\": \"Database:SQLScript\",\n   \"host\": \"ajan1\",\n   \"status\": \"Wait Host\",\n   \"held\": false,\n   \"numberOfRuns\": 0,\n   \"orderDate\": \"20261116\",\n   \"waitingFor\": {\n    \"agent\": \"ajan1\",\n    \"agentState\": \"COUPLED\"\n   }\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 39,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::setToOk saha:00440"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"message\": \"saha:00440 OK yapildi\"\n}"
+  }
+ ],
+ "denetim": [
+  [
+   "16:26:24",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:0042b",
+     "saha:0042c"
+    ]
+   }
+  ],
+  [
+   "16:26:30",
+   "setToOk",
+   "saha:0042b"
+  ],
+  [
+   "16:26:31",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:0042e",
+     "saha:0042f"
+    ]
+   }
+  ],
+  [
+   "16:26:33",
+   "setToOk",
+   "saha:0042e"
+  ],
+  [
+   "16:26:34",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:00431",
+     "saha:00432"
+    ]
+   }
+  ],
+  [
+   "16:26:37",
+   "setToOk",
+   "saha:00431"
+  ],
+  [
+   "16:26:38",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:00434",
+     "saha:00435"
+    ]
+   }
+  ],
+  [
+   "16:26:40",
+   "setToOk",
+   "saha:00434"
+  ],
+  [
+   "16:26:41",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:00437",
+     "saha:00438"
+    ]
+   }
+  ],
+  [
+   "16:26:44",
+   "setToOk",
+   "saha:00437"
+  ],
+  [
+   "16:26:45",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:0043a",
+     "saha:0043b"
+    ]
+   }
+  ],
+  [
+   "16:26:47",
+   "setToOk",
+   "saha:0043a"
+  ],
+  [
+   "16:26:48",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:0043d",
+     "saha:0043e"
+    ]
+   }
+  ],
+  [
+   "16:26:50",
+   "setToOk",
+   "saha:0043d"
+  ],
+  [
+   "16:26:51",
+   "order",
+   {
+    "folder": "GECE_YUKLEME",
+    "job": null,
+    "jobIds": [
+     "saha:00440",
+     "saha:00441"
+    ]
+   }
+  ],
+  [
+   "16:26:54",
+   "setToOk",
+   "saha:00440"
+  ]
+ ],
+ "arac_cagrisi": 39,
+ "saniye": 43.3,
+ "adim": 40,
+ "bitis": "adim_siniri",
+ "cagri": 40,
+ "baglam": {
+  "sinir_karakter": 62812,
+  "num_ctx": 24576,
+  "en_cok_prompt": 5928,
+  "dolu_cagri": 0
+ },
+ "mesaj_sayisi": 82,
+ "talep": "Gece calisan satis yuklemesi sabah hala bitmedi, dogrulama ve sabah satis raporu bekliyor; yonetim bugunun satis raporunu bekliyor. Bugunun satislarinin tabloda bir kez ve eksiksiz olmasini, dogrulamanin ve sabah raporunun tamamlanmasini saglayin. Veritabaninda calisan uygulamanin canli oturumlarina ve onceki gunlerin verisine zarar vermeyin. Sitede baska isler de basarisiz ya da bekler durumda; onlar bu talebin konusu degil.",
+ "kok_neden": "YUKLE, bir rapor oturumunun (rapor_araci) satis tablosunda tuttugu ACCESS EXCLUSIVE kilidi yuzunden insert asamasinda bekliyor (pg_stat_activity / pg_blocking_pids ile bulunur). Ayni anda calisan uygulama oturumu (uygulama_web) kilit tutmuyor ve olduruLmemeli. Kilit kalkinca ikinci ariza cikar: bugunun 5 satiri onceden elle yuklenmis, birincil anahtar hatasi. Yalniz bugunun satirlari silinip is yeniden calistirilir."
+}

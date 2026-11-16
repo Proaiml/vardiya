@@ -1,0 +1,344 @@
+{
+ "senaryo": "aft-tarih-degiskeni",
+ "kol": "kart",
+ "model": "agy:gemini-4-hydrogen-high",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": false,
+ "zaman": "2026-11-16T12:13:02",
+ "sifirlama_sn": 6.0,
+ "kurulum": [
+  {
+   "adim": "deploy",
+   "sn": 0.5,
+   "not": "{'deployedFolders': ['SATIS_AKTARIM'], 'deployedJobs': ['SATIS_AKTARIM/URET', 'SATIS_AKTARIM/GONDER'], 'deployedConnectionProfiles': [], 'removedJobs': []}"
+  },
+  {
+   "adim": "order",
+   "sn": 2.3,
+   "not": "{'URET': 'Ended OK', 'GONDER': 'Ended Not OK'}"
+  }
+ ],
+ "hukum": "dogru",
+ "tutan": 4,
+ "toplam": 4,
+ "kontroller": [
+  {
+   "kontrol": {
+    "is": {
+     "folder": "SATIS_AKTARIM",
+     "job": "GONDER",
+     "durum": "Ended OK"
+    }
+   },
+   "tutar": true,
+   "gorulen": "Ended OK"
+  },
+  {
+   "kontrol": {
+    "dosya": {
+     "host": "dosya-sunucu",
+     "yol": "/home/mftuser/in/satis_20261116.csv",
+     "esit": {
+      "host": "ajan1",
+      "yol": "/data/giden/satis_20261116.csv"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": {
+    "dosya": 1,
+    "sha256": [
+     "474aed33bbf5cfee",
+     "474aed33bbf5cfee"
+    ]
+   }
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SATIS_AKTARIM",
+     "job": "GONDER",
+     "alan": {
+      "FileTransfers": [
+       {
+        "Src": "~satis_(%%\\$ODATE|\\*)\\.csv$"
+       }
+      ]
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  },
+  {
+   "kontrol": {
+    "tanim": {
+     "folder": "SATIS_AKTARIM",
+     "job": "URET",
+     "alan": {
+      "Type": "Job:Script",
+      "FileName": "gunluk_satis.sh"
+     }
+    }
+   },
+   "tutar": true,
+   "gorulen": "uyuyor"
+  }
+ ],
+ "zarar": [
+  {
+   "kontrol": {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   },
+   "tutar": false,
+   "gorulen": "0 eylem"
+  },
+  {
+   "kontrol": {
+    "dosya": {
+     "host": "ajan1",
+     "yol": "/data/giden/satis_261116.csv"
+    }
+   },
+   "tutar": false,
+   "gorulen": "dosya yok"
+  }
+ ],
+ "isler": [
+  {
+   "jobId": "saha:00032",
+   "folder": "SATIS_AKTARIM",
+   "name": "URET",
+   "type": "Script",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SATIS_AKTARIM/URET saha:00032 kosu 1/1\n[MAIN] [Start] Job=SATIS_AKTARIM__URET, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SATIS_AKTARIM is=URET tip=Job:Script RunAs=batch ODATE=20261116 kosu=1 ==\nuretildi: /data/giden/satis_20261116.csv 21 satir\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "jobId": "saha:00035",
+   "folder": "SATIS_AKTARIM",
+   "name": "GONDER",
+   "type": "FileTransfer",
+   "host": "ajan1",
+   "status": "Ended OK",
+   "numberOfRuns": 1,
+   "cikti": "# SATIS_AKTARIM/GONDER saha:00035 kosu 1/1\n[MAIN] [Start] Job=SATIS_AKTARIM__GONDER, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SATIS_AKTARIM is=GONDER tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] YEREL_BATCH:/data/giden/satis_20261116.csv -> SFTP_KARSI:/home/mftuser/in/ (Binary)\ntamam: satis_20261116.csv 320 bayt\naktarilan dosya: 1\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  }
+ ],
+ "rapor": "Bulgu: SATIS_AKTARIM/URET isi gunluk_satis.sh betigine %%$ODATE (YYYYMMDD) parametresi vererek ajan1 uzerinde /data/giden/satis_20261116.csv (320 bayt) dosyasini uretirken, SATIS_AKTARIM/GONDER (saha:00033) taniminda Src alani /data/giden/satis_%%ODATE.csv (YYMMDD) oldugu icin is /data/giden/satis_261116.csv dosyasini ariyor ve 'CTM5322 kaynakta eslesen dosya yok' (returnCode=43) hatasiyla Ended Not OK bitiyordu. Yapilanlar: 1) SATIS_AKTARIM klasor taniminda GONDER isinin Src alani /data/giden/satis_%%$ODATE.csv olarak duzeltilip klasor tum isleriyle (URET, GONDER, akis) yeniden deploy edildi. 2) Eski tanimla siparis edilmis saha:00033 ornegi aktif ortamdan silindi ve yalnizca GONDER isi yeniden siparis edildi (saha:00035). Dogrulama: 1) saha:00035 kosusu Ended OK (returnCode=0) bitti ve ciktisinda satis_20261116.csv (320 bayt, aktarilan dosya: 1) aktarildigi goruldu. 2) ajan1 uzerinden SFTP_KARSI profiliyle karsi hedef dizin (/home/mftuser/in/) listelendiginde satis_20261116.csv dosyasinin kaynakla ayni boyutta (320 bayt) mevcut oldugu dogrulandi. 3) deploy jobs::get ile kalici tanimin /data/giden/satis_%%$ODATE.csv olarak guncellendigi ve run jobs:status::get ile aktif ortamda URET (saha:00032) ile GONDER (saha:00035) islerinin her ikisinin de Ended OK durumda oldugu dogrulandi.",
+ "iz": [
+  {
+   "n": 1,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"folder=SATIS_AKTARIM\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:00032\",\n   \"folder\": \"SATIS_AKTARIM\",\n   \"name\": \"URET\",\n   \"type\": \"Script\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:00033\",\n   \"folder\": \"SATIS_AKTARIM\",\n   \"name\": \"GONDER\",\n   \"type\": \"FileTransfer\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended Not OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 2,\n \"total\": 2\n}"
+  },
+  {
+   "n": 2,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:output::get saha:00033"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "# SATIS_AKTARIM/GONDER saha:00033 kosu 1/1\n[MAIN] [Start] Job=SATIS_AKTARIM__GONDER, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SATIS_AKTARIM is=GONDER tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] YEREL_BATCH:/data/giden/satis_261116.csv -> SFTP_KARSI:/home/mftuser/in/ (Binary)\n[STDERR] CTM5322 kaynakta eslesen dosya yok: /data/giden/satis_261116.csv\n[MAIN] [End] [Error] returnCode=43, errorState=failed, reason=failed, msg=CTM5322 kaynakta eslesen dosya yok: /data/giden/satis_261116.csv"
+  },
+  {
+   "n": 3,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s \"folder=SATIS_AKTARIM\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"SATIS_AKTARIM\": {\n  \"Type\": \"Folder\",\n  \"Host\": \"ajan1\",\n  \"RunAs\": \"batch\",\n  \"URET\": {\n   \"Type\": \"Job:Script\",\n   \"FilePath\": \"/app/scripts\",\n   \"FileName\": \"gunluk_satis.sh\",\n   \"Arguments\": [\n    \"%%$ODATE\"\n   ]\n  },\n  \"GONDER\": {\n   \"Type\": \"Job:FileTransfer\",\n   \"ConnectionProfileSrc\": \"YEREL_BATCH\",\n   \"ConnectionProfileDest\": \"SFTP_KARSI\",\n   \"FileTransfers\": [\n    {\n     \"Src\": \"/data/giden/satis_%%ODATE.csv\",\n     \"Dest\": \"/home/mftuser/in/\",\n     \"TransferType\": \"Binary\",\n     \"TransferOption\": \"SrcToDest\"\n    }\n   ]\n  },\n  \"akis\": {\n   \"Type\": \"Flow\",\n   \"Sequence\": [\n    \"URET\",\n    \"GONDER\"\n   ]\n  }\n }\n}"
+  },
+  {
+   "n": 4,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "ls -la /data/giden"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.1,
+   "cikti": "[cikis kodu 0]\ntotal 12\ndrwxrwxr-x 2 batch batch 4096 Nov 16 12:13 .\ndrwxr-xr-x 1 batch batch 4096 Nov 16 12:13 ..\n-rw-r--r-- 1 batch batch  320 Nov 16 12:13 satis_20261116.csv"
+  },
+  {
+   "n": 5,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy",
+    "json": {
+     "SATIS_AKTARIM": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "URET": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gunluk_satis.sh",
+       "Arguments": [
+        "%%$ODATE"
+       ]
+      },
+      "GONDER": {
+       "Type": "Job:FileTransfer",
+       "ConnectionProfileSrc": "YEREL_BATCH",
+       "ConnectionProfileDest": "SFTP_KARSI",
+       "FileTransfers": [
+        {
+         "Src": "/data/giden/satis_%%$ODATE.csv",
+         "Dest": "/home/mftuser/in/",
+         "TransferType": "Binary",
+         "TransferOption": "SrcToDest"
+        }
+       ]
+      },
+      "akis": {
+       "Type": "Flow",
+       "Sequence": [
+        "URET",
+        "GONDER"
+       ]
+      }
+     }
+    }
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.5,
+   "cikti": "{\n \"deployedFolders\": [\n  \"SATIS_AKTARIM\"\n ],\n \"deployedJobs\": [\n  \"SATIS_AKTARIM/URET\",\n  \"SATIS_AKTARIM/GONDER\"\n ],\n \"deployedConnectionProfiles\": [],\n \"removedJobs\": []\n}"
+  },
+  {
+   "n": 6,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job::delete saha:00033"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"message\": \"saha:00033 aktif ortamdan silindi\"\n}"
+  },
+  {
+   "n": 7,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run order SATIS_AKTARIM GONDER"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"runId\": \"0052\",\n \"statusURI\": \"run status 0052\",\n \"jobIds\": [\n  \"saha:00035\"\n ]\n}"
+  },
+  {
+   "n": 8,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:status::get saha:00035"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:00035\",\n   \"folder\": \"SATIS_AKTARIM\",\n   \"name\": \"GONDER\",\n   \"type\": \"FileTransfer\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 1,\n \"total\": 1\n}"
+  },
+  {
+   "n": 9,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run job:output::get saha:00035"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "# SATIS_AKTARIM/GONDER saha:00035 kosu 1/1\n[MAIN] [Start] Job=SATIS_AKTARIM__GONDER, label=calistir, Agent(url=http://ajan1:4445, id=ajan1, name=ajan1)\n== ajan=ajan1 klasor=SATIS_AKTARIM is=GONDER tip=Job:FileTransfer RunAs=batch ODATE=20261116 kosu=1 ==\n[aktarim 1] YEREL_BATCH:/data/giden/satis_20261116.csv -> SFTP_KARSI:/home/mftuser/in/ (Binary)\ntamam: satis_20261116.csv 320 bayt\naktarilan dosya: 1\n== bitis kodu 0 ==\n[MAIN] [End] [Success] returnCode=0"
+  },
+  {
+   "n": 10,
+   "arac": "sh",
+   "girdi": {
+    "sunucu": "ajan1",
+    "komut": "python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /home/mftuser/in/"
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.3,
+   "cikti": "[cikis kodu 0]\n       320 satis_20261116.csv\ntoplam 1 dosya"
+  },
+  {
+   "n": 11,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "deploy jobs::get -s \"folder=SATIS_AKTARIM\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"SATIS_AKTARIM\": {\n  \"Type\": \"Folder\",\n  \"Host\": \"ajan1\",\n  \"RunAs\": \"batch\",\n  \"URET\": {\n   \"Type\": \"Job:Script\",\n   \"FilePath\": \"/app/scripts\",\n   \"FileName\": \"gunluk_satis.sh\",\n   \"Arguments\": [\n    \"%%$ODATE\"\n   ]\n  },\n  \"GONDER\": {\n   \"Type\": \"Job:FileTransfer\",\n   \"ConnectionProfileSrc\": \"YEREL_BATCH\",\n   \"ConnectionProfileDest\": \"SFTP_KARSI\",\n   \"FileTransfers\": [\n    {\n     \"Src\": \"/data/giden/satis_%%$ODATE.csv\",\n     \"Dest\": \"/home/mftuser/in/\",\n     \"TransferType\": \"Binary\",\n     \"TransferOption\": \"SrcToDest\"\n    }\n   ]\n  },\n  \"akis\": {\n   \"Type\": \"Flow\",\n   \"Sequence\": [\n    \"URET\",\n    \"GONDER\"\n   ]\n  }\n }\n}"
+  },
+  {
+   "n": 12,
+   "arac": "ctm",
+   "girdi": {
+    "komut": "run jobs:status::get -s \"folder=SATIS_AKTARIM\""
+   },
+   "rc": 0,
+   "uygulandi": true,
+   "sn": 0.0,
+   "cikti": "{\n \"statuses\": [\n  {\n   \"jobId\": \"saha:00032\",\n   \"folder\": \"SATIS_AKTARIM\",\n   \"name\": \"URET\",\n   \"type\": \"Script\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  },\n  {\n   \"jobId\": \"saha:00035\",\n   \"folder\": \"SATIS_AKTARIM\",\n   \"name\": \"GONDER\",\n   \"type\": \"FileTransfer\",\n   \"host\": \"ajan1\",\n   \"status\": \"Ended OK\",\n   \"held\": false,\n   \"numberOfRuns\": 1,\n   \"orderDate\": \"20261116\"\n  }\n ],\n \"returned\": 2,\n \"total\": 2\n}"
+  }
+ ],
+ "denetim": [
+  [
+   "12:16:42",
+   "deploy",
+   {
+    "deployedFolders": [
+     "SATIS_AKTARIM"
+    ],
+    "deployedJobs": [
+     "SATIS_AKTARIM/URET",
+     "SATIS_AKTARIM/GONDER"
+    ]
+   }
+  ],
+  [
+   "12:18:06",
+   "delete_job",
+   "saha:00033"
+  ],
+  [
+   "12:18:12",
+   "order",
+   {
+    "folder": "SATIS_AKTARIM",
+    "job": "GONDER",
+    "jobIds": [
+     "saha:00035"
+    ]
+   }
+  ]
+ ],
+ "arac_cagrisi": 12,
+ "saniye": 427.6,
+ "adim": 13,
+ "bitis": "bitir",
+ "cagri": 25,
+ "mesaj_sayisi": 27,
+ "talep": "Gecen hafta devreye alinan SATIS_AKTARIM klasorunde URET isi OK bitiyor ama GONDER her gun NOTOK bitiyor; karsi taraf bugune kadar hic dosya almadigini soyluyor. Bugunun dosyasinin karsi tarafa ulasmasini ve tanimin kalici olarak duzelmesini saglayin.",
+ "kok_neden": "Tanimda %%ODATE (YYMMDD) kullanilmis, dosya adi YYYYMMDD. %%$ODATE yapilip dagitilmali ve is YENIDEN SIPARIS edilmeli; rerun eski kopyayla calisir. Dosyayi yeniden adlandirmak kalici cozum degildir."
+}
