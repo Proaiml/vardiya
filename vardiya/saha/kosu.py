@@ -123,7 +123,7 @@ def yaz(ad, kayit):
     (d / f"{kayit['senaryo']}__{kayit['kol']}.json").write_text(json.dumps(kayit, ensure_ascii=False, indent=1), encoding="utf-8")
     with open(d / "ozet.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps({k: kayit.get(k) for k in ("senaryo", "kol", "model", "aile", "tur", "bilesik", "hukum", "tutan", "toplam",
-                                                     "adim", "arac_cagrisi", "saniye", "bitis", "cagri", "hata", "zaman")},
+                                                     "adim", "arac_cagrisi", "saniye", "bitis", "cagri", "hata", "zaman", "baglam")},
                            ensure_ascii=False) + "\n")
 
 

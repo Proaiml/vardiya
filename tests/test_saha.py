@@ -348,3 +348,27 @@ class Cards(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ContextDiscipline(unittest.TestCase):
+    def test_old_tool_results_shrink_and_the_head_stays(self):
+        from vardiya.saha import ajan
+        msgs = [{"role": "system", "content": "S" * 3000}, {"role": "user", "content": "talep " + "T" * 2000}]
+        for i in range(20):
+            msgs += [{"role": "assistant", "content": '{"arac": "sh"}'}, {"role": "user", "content": f"SONUC {i}:\n" + "satir\n" * 400}]
+        out = ajan.sikistir(msgs, 20000)
+        self.assertEqual(out[:2], msgs[:2])
+        self.assertEqual(out[-1], msgs[-1])
+        self.assertLessEqual(sum(len(m["content"]) for m in out), 20000)
+        self.assertIn("kisaltildi", out[3]["content"])
+        short = msgs[:4]
+        self.assertIs(ajan.sikistir(short, 10 ** 6), short)
+
+    def test_only_local_models_get_a_limit(self):
+        from vardiya.saha import ajan
+
+        class M:
+            spec = "agy:gpt-oss-120b-medium"
+        self.assertIsNone(ajan.baglam_siniri(M()))
+        M.spec = "ollama:qwen3:14b"
+        self.assertGreater(ajan.baglam_siniri(M()), 30000)
