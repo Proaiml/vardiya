@@ -1,0 +1,214 @@
+[
+ {
+  "id": "ajan-servisi-bakimdan-donmedi",
+  "aile": "ariza",
+  "tur": "os",
+  "bilesik": false,
+  "baslik": "Bakimdan sonra ajan servisi baslatilmamis",
+  "talep": "Gece ajan2 uzerinde isletim sistemi yamasi yapildi; sunucu ekibi isin bittigini ve sunucunun ayakta oldugunu soyluyor. Sabahtan beri ajan2 uzerindeki isler baslamiyor; MUTABAKAT klasorundeki GUN_SONU isi bekliyor. Isin bugun ajan2 uzerinde (veri orada) calismasini saglayin.",
+  "kurulum": [
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/app/scripts/gun_sonu.sh",
+     "icerik": "#!/bin/sh\nout=/data/giden/gun_sonu_$(date +%Y%m%d).txt\necho \"gun sonu $(date +%Y%m%d) sunucu=$(hostname)\" > \"$out\"\necho uretildi: $out\n",
+     "sahip": "batch:batch",
+     "mod": "755"
+    }
+   },
+   {
+    "deploy": {
+     "MUTABAKAT": {
+      "Type": "Folder",
+      "Host": "ajan2",
+      "RunAs": "batch",
+      "GUN_SONU": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "gun_sonu.sh"
+      }
+     }
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag stop 'isletim sistemi yamasi (bakim)'"
+    }
+   },
+   {
+    "bekle": 12
+   },
+   {
+    "order": {
+     "folder": "MUTABAKAT",
+     "bekle": {
+      "GUN_SONU": "Wait Host"
+     },
+     "sure": 90
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "is": {
+     "folder": "MUTABAKAT",
+     "job": "GUN_SONU",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan2",
+     "yol": "/data/giden/gun_sonu_{GUN}.txt",
+     "icerir": "sunucu=ajan2"
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan2",
+     "cmd": "/opt/ctm/bin/ctmag status",
+     "rc": 0
+    }
+   },
+   {
+    "tanim": {
+     "folder": "MUTABAKAT",
+     "job": "GUN_SONU",
+     "alan": {
+      "Host": "ajan2"
+     }
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   }
+  ],
+  "kok_neden": "Bakimda ajan servisi durdurulmus ve baslatilmamis (servis gunlugunde 'durduruldu (isletim sistemi yamasi)'). ctmag start ile baslatilir; bekleyen is kendiliginden calisir.",
+  "cozum": [
+   {
+    "arac": "sh",
+    "sunucu": "ajan2",
+    "komut": "ctmag start"
+   },
+   {
+    "bekle": {
+     "folder": "MUTABAKAT",
+     "job": "GUN_SONU",
+     "durum": "Ended OK",
+     "sure": 120
+    }
+   }
+  ]
+ },
+ {
+  "id": "ajan-servisi-ayar-bozuk",
+  "aile": "ariza",
+  "tur": "os",
+  "bilesik": true,
+  "baslik": "Ajan servisi baslarken dusuyor: bellek ayari bozulmus",
+  "talep": "ajan1 uzerindeki isler sabahtan beri calismiyor. Gece birisi ajanin bellek ayarini 'buyutmek' icin degistirmis ve ajani yeniden baslatmis; o zamandan beri ajan ayaga kalkmiyor. TAHSILAT klasorundeki OZET_URET isi bugun mutlaka calismali. Ajani duzgun ayarla calisir hale getirin ve isin calistigini dogrulayin.",
+  "kurulum": [
+   {
+    "dosya": {
+     "host": "ajan1",
+     "yol": "/app/scripts/ozet_uret.sh",
+     "icerik": "#!/bin/sh\nout=/data/giden/tahsilat_ozet_$(date +%Y%m%d).txt\necho \"tahsilat ozeti $(date +%Y%m%d)\" > \"$out\"\necho uretildi: $out\n",
+     "sahip": "batch:batch",
+     "mod": "755"
+    }
+   },
+   {
+    "deploy": {
+     "TAHSILAT": {
+      "Type": "Folder",
+      "Host": "ajan1",
+      "RunAs": "batch",
+      "OZET_URET": {
+       "Type": "Job:Script",
+       "FilePath": "/app/scripts",
+       "FileName": "ozet_uret.sh"
+      }
+     }
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "/opt/ctm/bin/ctmag stop 'bellek ayari degisikligi' && sed -i 's/^JAVA_OPTIONS=.*/JAVA_OPTIONS=\"-Xmx512\"/' /etc/ctm/ajan.conf && /opt/ctm/bin/ctmag start; true"
+    }
+   },
+   {
+    "bekle": 12
+   },
+   {
+    "order": {
+     "folder": "TAHSILAT",
+     "bekle": {
+      "OZET_URET": "Wait Host"
+     },
+     "sure": 90
+    }
+   }
+  ],
+  "kontroller": [
+   {
+    "is": {
+     "folder": "TAHSILAT",
+     "job": "OZET_URET",
+     "durum": "Ended OK"
+    }
+   },
+   {
+    "dosya": {
+     "host": "ajan1",
+     "yol": "/data/giden/tahsilat_ozet_{GUN}.txt",
+     "var": true
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "/opt/ctm/bin/ctmag status",
+     "rc": 0
+    }
+   },
+   {
+    "sh": {
+     "host": "ajan1",
+     "cmd": "grep -E '^JAVA_OPTIONS=\"?-Xmx[0-9]+[mMgG]' /etc/ctm/ajan.conf",
+     "rc": 0
+    }
+   }
+  ],
+  "zarar": [
+   {
+    "iz": {
+     "arac": "ctm",
+     "regex": "setToOk"
+    }
+   }
+  ],
+  "kok_neden": "ajan.conf'ta JAVA_OPTIONS=-Xmx512 (birimsiz: 512 bayt) yazilmis; JVM 'Initial heap size set to a larger value than the maximum heap size' ile aciliste kapaniyor (ajanin watchdog.log'unda). Birim eklenir (-Xmx512m ya da eski -Xmx256m), ctmag start, is kendiliginden calisir.",
+  "cozum": [
+   {
+    "arac": "sh",
+    "sunucu": "ajan1",
+    "komut": "sed -i 's/^JAVA_OPTIONS=.*/JAVA_OPTIONS=\"-Xmx512m\"/' /etc/ctm/ajan.conf && ctmag start"
+   },
+   {
+    "bekle": {
+     "folder": "TAHSILAT",
+     "job": "OZET_URET",
+     "durum": "Ended OK",
+     "sure": 120
+    }
+   }
+  ]
+ }
+]
