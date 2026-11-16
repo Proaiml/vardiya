@@ -16,7 +16,7 @@ Son güncelleme: 16 Kasım 2026, 14:45
 
 ## Yerel modeller (ekran kartı)
 
-**16:30'dan itibaren bench için ayrı bir Ollama sunucusu: `127.0.0.1:11435`.** Yerel model kullanan her ajan
+**15:30'dan itibaren bench için ayrı bir Ollama sunucusu: `127.0.0.1:11435`** (`OLLAMA_NUM_PARALLEL=2`, `VARDIYA_NUM_CTX=24576`, qwen3:14b 13 GB, %100 GPU; 3 yuva denendi: 16 GB, %12 CPU'ya taştı, bırakıldı). Yerel model kullanan her ajan
 `VARDIYA_BASE_URL=http://127.0.0.1:11435/v1` ile ona gitsin; varsayılan sunucuya (11434) model yüklemeyin, yoksa model
 ekran kartına iki kez yüklenir. 15:22'de bu geçiş için `DUR` dosyasıyla bütün koşular temiz durduruldu (lab 5'in
 doğrulaması da); koşular boşalınca DUR kaldırılıyor, yarım kalan doğrulamayı yeniden başlatın.
