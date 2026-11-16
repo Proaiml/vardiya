@@ -16,6 +16,11 @@ Son güncelleme: 16 Kasım 2026, 14:45
 
 ## Yerel modeller (ekran kartı)
 
+**16:30'dan itibaren bench için ayrı bir Ollama sunucusu: `127.0.0.1:11435`.** Yerel model kullanan her ajan
+`VARDIYA_BASE_URL=http://127.0.0.1:11435/v1` ile ona gitsin; varsayılan sunucuya (11434) model yüklemeyin, yoksa model
+ekran kartına iki kez yüklenir. 15:22'de bu geçiş için `DUR` dosyasıyla bütün koşular temiz durduruldu (lab 5'in
+doğrulaması da); koşular boşalınca DUR kaldırılıyor, yarım kalan doğrulamayı yeniden başlatın.
+
 14:45'ten itibaren `ollama:qwen3:14b` yükleniyor (`VARDIYA_NUM_CTX=24576`, tek model). gemma4 ve qwen3:8b'ye geçiş
 ayrıca buraya yazılacak; o zamana kadar diğer ajanlar yalnızca qwen3:14b kullansın. Yerel modellerde ajan
 döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi `saha-donuk-1c`, harness değişmedi).
