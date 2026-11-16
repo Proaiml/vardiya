@@ -13,6 +13,8 @@
 > Harness yoksa model bu işi yapamaz. Tablodaki her satır depodaki bir koşudan gelir (`results/saha/`). Zor kümede
 > henüz gösteremediklerimiz aşağıda açıkça yazılı.
 
+[![Vardiya afişi: laboratuvar, üç basamak, bir bölümün dökümü](docs/afis/vardiya-afis.png)](docs/afis/vardiya-afis.pdf)
+
 **Dil modelini, Control-M sınıfı bir batch zamanlayıcının yöneticisi yapan açık harness.** Vardiya, ekiplerden gelen
 talepten iş tanımlar; başarısız bir işin nedenini gerçek sunucularda bulur, düzeltir ve işi yeniden çalıştırır. Harness'in
 içinde çalışan yönetici ajanın adı **Usta**'dır. Canlı bench, bir Docker laboratuvarında gerçek bir zamanlayıcı, iki ajan
