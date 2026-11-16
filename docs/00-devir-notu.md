@@ -82,6 +82,50 @@ Rakamlar kaynak sayfalarından alındı; çoğu yeni olduğu için çapraz doğr
 
 ## Kodun durumu (Aşama 0 tamam)
 
+### Scheduler Admin Bench ve sonrası (13 Kasım 2026, sürüm 0.1.0 üzerinde)
+
+Hiçbiri commit edilmedi.
+
+**Yön (İlhan, 13 Kasım 2026):** hedef harness ile modeli orta noktada buluşturmak. Her şey koda dökülmez; dili
+model okur, harness onun işini güvenilir kılar. Model bağlanmadan alınan sonuç bir başarı ölçüsü değil, yalnızca
+işin ne kadarının koda düştüğünü gösteren ayırma koludur.
+
+- **Bench kuruldu.** `vardiya/sabgen.py` tohumlu senaryo üretir (12 aile, 8'i tuzak), `vardiya/sab.py` koşar,
+  sonuçları `results/` altına yazar ve raporlar. Tasarım ve sonuçlar `docs/03-scheduler-admin-bench.md`.
+- **Ana sonuç** (48 senaryo, günler bağımsız yazarlı kümeden, düşünme kapalı): ham `qwen3:8b` ve `qwen3:14b` %19
+  doğru, %73 ve %81 zararlı; runbook'lu plasebo %40 doğru, %42 ile %50 zararlı; harness ile model birlikte %100
+  doğru, %0 zararlı. Model bağlanmadan harness %94'te kalıyor: fark modelin payı.
+- **Gelişmiş model kıyası.** Gemini 4 Hydrogen, Antigravity'nin `agy` aracı üzerinden ham kola bağlandı
+  (`--model agy:gemini-4-hydrogen-xhigh`): biten 10 talebin 10'u doğru, talep başına 6,5 çağrı ve 160 saniye.
+  Harness içindeki 8B yerel model aynı senaryolarda aynı sonuca ulaşıyor. Örneklem 10 talep.
+- **Skoru yükselten şey: model okur, kod denetler.** Serbest yazılmış günlerde model ifadeyi kural formuna çevirir,
+  kod kuralın tarihlerini üreten takvimi bulur ve ifadedeki açık işaretlerle çelişen okumayı veto eder
+  (`gunler.contradicts`). Hiç ayar yapılmamış kümede: model tek başına %76 ile %81 doğru, %16 ile %20 yanlış
+  takvim; denetimle %91 ile %95 doğru, %0 ile %1 yanlış takvim. Varsayılan strateji `lex>rule-gloss-veto`.
+- **Denenip bırakılan yol.** Okumayı tümüyle koda taşıyan sözlük, aynı elin yazdığı ifadelerde çok iyi göründü,
+  başka yazarların ifadelerinde beşte bire düştü. Kalıp ifadeler için kısa yol olarak kaldı.
+- **Skill katmanı talep tarafına geldi.** Kurum standartları `skills/talep-standartlari/SKILL.md` içinde veri
+  olarak duruyor. Skill yalnızca iade gerekçesi ekleyebilir; çekirdek denetimlerini gevşetemez.
+- **Üçüncü talep türü:** iş kaldırma (`islem: kaldir`) ve tuzağı (başka işlerin bağımlı olduğu işi kaldırmak).
+- **JS7 bağdaştırıcısı çalışıyor.** `vardiya/js7repo.py` aynı fiilleri JS7 üzerinde uygular; `vardiya/js7bench.py`
+  ile on ailede dört kolla 40 hücrenin 40'ında JS7 hükmü emülatörle aynı çıktı. JS7'de bulunan iki tuzak ve
+  çözümleri `lab/js7/README.md` dosyasında.
+- **Ajan köprüsü.** `vardiya/agentbench.py`, komut satırı aracı olmayan ajan araçlarını ham kola oturtmak için
+  duruyor (`docs/04-ajan-araciyla-olcum.md`). Hydrogen için gerekmedi; `agy` yeterli oldu.
+
+Açık kalanlar:
+
+- Bench'te modelin muhakemesini isteyen aileler az: muğlak ya da çelişkili talepler, açıklama ile alanların
+  tutarsızlığı eklenmeli. Şu an modelin payı yalnızca gün ifadelerinde ölçülüyor.
+- Gelişmiş model kıyası 10 taleple sınırlı; plasebo ve harness kollarında Hydrogen ölçülmedi.
+- Kapının göremediği yanlış okuma kalıyor (ifadede çelişen işaret yoksa). Gerçek kullanıcı taleplerinden oluşan
+  bir ifade kümesi yok; bağımsız kümeleri modeller yazdı.
+- Düşünme açık yerel taban ve Qwen dışı yerel modeller ölçülmedi.
+- JS7'de takvim ve saat yalnızca etiket; Daily Plan ile karşılaştırma yapılmadı.
+- Yeni fiiller (iş kaldırma) ve yeni varsayılan strateji JS7 üzerinde koşulmadı.
+
+
+
 Bağımlılık yok, Python 3.10+. Depo kökünde:
 
 ```

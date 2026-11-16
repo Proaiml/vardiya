@@ -122,7 +122,7 @@ def secim(adlar, n=20):
     with the most Usta steps, until n."""
     rows = [r for ad in adlar for r in liste(ad) if r["hukum"] in HUKUMLER and r["karsi_hukum"] in HUKUMLER]
     farkli = [r for r in rows if r["hukum"] != r["karsi_hukum"]]
-    farkli.sort(key=lambda r: (not r["fark"], r["ad"], r["senaryo"]))
+    farkli.sort(key=lambda r: (0 if r["fark"] else 1 if r["geri"] else 2, r["ad"], r["senaryo"]))
     kalan = sorted([r for r in rows if r not in farkli and r["bilesik"]], key=lambda r: -(r["adim"] or 0))
     return (farkli + kalan)[:n]
 
@@ -172,7 +172,7 @@ def belge(adlar, n=20, yol=None):
             "Bu belge kanıt dosyalarından betikle üretilir (`python -m vardiya.saha.vitrin belge " + " ".join(adlar) + "`); model çağrısı "
             "yoktur. Her kayıt bir Usta bölümüdür: talep, harness'in gördüğü, sırasıyla yapılan eylemler (reddedilen ve ikinci çağrı istenenler "
             "işaretli), bölüm sonunda sunuculardan okunan kanıt ve aynı senaryoda araçlı modelin (yalnız erişim katmanı: aynı araçlar ve el kitabı, harness yok) sonucu.", "",
-            f"Seçim kuralı: önce iki kolun hükmünün farklı olduğu bütün bölümler (önce Usta'nın doğru, araçlı modelin doğru olmadığı), sonra "
+            f"Seçim kuralı: önce iki kolun hükmünün farklı olduğu bütün bölümler (önce Usta'nın doğru, araçlı modelin doğru olmadığı, sonra tersi), sonra "
             f"bileşik senaryolardan en çok adım sürenler; en çok {n} kayıt. Bu seçimde hükmü farklı olan: {farkli}.", "",
             "Koşular: " + ", ".join(f"`{a}`" for a in adlar) + ". Ham kanıt: `results/saha/<koşu>/<senaryo>__<kol>.json` ve web "
             "konsolundaki \"Canlı saha\" ile \"Müdahale vitrini\" sayfaları.", "",
