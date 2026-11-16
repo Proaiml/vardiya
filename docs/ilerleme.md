@@ -1,6 +1,6 @@
 # İlerleme (baş işçi)
 
-Son güncelleme: 16 Kasım 2026, 14:25
+Son güncelleme: 16 Kasım 2026, 14:45
 
 ## Model kotası
 
@@ -12,13 +12,19 @@ Son güncelleme: 16 Kasım 2026, 14:25
 - Koşucu artık art arda 3 kota hatasında kendini durduruyor (çıkış 5); kuyruk betiği her işten önce modeli tek
   çağrıyla yokluyor.
 
+## Yerel modeller (ekran kartı)
+
+14:45'ten itibaren `ollama:qwen3:14b` yükleniyor (`VARDIYA_NUM_CTX=24576`, tek model). gemma4 ve qwen3:8b'ye geçiş
+ayrıca buraya yazılacak; o zamana kadar diğer ajanlar yalnızca qwen3:14b kullansın. Yerel modellerde ajan
+döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi `saha-donuk-1c`, harness değişmedi).
+
 ## Laboratuvarlar ve kuyruk
 
 | Lab | Kod | Sıra |
 | --- | --- | --- |
-| 1 | donuk (`saha-donuk-1b`) | `test-gpt-oss` 1/2, sonra 2/2 boşlukları, sonra `test-gpt-oss-b10` 1/2 |
+| 1 | donuk (`saha-donuk-1c`) | `test-gpt-oss` 1/2, `qwen-baglam-deneme` (1 bölüm), `test-qwen3-14b`, `test-gpt-oss-b10` 1/2 |
 | 2 | donuk | `test-gpt-oss-b10` 2/2, sonra `test-sonnet-low` (30 senaryo, yalin+usta) |
-| 3 | geliştirme (ana depo) | ajan sunucuları yeni denetçiyle yeniden kuruluyor, sonra `zor-dev-gpt-oss` (usta, yalin) |
+| 3 | önce donuk, sonra geliştirme | eski `test-gpt-oss` 2/2 süreci (kart kolu dahil) bitince: ajan sunucuları yenilenir, ajan servisi senaryoları doğrulanır, `zor-dev-gpt-oss` |
 | 4 | senaryo yazarı | - |
 | 5 | katalog ajanı | - |
 
