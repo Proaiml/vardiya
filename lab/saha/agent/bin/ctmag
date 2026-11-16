@@ -1,0 +1,46 @@
+#!/bin/sh
+# ctmag: ajan servisinin betigi (Control-M'deki start-ag / shut-ag / ag_diag_comm karsiligi).
+#   ctmag start | stop | restart | status
+# Ayar: /etc/ctm/ajan.conf (JAVA_OPTIONS, HTTP_PORT). Gunluk: /var/log/ctmagent.log
+# Ajan sureci jobscheduler hesabiyla calisir; sunucu (konteyner) ajan dursa da ayakta kalir.
+CONF=/etc/ctm/ajan.conf
+LOG=/var/log/ctmagent.log
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
+pid() { pgrep -f 'js7.agent.main.AgentMain' | head -1; }
+
+durum() {
+  p=$(pid)
+  if [ -n "$p" ]; then echo "ajan calisiyor (pid $p)"; return 0; fi
+  echo "ajan calismiyor"; return 3
+}
+
+baslat() {
+  if [ -n "$(pid)" ]; then echo "ajan zaten calisiyor (pid $(pid))"; return 0; fi
+  if [ ! -r "$CONF" ]; then log "BASLATILAMADI: ayar dosyasi yok ya da okunamiyor: $CONF"; echo "ajan baslatilamadi: ayar dosyasi yok: $CONF"; return 1; fi
+  . "$CONF"
+  : "${HTTP_PORT:=4445}"
+  log "baslatiliyor (JAVA_OPTIONS=$JAVA_OPTIONS HTTP_PORT=$HTTP_PORT)"
+  RUN_JS_JAVA_OPTIONS="$JAVA_OPTIONS" RUN_JS_HTTP_PORT="$HTTP_PORT" nohup /usr/local/bin/entrypoint.sh >> "$LOG" 2>&1 &
+  sleep 12
+  if [ -n "$(pid)" ]; then log "ajan basladi (pid $(pid))"; echo "ajan basladi (pid $(pid))"; return 0; fi
+  log "BASLATILAMADI: ajan sureci acilir acilmaz kapandi; ajanin kendi gunlukleri: /var/sos-berlin.com/js7/agent/logs/watchdog.log ve agent.log"
+  echo "ajan baslatilamadi; son gunluk satirlari:"; tail -8 "$LOG"; return 1
+}
+
+durdur() {
+  p=$(pid)
+  if [ -z "$p" ]; then echo "ajan zaten calismiyor"; return 0; fi
+  log "durduruluyor (${1:-elle})"
+  kill "$p"; i=0
+  while [ -n "$(pid)" ] && [ $i -lt 20 ]; do sleep 1; i=$((i + 1)); done
+  [ -n "$(pid)" ] && kill -9 "$(pid)"
+  log "ajan durduruldu (${1:-elle})"; echo "ajan durduruldu"
+}
+
+case "$1" in
+  start) baslat ;;
+  stop) durdur "$2" ;;
+  restart) durdur "$2"; baslat ;;
+  status) durum ;;
+  *) echo "kullanim: ctmag start|stop|restart|status"; exit 2 ;;
+esac

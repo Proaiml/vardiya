@@ -12,6 +12,8 @@ name: ${SAHA_PROJE:-vardiya-saha}
 x-ajan: &ajan
   build: ./agent
   image: vardiya/saha-ajan:1
+  # PID 1 bir denetci: ajan servisi (ctmag) durabilir ve sunucudan yeniden baslatilabilir; sunucu ayakta kalir.
+  entrypoint: ["/opt/ctm/bin/ajan-denetci"]
   tty: true
   stdin_open: true
   environment:

@@ -23,6 +23,15 @@ PROFILES = {
                  "Password": DB_USERS["rapor_user"], "DatabaseName": "uygulama"},
 }
 
+# Agent hosts whose PID 1 is the supervisor (lab/saha/agent/bin/ajan-denetci): the agent service may have been
+# stopped or its settings broken by the previous episode; put the settings back and start it.
+AGENT_SERVICE_RESET = r"""
+if grep -q ajan-denetci /proc/1/cmdline 2>/dev/null; then
+  mkdir -p /etc/ctm && printf 'JAVA_OPTIONS="-Xmx256m"\nHTTP_PORT=4445\n' > /etc/ctm/ajan.conf
+  /opt/ctm/bin/ctmag status >/dev/null || /opt/ctm/bin/ctmag start
+fi
+"""
+
 AGENT_RESET = r"""
 for p in /proc/[0-9]*; do grep -qz '^SAHA_ARIZA=1' $p/environ 2>/dev/null && kill -9 ${p#/proc/} 2>/dev/null; done
 for u in batch etl finans mft; do pkill -u $u 2>/dev/null; passwd -u $u >/dev/null 2>&1; done
@@ -105,6 +114,8 @@ def sifirla(lab, ctm, bekle=120):
             lab.power(host, "unpause")
         elif state != ["true", "false"]:
             lab.power(host, "start")
+    for host in AGENTS:
+        lab.sh(host, AGENT_SERVICE_RESET, timeout=60)
     for _ in range(40):
         if lab.sh("appdb", "pg_isready -U postgres -d uygulama")[0] == 0:
             break

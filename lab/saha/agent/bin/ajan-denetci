@@ -1,0 +1,9 @@
+#!/bin/sh
+# PID 1 of an agent host: brings the agent service up once and keeps the host alive whether the agent runs or not,
+# so a stopped agent is a real "agent down on a live server" that an admin can restart from a shell.
+mkdir -p /etc/ctm
+[ -f /etc/ctm/ajan.conf ] || printf 'JAVA_OPTIONS="%s"\nHTTP_PORT=4445\n' "${RUN_JS_JAVA_OPTIONS:--Xmx256m}" > /etc/ctm/ajan.conf
+ln -sf /opt/ctm/bin/ctmag /usr/local/bin/ctmag
+/opt/ctm/bin/ctmag start
+trap '/opt/ctm/bin/ctmag stop kapanis; exit 0' TERM INT
+while :; do sleep 5 & wait $!; done

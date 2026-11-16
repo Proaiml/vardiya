@@ -18,6 +18,8 @@ veritabani gercektir. Zamanlayici Control-M Automation API sozdizimini konusur (
 - ajan1, ajan2: islerin calistigi ajan sunuculari (Linux). Is hesaplari: batch, etl, finans, mft. Ajan sureci
   `jobscheduler` hesabiyla calisir. Dizinler: /data/gelen, /data/giden, /data/arsiv, /data/dar (kucuk disk bolumu),
   /app/scripts, /app/sql, /var/log/app. Baglanti profilleri /opt/ctm/cp, SSH anahtarlari /opt/ctm/keys altinda.
+  Ajan servisi: `ctmag status|start|stop|restart` (root). Ajan durursa sunucu ayakta kalir, isler Wait Host'ta bekler.
+  Servis gunlugu /var/log/ctmagent.log, ayar /etc/ctm/ajan.conf, ajanin kendi gunlukleri /var/sos-berlin.com/js7/agent/logs.
 - dosya-sunucu: karsi taraf SFTP sunucusu. Hesaplar: mftuser (parola), banka (yalnizca anahtar), rapor (parola).
   Her hesabin evinde in/, out/, arsiv/ dizinleri vardir.
   Karsi dizini bir profille listelemek icin (kabuk erisimin olmasa da): sh ajan1 "python3 /opt/ctm/bin/runjob.py ls PROFIL /dizin"

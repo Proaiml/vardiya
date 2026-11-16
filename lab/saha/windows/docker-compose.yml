@@ -1,0 +1,45 @@
+# Paylasilan Windows sunucusu (gercek Windows Server 2022 deneme surumu, KVM ile bir konteyner icinde).
+# Butun laboratuvar kopyalarinin aglarina baglanir (her agda .30 adresi); ajan sunuculari ona WinRM ile baglanir.
+# Kurulum ISO'sunu dockurr/windows imaji Microsoft'tan kendisi indirir; ilk acilis 20-40 dakika surer.
+# Hesap ve parola yalnizca bu laboratuvar icindir. Kurulumu izlemek icin: http://127.0.0.1:28006
+#
+#   docker compose -f lab/saha/windows/docker-compose.yml up -d
+name: vardiya-saha-win
+
+services:
+  win:
+    image: dockurr/windows:latest
+    container_name: vardiya-saha-win
+    environment:
+      VERSION: "2022"
+      RAM_SIZE: "3G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+      USERNAME: "ctmadmin"
+      PASSWORD: "Lab-Win-2026"
+      LANGUAGE: "English"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 127.0.0.1:28006:8006
+    volumes:
+      - win-disk:/storage
+      - ./oem:/oem
+    stop_grace_period: 2m
+    networks:
+      saha1: {ipv4_address: 172.31.57.30}
+      saha2: {ipv4_address: 172.31.58.30}
+      saha3: {ipv4_address: 172.31.59.30}
+      saha4: {ipv4_address: 172.31.60.30}
+
+volumes:
+  win-disk:
+
+networks:
+  saha1: {external: true, name: vardiya-saha_saha}
+  saha2: {external: true, name: vardiya-saha2_saha}
+  saha3: {external: true, name: vardiya-saha3_saha}
+  saha4: {external: true, name: vardiya-saha4_saha}
