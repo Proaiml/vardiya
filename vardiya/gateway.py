@@ -59,7 +59,13 @@ class Model:
             try:
                 with urllib.request.urlopen(req, timeout=self.timeout) as r:
                     self.calls += 1
-                    return json.loads(r.read())["message"]["content"]
+                    out = json.loads(r.read())
+                    # what Ollama really read: a prompt that filled the window was cut at its start
+                    n, ctx = out.get("prompt_eval_count") or 0, body["options"]["num_ctx"]
+                    b = self.__dict__.setdefault("baglam", {"num_ctx": ctx, "en_cok_prompt": 0, "dolu_cagri": 0})
+                    b["en_cok_prompt"] = max(b["en_cok_prompt"], n)
+                    b["dolu_cagri"] += n >= ctx - 64
+                    return out["message"]["content"]
             except urllib.error.HTTPError as e:
                 if attempt or e.code != 400 or "think" not in body:
                     raise
