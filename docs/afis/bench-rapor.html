@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<title>Vardiya canlı saha bench raporu</title>
+<title>SchedOps-Bench raporu</title>
 <style>
   @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
   :root { --ink:#111827; --muted:#4b5563; --line:#cfcfc8; --teal:#0f6b62; --amber:#9a4a06; --soft:#f1f1ea; }
@@ -33,11 +33,12 @@
 
 <div class="cover">
   <div class="meta">VARDİYA · AÇIK KAYNAK HARNESS · AIOPS</div>
-  <h1>Canlı saha bench raporu</h1>
+  <h1>SchedOps-Bench raporu</h1>
+  <p class="lead" style="margin-bottom:1mm"><b>Batch zamanlayıcı operasyonları için canlı ortam benchmark'ı</b> (SchedOps-Bench, Vardiya projesinin canlı bench'i)</p>
   <p class="lead">Bir dil modeli, batch zamanlayıcının yöneticisi olarak gerçek sunucularda arızayı bulup düzeltebiliyor mu, ve harness bunda ne kadar pay sahibi?</p>
   <p>16 Kasım 2026 · github.com/Proaiml/vardiya · Apache License 2.0</p>
-  <p class="meta">Bu rapor <code>docs/09-canli-saha-bench.md</code> belgesinin ve <code>results/saha/</code> altındaki koşuların bir özetidir. Tabloların her sayısı bir koşudan gelir ve model adıyla, küme adıyla verilir; modeller birleştirilmez; yarım kalan koşular kısmi diye işaretlidir.</p>
-  <h3>Bu bench ne ölçer</h3>
+  <p class="meta">Bu rapor <code>docs/09-canli-saha-bench.md</code> belgesinin ve <code>results/saha/</code> altındaki koşuların bir özetidir; bütün senaryolar <code>docs/schedops-bench-senaryolar.pdf</code> dosyasındadır. Proje adı Vardiya, bench'in adı SchedOps-Bench'tir. Tabloların her sayısı bir koşudan gelir ve model adıyla, küme adıyla verilir; modeller birleştirilmez; yarım kalan koşular kısmi diye işaretlidir.</p>
+  <h3>SchedOps-Bench ne ölçer</h3>
   <p>Vardiya, bir dil modelini Control-M sınıfı bir batch zamanlayıcının yöneticisi yapan açık bir harness'tir; yönetici ajanın adı Usta'dır. Canlı bench, Docker içinde gerçek bir zamanlayıcı, iki ajan sunucusu, bir SFTP sunucusu ve bir PostgreSQL veritabanı kurar. Her bölümde bir arıza gerçekten üretilir, ajan çözmeye çalışır ve hüküm, sunuculardan okunan son durumdan verilir (iş durumu, dosya özeti, SQL sonucu), ajanın sözünden değil.</p>
   <h3>Üç basamak</h3>
   <table>

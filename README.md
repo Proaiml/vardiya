@@ -15,7 +15,31 @@
 
 [![Vardiya afişi: laboratuvar şeması, üç basamak, bir bölümün dökümü](docs/afis/vardiya-afis.png)](docs/afis/vardiya-afis.pdf)
 
-*Afiş (PDF için tıklayın). Bench raporu: [`docs/vardiya-saha-bench.pdf`](docs/vardiya-saha-bench.pdf) · Ayrıntı: [`docs/09-canli-saha-bench.md`](docs/09-canli-saha-bench.md)*
+*Afiş (PDF için tıklayın). SchedOps-Bench raporu: [`docs/vardiya-saha-bench.pdf`](docs/vardiya-saha-bench.pdf) · senaryolar: [`docs/schedops-bench-senaryolar.pdf`](docs/schedops-bench-senaryolar.pdf) · Ayrıntı: [`docs/09-canli-saha-bench.md`](docs/09-canli-saha-bench.md)*
+
+## SchedOps-Bench
+
+**SchedOps-Bench: batch zamanlayıcı operasyonları için canlı ortam benchmark'ı** (İngilizce: *SchedOps-Bench, a live-environment
+benchmark for batch scheduler operations by AI agents*). Tam bu iş için kurulmuş bir benchmark'tır: bir ajanın gerçek
+sunucularda bir iş zamanlayıcıyı yönetmesi; taleplerden iş tanımlamak, başarısız dosya aktarımı, komut/betik ve veritabanı
+işlerini teşhis etmek, düzeltmek ve yeniden çalıştırmak. Üç şeyle ayrışır:
+
+- Her senaryo canlı bir laboratuvarda gerçekten çalışır; arıza gerçekten üretilir (parola değişir, anahtar izni bozulur,
+  oturum kilit tutar, disk dolar).
+- Hüküm ajanın raporundan değil, sunuculardan okunan son durumdan verilir (iş durumu, dosya özeti, SQL sonucu, tanım).
+  Zararlı ve sahte yeşil sonuçlar ayrı sayılır.
+- Bir senaryo kümeye ancak kimse dokunmadığında doğru çıkmıyor ve örnek çözüm doğru çıkıyorsa girer.
+
+Boyut (senaryo dosyalarından sayıldı): geliştirme `dev` 18 dosyada 16 ölçülen (iki ajan servisi senaryosu ölçülen kümede
+yok), gizli test `test` 30, `zor-dev` 10, `zor-test` 17, `katalog-dev` 30, `katalog-test` 60; toplam 165 senaryo.
+Ölçümler `dev`, `test`, `zor-dev` ve `zor-test` üzerindedir; katalog kümeleri ölçülmedi (`katalog-test` doğrulaması
+yeniden başlatmada yarım kaldı: 60 senaryodan 49'unda geçen bir çift satır var, 1'i kurulamadı, 10'unda satır yok).
+Bu, projenin önceki bench'leriyle karıştırılmasın: Scheduler Admin Bench (emülatörde tanım talepleri, `docs/03`) ve ops
+bench (metin cevapları, `docs/07`) ayrıdır; SchedOps-Bench onların canlı üyesidir.
+
+PDF'ler: [SchedOps-Bench raporu (sonuçlar, yöntem, sınırlar)](docs/vardiya-saha-bench.pdf) ·
+[SchedOps-Bench senaryo kataloğu (165 senaryonun tamamı)](docs/schedops-bench-senaryolar.pdf). Kod, klasör ve komut adları
+değişmedi (`vardiya saha ...`, `bench/saha/`).
 
 ## Nedir, kimin için
 
@@ -77,7 +101,7 @@ Not OK, ARSIVLE bekliyor, dosya yok, profil testi başarısız). **Araçlı mode
 bir adımını karşı kuruma ait sunucuda kabuk açmaya denemeye harcadı (reddedildi). Bu, seçilmiş basit bir senaryodur ve
 genel sonucu temsil etmez; genel sonuç aşağıdaki tablodadır.
 
-## Sonuçlar: üç basamak
+## SchedOps-Bench sonuçları: üç basamak
 
 1. **Saf model.** Aracı yoktur; yalnızca öneri metni yazar, sitede hiçbir şey değişmez. Ayrıca koşulmaz: her senaryonun
    doğrulamasındaki "kimse dokunmadı" kolu bunu ölçer ve kuruluş gereği hiçbir senaryoda doğru çıkmaz (geliştirmede
@@ -258,7 +282,8 @@ başka hiçbir şeyi açmaz. Vardiya, BMC Software ile bağlantılı değildir.
 ## English summary
 
 Vardiya is an open harness that lets a language model act as the administrator of a Control-M class batch scheduler:
-it defines jobs from tickets, and diagnoses, fixes and reruns failed jobs on real hosts, an AIOps use. A live bench in
+it defines jobs from tickets, and diagnoses, fixes and reruns failed jobs on real hosts, an AIOps use. A live bench, SchedOps-Bench (a
+live-environment benchmark for batch scheduler operations by AI agents), in
 Docker (a real scheduler, two agent hosts, an SFTP server, a PostgreSQL database) judges every episode by the end state
 read from the hosts, not by what the agent says.
 
@@ -463,7 +488,7 @@ olmayan tanim) reddettigini hicbir skill kabul ettiremez. Standart skill'i hic y
 **Ariza skill'i**: tetik, yetki, izinli eylemler, teshis kosullari, planlar ve dogrulama kosullari.
 Ornek: `skills/failed-load-triage/SKILL.md`.
 
-## Canli saha bench'i
+## Canli saha bench'i (SchedOps-Bench)
 
 Usta'nin urunu uctan uca yonetebildigini gercek bir ortamda olcen bench. Ayrinti ve sonuclar:
 `docs/09-canli-saha-bench.md`; Usta'nin tek tek mudahaleleri: `docs/13-mudahale-gunlugu.md`.
