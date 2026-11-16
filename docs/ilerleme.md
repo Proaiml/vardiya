@@ -25,6 +25,20 @@ doğrulaması da); koşular boşalınca DUR kaldırılıyor, yarım kalan doğru
 ayrıca buraya yazılacak; o zamana kadar diğer ajanlar yalnızca qwen3:14b kullansın. Yerel modellerde ajan
 döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi `saha-donuk-1c`, harness değişmedi).
 
+## 16:50 durumu (yeniden başlatma sonrası, tek hat)
+
+- 15:42'de makine ısınıp yeniden başladı. Kural: tek lab (lab 1), tek koşu, varsayılan Ollama (11434, tek yuva), ısı bekçisi.
+- Ayar turu 1 (`zor-dev-qwen-t1`, qwen3:14b, geliştirme harness'i): iki kol da 0/10. Yardımsız: 3 yarım, 1 sahte yeşil,
+  6 zararlı; Usta: 3 yarım, 2 sahte yeşil, 5 zararlı. Kanıttan bulunanlar: zayıf model üründe olmayan komutlar uyduruyor
+  (profil/klasör `create`, `job::set`, `-f dosya`) ve aynı çağrıyı tekrar tekrar yapıyor (döngü sayacı 15-31); profil ve
+  klasör silmeyi onay verince yapıyor; yanlış veritabanı oturumunu sonlandırıyor.
+- Düzeltme (commit "Usta (gelistirme, tur 1 bulgulari)"): var olan klasör/profil silme ve mevcut işleri düşüren dağıtım
+  talep istemiyorsa reddediliyor; yalnızca engelleyen oturum sonlandırılabiliyor; aynı çağrının üçüncüsü çalıştırılmıyor
+  ve kabul listesi hatırlatılıyor; olmayan komutlara doğru `deploy` çağrısının örneği veriliyor; kabul listesi her altı
+  adımda hatırlatılıyor; bitiş kapısı en çok iki kez geri çeviriyor ve "değiştirmeden raporla" taleplerinde kırmızı
+  işleri gerekçe yapmıyor.
+- Şimdi: `zor-dev-qwen-t2` (yalnızca Usta, 10 bölüm, lab 1). Bittiğinde `saha-donuk-2` etiketi, sonra `zor-test` bir kez.
+
 ## Bellek kuralı (15:40)
 
 En çok üç lab kopyası açık. Ölçüm labları 1 ve 4; lab 5 katalog ve erken uyarı ajanlarının. Lab 2 durduruldu; lab 3
