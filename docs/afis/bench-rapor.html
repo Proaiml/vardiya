@@ -26,6 +26,7 @@
   .cover { min-height:230mm; display:flex; flex-direction:column; justify-content:center; break-after:page; }
   .pb { break-before:page; }
   .small td, .small th { font-size:8.4pt; }
+  table.small { break-inside:auto; } table.small tr { break-inside:avoid; }
 </style>
 </head>
 <body>
@@ -36,15 +37,18 @@
   <p class="lead">Bir dil modeli, batch zamanlayıcının yöneticisi olarak gerçek sunucularda arızayı bulup düzeltebiliyor mu, ve harness bunda ne kadar pay sahibi?</p>
   <p>16 Kasım 2026 · github.com/Proaiml/vardiya · Apache License 2.0</p>
   <p class="meta">Bu rapor <code>docs/09-canli-saha-bench.md</code> belgesinin ve <code>results/saha/</code> altındaki koşuların bir özetidir. Tabloların her sayısı bir koşudan gelir ve model adıyla, küme adıyla verilir; modeller birleştirilmez; yarım kalan koşular kısmi diye işaretlidir.</p>
-  <div class="box">
-    <h3>Önce sınırlar</h3>
-    <ul>
-      <li>Zor kümede (kalabalık site, yanıltıcı bilet) denenen zayıf modellerle iki araçlı basamak da senaryoları çözemiyor; Usta'nın doğrulukta kazancı gösterilemedi.</li>
-      <li>Güçlü model koşuları kota yüzünden kısmi; gizli testte güçlü model ölçülmedi.</li>
-      <li>Laboratuvardaki zamanlayıcı JS7'dir ve Control-M Automation API uyumlu bir alt kümeyi konuşur. BMC'nin ürünü değildir; Control-M kurulup denenmedi. Vardiya, BMC Software ile bağlantılı değildir; "Control-M" BMC'nin ticari markasıdır.</li>
-      <li>Grafik modeliyle erken uyarı kodlandı, ölçülmedi. Kümeler küçük (10-30 senaryo); hiçbir eşli fark istatistik olarak anlamlı değil.</li>
-    </ul>
-  </div>
+  <h3>Bu bench ne ölçer</h3>
+  <p>Vardiya, bir dil modelini Control-M sınıfı bir batch zamanlayıcının yöneticisi yapan açık bir harness'tir; yönetici ajanın adı Usta'dır. Canlı bench, Docker içinde gerçek bir zamanlayıcı, iki ajan sunucusu, bir SFTP sunucusu ve bir PostgreSQL veritabanı kurar. Her bölümde bir arıza gerçekten üretilir, ajan çözmeye çalışır ve hüküm, sunuculardan okunan son durumdan verilir (iş durumu, dosya özeti, SQL sonucu), ajanın sözünden değil.</p>
+  <h3>Üç basamak</h3>
+  <table>
+    <thead><tr><th>Basamak</th><th>Ne</th><th>Sonuç (örnek)</th></tr></thead>
+    <tbody>
+      <tr><td><b>1. Saf model</b></td><td>Araç yok; yalnızca öneri metni, sitede hiçbir şey değişmez</td><td>Hiçbir senaryoda doğru çıkmaz (kuruluş gereği): dev 0/17, test 0/30</td></tr>
+      <tr><td><b>2. Araçlı model</b></td><td>Yalnız erişim katmanı: iki araç, el kitabı, ajan döngüsü</td><td>gemini-3.8-flash-low, dev: 15/15, ort. 14,1 adım</td></tr>
+      <tr><td><b>3. Usta</b></td><td>Aynı model tam harness içinde</td><td>gemini-3.8-flash-low, dev: 15/15, ort. 8,3 adım</td></tr>
+    </tbody>
+  </table>
+  <p class="meta">Ayrıntılı tablolar (modeller birleştirilmez, kısmi koşular işaretli) bölüm 4'te, sınırlar ve ölçülmeyenler bölüm 9'dadır.</p>
 </div>
 
 <h2 style="margin-top:0">1. Laboratuvar</h2>
