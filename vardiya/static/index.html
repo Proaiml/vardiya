@@ -306,6 +306,7 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
       <button data-page="ortam"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="3.5" r="2"/><circle cx="12.5" cy="12.5" r="2"/><path d="M5.3 7.1 10.7 4.4M5.3 8.9l5.4 2.7"/></svg>Ortam ve işler</button>
       <button data-page="saglik"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 8h3l1.5-4 3 8 1.5-4h4"/></svg>Tanım sağlığı<span class="count warn" id="nav-health" hidden></span></button>
       <button data-page="saha"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="4" rx="1"/><rect x="1.5" y="9.5" width="13" height="4" rx="1"/><path d="M4 4.5h.5M4 11.5h.5"/></svg>Canlı saha</button>
+      <button data-page="vitrin"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 2.5h11v11h-11z"/><path d="M5 8l2 2 4-4"/></svg>Müdahale vitrini</button>
       <button data-page="bench"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14.5h12M4 12V8M8 12V3.5M12 12V6"/></svg>Bench sonuçları</button>
     </nav>
     <div class="side-foot" id="side-foot"></div>
@@ -430,6 +431,22 @@ pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 var(--mono)
         <div class="card mt" id="saha-ep-card" hidden><header><h2 id="saha-ep-title">Bölüm kanıtı</h2><span class="hint" id="saha-ep-meta"></span></header>
           <div class="body" id="saha-ep"></div></div>
       </section>
+      <section data-page="vitrin" hidden>
+        <div class="card"><header><h2>Usta'nın müdahaleleri</h2><span class="hint" id="vit-count"></span></header>
+          <div class="body">
+            <p class="hint" style="margin-top:0">Her satır bir Usta bölümüdür ve yanında aynı senaryoda yardımsız modelin sonucu durur. Kayıtlar kanıt dosyalarından üretilir: talep, harness'in gördüğü, sırasıyla eylemler, sunuculardan okunan kanıt.</p>
+            <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+              <select id="vit-run" aria-label="Koşu"></select>
+              <select id="vit-aile" aria-label="Aile"><option value="">Bütün aileler</option><option value="ariza">Arıza</option><option value="tanim">Tanım</option><option value="yonetim">Yönetim</option></select>
+              <select id="vit-tur" aria-label="İş tipi"><option value="">Bütün iş tipleri</option><option value="aft">Dosya aktarımı</option><option value="os">Komut / betik</option><option value="db">Veritabanı</option><option value="karma">Karma</option></select>
+              <select id="vit-hukum" aria-label="Hüküm"><option value="">Bütün hükümler</option><option value="dogru">Doğru</option><option value="yarim">Yarım</option><option value="yanlis">Yanlış</option><option value="sahte_yesil">Sahte yeşil</option><option value="zararli">Zararlı</option></select>
+              <label class="hint"><input type="checkbox" id="vit-fark"> Yalnızca Usta'nın başarıp yardımsız modelin başaramadığı</label>
+            </div>
+            <div class="scroll mt" id="vit-list"></div>
+          </div></div>
+        <div class="card mt" id="vit-card" hidden><header><h2 id="vit-title">Kayıt</h2><span class="hint" id="vit-meta"></span></header>
+          <div class="body" id="vit-rec"></div></div>
+      </section>
       <section data-page="bench" hidden>
         <div class="card"><header><h2>Zamanlayıcı Ops Bench</h2><span class="hint">forumlardaki gerçek adminlik sorunları</span></header>
           <div class="body">
@@ -506,6 +523,7 @@ $("#theme").onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; s
 const TITLES = {genel:["Genel bakış","Ortamın durumu ve önümüzdeki riskler"], olay:["Olaylar ve kök neden","Yerel hata çizgesinden kanıt, aday nedenler ve geçmişte işe yarayan çözüm"],
   uyari:["Erken uyarılar","Olay olmadan önce: yavaşlayan işler, tekrarlayan hatalar, kalıcı çözülmemiş nedenler"], talep:["Talep masası","Zorunlu şablonla gelen tanım talepleri: denetle, uygula, kaydet ya da gerekçeyle iade et"],
   gecmis:["Talep geçmişi","Bu oturumda işlenen talepler"], defter:["Denetim defteri","Değiştirilemez, özet zincirli kayıt"], ortam:["Ortam ve işler","Tanımlar, bağımlılıklar, takvimler ve bağlantı profilleri"],
+  vitrin:["Müdahale vitrini","Usta'nın gerçek ortamdaki müdahaleleri ve aynı işte yardımsız model"],
   saha:["Canlı saha","Gerçek zamanlayıcı, gerçek sunucular: yardımsız model ile Usta aynı işte, uç duruma göre hüküm"],
   bench:["Bench sonuçları","Usta'nın ölçümü: gerçek adminlik sorunları ve talep karşılama"],
   rapor:["Raporlar","Haftalık sorulanlar: değişiklikler, Set OK, en uzun süren işler, aylık hatalar"],
@@ -522,7 +540,7 @@ function go(page) {
   $("#side").classList.remove("open");
   try { localStorage.setItem("vardiya-page", page); } catch (e) {}
   ({ortam: renderSite, gecmis: loadHistory, defter: loadLedger, bench: () => { loadOps(); loadBench(); }, rapor: () => loadReports(), saglik: loadHealth,
-    usta: loadUsta, yetenek: loadCatalog, saha: () => loadSaha()})[page]?.();
+    usta: loadUsta, yetenek: loadCatalog, saha: () => loadSaha(), vitrin: () => loadVitrin()})[page]?.();
   if (page === "olay" && current) pick(current);
 }
 $("#refresh").onclick = () => boot(true);
@@ -952,6 +970,45 @@ async function showEpisode(id, kol) {
     d.isler.map(j => j.hata ? "" : `<details class="cand"><summary><span class="mono">${esc(j.folder)}/${esc(j.name)}</span> ${tag(j.type)} ${tag(j.host)} <b>${esc(j.status)}</b> · ${j.numberOfRuns} koşu</summary><pre>${esc(j.cikti)}</pre></details>`).join("");
   $("#saha-ep").innerHTML = h;
   $("#saha-ep-card").scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+// ---- intervention showcase
+let vitRows = null;
+async function loadVitrin() {
+  if (!vitRows) { vitRows = (await api("/api/saha/vitrin")).rows;
+    const runs = [...new Set(vitRows.map(r => r.ad))];
+    $("#vit-run").innerHTML = `<option value="">Bütün koşular</option>` + runs.map(r => `<option>${esc(r)}</option>`).join("");
+    ["#vit-run", "#vit-aile", "#vit-tur", "#vit-hukum", "#vit-fark"].forEach(s => $(s).onchange = renderVitrin); }
+  renderVitrin();
+}
+function renderVitrin() {
+  const f = {ad: $("#vit-run").value, aile: $("#vit-aile").value, tur: $("#vit-tur").value, hukum: $("#vit-hukum").value, fark: $("#vit-fark").checked};
+  const rows = vitRows.filter(r => (!f.ad || r.ad === f.ad) && (!f.aile || r.aile === f.aile) && (!f.tur || r.tur === f.tur) && (!f.hukum || r.hukum === f.hukum) && (!f.fark || r.fark));
+  $("#vit-count").textContent = `${rows.length} bölüm · Usta'nın başarıp yardımsızın başaramadığı: ${rows.filter(r => r.fark).length} · tersi: ${rows.filter(r => r.geri).length}`;
+  $("#vit-list").innerHTML = rows.length ? `<table><thead><tr><th>Koşu</th><th>Senaryo</th><th>Aile</th><th>İş tipi</th><th>Usta</th><th>Yardımsız</th><th class="num">Adım (Usta / yardımsız)</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td class="mono">${esc(r.ad)}</td><td><button class="linkish mono" data-vit="${esc(r.ad)}|${esc(r.senaryo)}">${esc(r.senaryo)}</button>${r.fark ? " " + tag("fark") : ""}</td><td>${esc(SAHA_FAM[r.aile] || r.aile || "")}</td><td>${esc(SAHA_TUR[r.tur] || r.tur || "")}${r.bilesik ? " · bileşik" : ""}</td><td>${vdot(r.hukum)}</td><td>${r.karsi_hukum ? vdot(r.karsi_hukum) : "—"}</td><td class="num">${r.adim ?? "-"} / ${r.karsi_adim ?? "-"}</td></tr>`).join("") + "</tbody></table>"
+    : empty("Eşleşen bölüm yok", "Süzgeçleri gevşetin.");
+  $("#vit-list").querySelectorAll("[data-vit]").forEach(b => b.onclick = () => { const [ad, s] = b.dataset.vit.split("|"); showVitrin(ad, s); });
+}
+async function showVitrin(ad, senaryo) {
+  const r = await api(`/api/saha/vitrin/kayit?ad=${encodeURIComponent(ad)}&senaryo=${encodeURIComponent(senaryo)}`);
+  $("#vit-card").hidden = false;
+  $("#vit-title").innerHTML = `${esc(senaryo)} · Usta ${vdot(r.hukum)}` + (r.karsi ? ` · yardımsız ${vdot(r.karsi.hukum)}` : "");
+  $("#vit-meta").textContent = `${ad} · ${r.model || ""} · ${r.tutan ?? "-"}/${r.toplam ?? "-"} kontrol · ${r.adim ?? "-"} adım · ${r.saniye ?? "-"} sn`;
+  const chk = (list, harm) => (list || []).map(c => `<tr><td style="width:26px">${icon(harm ? (c.tutar ? "crit" : "ok") : (c.tutar ? "ok" : "crit"))}</td><td class="mono">${esc(c.kontrol)}</td><td class="mono">${esc(c.gorulen)}</td></tr>`).join("");
+  let h = `<div class="sect" style="margin-top:0">Talep</div><p>${esc(r.talep || "")}</p>`;
+  if (r.kok_neden) h += `<details><summary>Kök neden (senaryodan; ajana gösterilmez)</summary><p>${esc(r.kok_neden)}</p></details>`;
+  h += `<div class="sect">Harness'in gördüğü ve yaptığı</div><p>${(r.kartlar || []).map(tag).join(" ")} ${esc(Object.entries(r.harness || {}).map(e => e[1] + " " + e[0]).join(" · "))}</p>` +
+    (r.bitis_notlari || []).map(n => `<div class="notice warn">${icon("warn")}<div><b>Bitiş geri çevrildi:</b> ${esc(n.join(" · "))}</div></div>`).join("");
+  h += `<div class="sect">Eylemler (sırasıyla)</div><table><tbody>${(r.eylemler || []).map(e => `<tr><td class="num">${e.n}</td><td class="mono">${esc(e.komut)}</td><td>${e.isaret ? tag(e.isaret) : ""}</td><td class="hint">${esc(e.ozet)}</td></tr>`).join("")}</tbody></table>`;
+  h += `<div class="sect">Kanıt: uç durum kontrolleri (sunuculardan okunan)</div><div class="scroll"><table><tbody>${chk(r.kontroller)}</tbody></table></div>`;
+  if ((r.zarar || []).length) h += `<div class="sect">Zarar kontrolleri (hiçbiri tutmamalı)</div><div class="scroll"><table><tbody>${chk(r.zarar, true)}</tbody></table></div>`;
+  h += `<div class="sect">Zamanlayıcının kaydı</div><table><tbody>${(r.isler || []).map(j => `<tr><td class="mono">${esc(j.is)}</td><td><b>${esc(j.durum)}</b></td><td class="num">${j.kosu}</td><td class="mono hint">${esc((j.son || []).join(" | "))}</td></tr>`).join("")}</tbody></table>`;
+  if (r.rapor) h += `<div class="sect">Usta'nın raporu</div><pre>${esc(r.rapor)}</pre>`;
+  if (r.karsi) h += `<div class="sect">Aynı senaryoda yardımsız model: ${vdot(r.karsi.hukum)} · ${r.karsi.tutan}/${r.karsi.toplam} kontrol · ${r.karsi.adim} adım</div>` +
+    `<div class="scroll"><table><tbody>${chk(r.karsi.tutmayan)}${chk(r.karsi.zarar, true)}</tbody></table></div>`;
+  $("#vit-rec").innerHTML = h;
+  $("#vit-card").scrollIntoView({behavior: "smooth", block: "start"});
 }
 
 // ---- start

@@ -305,6 +305,23 @@ def saha_runs():
     return {"runs": out}
 
 
+def saha_vitrin():
+    """Every Usta episode of every run, with the unaided model's verdict on the same scenario (intervention showcase)."""
+    from .saha import kosu, vitrin
+    rows = []
+    if kosu.OUT.is_dir():
+        for d in sorted(kosu.OUT.iterdir()):
+            if (d / "ozet.jsonl").is_file() and not d.name.startswith("dogrula"):
+                rows += vitrin.liste(d.name)
+    return {"rows": rows}
+
+
+def saha_vitrin_kayit(ad, senaryo):
+    from .saha import vitrin
+    safe = lambda x: bool(x) and all(c.isalnum() or c in "-_." for c in x) and ".." not in x  # noqa: E731
+    return vitrin.kayit(ad, senaryo) if safe(ad) and safe(senaryo) else None
+
+
 def saha_episode(ad, senaryo, kol):
     """The evidence of one episode: ticket, tool calls with their real output, job outputs, checks, verdict."""
     from .saha import kosu
@@ -381,6 +398,11 @@ def make_handler(office):
             if url.path == "/api/saha/bolum":
                 ep = saha_episode((q.get("ad") or [""])[0], (q.get("senaryo") or [""])[0], (q.get("kol") or [""])[0])
                 return self._send(200 if ep else 404, ep or {"error": "yok"})
+            if url.path == "/api/saha/vitrin":
+                return self._send(200, saha_vitrin())
+            if url.path == "/api/saha/vitrin/kayit":
+                rec = saha_vitrin_kayit((q.get("ad") or [""])[0], (q.get("senaryo") or [""])[0])
+                return self._send(200 if rec else 404, rec or {"error": "yok"})
             return self._send(404, {"error": "yok"})
 
         def do_POST(self):
