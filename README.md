@@ -123,9 +123,10 @@ makine yeniden başlaması ya da sürüyor olması yüzünden yarım kaldığı 
 | gemini-4-hydrogen-high | dev (`dev-hydrogen-high`), **kısmi** | 6/6, 11,0 | 6/6, 7,7 | 30 bölüm kota ile kesildi |
 | gpt-oss-120b-medium | test, bütçe 40 (`test-gpt-oss`) | 8/26, 15,0 | 11/27, 18,0 | zararlı 4'e 1; eşli fark p=0,45 |
 | gpt-oss-120b-medium | test, bütçe 10 (`test-gpt-oss-b10`) | 4/15, 9,5 | 5/15, 9,5 | zararlı 2'ye 0; eşli fark p=1,0 |
+| qwen3:14b | dev (`dev-qwen3-14b`) | 3/16, 22,8 | 9/16, 28,3 | zararlı 10'a 0; eşli fark: yalnız Usta doğru 7, yalnız araçlı model 1 (p=0,07) |
 | qwen3:14b | zor-dev tur 1 (`zor-dev-qwen-t1`) | 0/10, 32,4 | 0/10, 36,5 | zararlı 6'ya 5 |
 | qwen3:14b | zor-dev tur 2 (`zor-dev-qwen-t2`) | ölçülmedi | 1/10, 27,3 | yalnızca Usta; zararlı 2, sahte yeşil 6 |
-| gpt-oss-120b-medium | zor-test (`zor-test-gpt-oss`), **kısmi** | 0/9, 17,3 | 0/10, 26,2 | koşu sürerken alınmış görüntü; sayılar değişebilir |
+| gpt-oss-120b-medium | zor-test (`zor-test-gpt-oss`) | 0/17, 18,7 | 0/17, 23,2 | zararlı 5'e 4; sahte yeşil 8'e 11 |
 
 Adım bütçesi (`--butce`): `dev-flash-low` üzerinde 14 ortak senaryoda en çok 8 adımda doğru bitenler araçlı modelde 2,
 Usta'da 9; 15 adımda 9'a 14. Kart metni kolu (kartların metni eklenmiş, harness yok) 8 adımda 2, 15 adımda 11 çözdü:
@@ -133,9 +134,11 @@ bilgi tek başına hızı açıklamıyor.
 
 - **1'den 2'ye: erişim katmanı.** Büyük fark budur. Araçsız model sunucuya bağlanamaz, işi yeniden çalıştıramaz,
   dosyayı aktaramaz. Basit senaryolarda hafif bir model de araçlarla işi sonuna kadar götürdü (flash dev'de 15/15).
-- **2'den 3'e: hız ve daha az zarar.** Aynı doğrulukta belirgin daha az adım (flash dev: 8,3'e karşı 14,1; hydrogen:
-  7,7'ye karşı 11,0). Zayıf modelde (gpt-oss test) daha az zararlı sonuç ve doğruda küçük bir artış var, ama eşli fark
-  istatistik olarak anlamlı değil.
+- **2'den 3'e: hız ve daha az zarar.** Güçlü ve hafif modelde aynı doğrulukta belirgin daha az adım (flash dev: 8,3'e
+  karşı 14,1; hydrogen: 7,7'ye karşı 11,0). Küçük yerel modelde (qwen3:14b, geliştirme kümesi) fark doğrulukta da
+  görülüyor: araçlarla tek başına 16 senaryodan 3'ünü doğru, 10'unu zararlı bitirdi (12 yıkıcı komut, 11 kez set to OK);
+  Usta'nın içinde 9'unu doğru bitirdi, hiçbirinde zarar yok. Bu küçük bir örneklemdir (p=0,07). gpt-oss gizli testte
+  zararlı 4'e 1, doğru 8'e 11; eşli fark anlamlı değil.
 
 ## Beceriler: yeni bir duruma uyarlamak
 
@@ -266,7 +269,7 @@ python -m vardiya web --port 8780                              # "Canlı saha" s
 ## Henüz gösterilmeyenler
 
 - **Zor kümede doğruluk kazancı yok.** Kalabalık sitede ve yanıltıcı biletlerle, denenen zayıf modellerle (qwen3:14b,
-  gpt-oss-120b-medium) iki araçlı basamak da senaryoları çözemiyor (0/10 civarı). Harness zararı azalttı ama zararın
+  gpt-oss-120b-medium) iki araçlı basamak da senaryoları çözemiyor (zor-dev 0-1/10, zor-test 0/17). Harness zararı azalttı ama zararın
   çoğu sahte yeşile döndü; doğrulukta Usta'nın bir kazancı henüz gösterilemedi.
 - **Zamanlayıcı BMC'nin ürünü değil.** Laboratuvar JS7 kullanır ve Control-M Automation API uyumlu bir alt kümesini
   konuşur (`vardiya/saha/ctm.py`). Gerçek Control-M kurulmadı; gerçek sisteme bağdaştırıcı hazır ama denenmedi.

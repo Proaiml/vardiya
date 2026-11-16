@@ -159,16 +159,18 @@
     <tr><td>Usta</td><td class="n">27</td><td class="n">11</td><td class="n">7</td><td class="n">0</td><td class="n">8</td><td class="n">1</td><td class="n">18,0</td></tr>
     <tr><td rowspan="2">test, bütçe 10 (<code>test-gpt-oss-b10</code>)</td><td>Araçlı model</td><td class="n">15</td><td class="n">4</td><td class="n">6</td><td class="n">0</td><td class="n">3</td><td class="n">2</td><td class="n">9,5</td></tr>
     <tr><td>Usta</td><td class="n">15</td><td class="n">5</td><td class="n">3</td><td class="n">3</td><td class="n">4</td><td class="n">0</td><td class="n">9,5</td></tr>
-    <tr><td rowspan="2">zor-test, <b>kısmi</b>, koşu sürerken alınmış görüntü (<code>zor-test-gpt-oss</code>)</td><td>Araçlı model</td><td class="n">9</td><td class="n">0</td><td class="n">3</td><td class="n">0</td><td class="n">4</td><td class="n">2</td><td class="n">17,3</td></tr>
-    <tr><td>Usta</td><td class="n">10</td><td class="n">0</td><td class="n">1</td><td class="n">0</td><td class="n">6</td><td class="n">3</td><td class="n">26,2</td></tr>
+    <tr><td rowspan="2">zor-test, <code>saha-donuk-2</code> (<code>zor-test-gpt-oss</code>)</td><td>Araçlı model</td><td class="n">17</td><td class="n">0</td><td class="n">4</td><td class="n">0</td><td class="n">8</td><td class="n">5</td><td class="n">18,7</td></tr>
+    <tr><td>Usta</td><td class="n">17</td><td class="n">0</td><td class="n">2</td><td class="n">0</td><td class="n">11</td><td class="n">4</td><td class="n">23,2</td></tr>
   </tbody>
 </table>
-<p>Eşli karşılaştırma (aynı senaryolar, araçlı modele karşı Usta): bütçe 40'ta 26 çift; yalnız Usta doğru 5, yalnız araçlı model doğru 2, işaret testi p=0,45. Bütçe 10'da 15 çift; 3'e 2, p=1,0. zor-test'te 8 çift, ikisi de doğru değil. Hiçbir fark anlamlı değil. Sahte yeşil sayıları iki basamakta da yüksek: iş yeşil ya da "tamam" denmiş ama veri hatalı.</p>
+<p>Eşli karşılaştırma (aynı senaryolar, araçlı modele karşı Usta): bütçe 40'ta 26 çift; yalnız Usta doğru 5, yalnız araçlı model doğru 2, işaret testi p=0,45. Bütçe 10'da 15 çift; 3'e 2, p=1,0. zor-test'te 17 çift, hiçbirinde iki basamaktan biri doğru değil. Hiçbir fark anlamlı değil. Sahte yeşil sayıları iki basamakta da yüksek: iş yeşil ya da "tamam" denmiş ama veri hatalı.</p>
 
 <h3>qwen3:14b (zayıf yerel model; Ollama, <code>VARDIYA_NUM_CTX=24576</code>, tek yuva)</h3>
 <table>
   <thead><tr><th>Küme (koşu)</th><th>Basamak</th><th class="n">Bölüm</th><th class="n">Doğru</th><th class="n">Yarım</th><th class="n">Yanlış</th><th class="n">Sahte yeşil</th><th class="n">Zararlı</th><th class="n">Ort. adım</th></tr></thead>
   <tbody>
+    <tr><td rowspan="2">dev, 16 senaryo, <code>saha-donuk-2</code> (<code>dev-qwen3-14b</code>)</td><td>Araçlı model</td><td class="n">16</td><td class="n">3</td><td class="n">1</td><td class="n">2</td><td class="n">0</td><td class="n">10</td><td class="n">22,8</td></tr>
+    <tr><td>Usta</td><td class="n">16</td><td class="n">9</td><td class="n">5</td><td class="n">0</td><td class="n">2</td><td class="n">0</td><td class="n">28,3</td></tr>
     <tr><td rowspan="2">test, <b>kısmi</b> (yeniden başlatmada kesildi; <code>test-qwen3-14b</code>)</td><td>Araçlı model</td><td class="n">7</td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td class="n">0</td><td class="n">3</td><td class="n">15,1</td></tr>
     <tr><td>Usta</td><td class="n">6</td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td class="n">2</td><td class="n">0</td><td class="n">24,8</td></tr>
     <tr><td rowspan="2">zor-dev tur 1 (<code>zor-dev-qwen-t1</code>)</td><td>Araçlı model</td><td class="n">10</td><td class="n">0</td><td class="n">3</td><td class="n">0</td><td class="n">1</td><td class="n">6</td><td class="n">32,4</td></tr>
@@ -176,6 +178,7 @@
     <tr><td>zor-dev tur 2, ayarlı harness (<code>zor-dev-qwen-t2</code>)</td><td>Usta</td><td class="n">10</td><td class="n">1</td><td class="n">1</td><td class="n">0</td><td class="n">6</td><td class="n">2</td><td class="n">27,3</td></tr>
   </tbody>
 </table>
+<p>Geliştirme kümesinde küçük yerel model araçlarla tek başına 16 senaryodan 3'ünü doğru, 10'unu zararlı bitirdi: 12 yıkıcı komut ve 11 kez set to OK uyguladı. Usta'nın içinde aynı model 9'unu doğru bitirdi, hiçbirinde zarar yok; harness 232 çağrıyı durdurdu ya da ikinci, açık çağrı istedi. Eşli karşılaştırmada yalnız Usta doğru 7, yalnız araçlı model doğru 1 (p=0,07). Usta adımda hızlı değil (28,3'e karşı 22,8): araçlı model zarar vererek erken bitiriyor. Araçsız (saf) model bu kümede hiçbir şey yapamaz: kimse dokunmadığında 17 senaryonun hiçbiri doğru değil.</p>
 <p>Tur 2'de yalnızca Usta koşuldu: zararlı 5'ten 2'ye indi ama zararın çoğu sahte yeşile döndü (2'den 6'ya); doğru 0'dan 1'e çıktı. Talimat gereği sonuç kovalanmadı. Zor kümede ilk turda görülenler: zayıf model üründe olmayan komutlar uyduruyordu, aynı çağrıyı 15-31 kez tekrarlıyordu, profil ve klasör silmeyi ikinci çağrıda yapıyordu, yanlış veritabanı oturumunu sonlandırıyordu.</p>
 
 <h2 class="pb">5. Adım bütçesi</h2>
@@ -197,7 +200,8 @@
     <tr><td rowspan="2">gemini-3.8-flash-low, dev</td><td>Araçlı model</td><td class="n">0</td><td class="n">0</td></tr><tr><td>Usta</td><td class="n">0</td><td class="n">0</td></tr>
     <tr><td rowspan="2">gpt-oss-120b-medium, test (bütçe 40)</td><td>Araçlı model</td><td class="n">8</td><td class="n">4</td></tr><tr><td>Usta</td><td class="n">8</td><td class="n">1</td></tr>
     <tr><td rowspan="2">gpt-oss-120b-medium, test (bütçe 10)</td><td>Araçlı model</td><td class="n">3</td><td class="n">2</td></tr><tr><td>Usta</td><td class="n">4</td><td class="n">0</td></tr>
-    <tr><td rowspan="2">gpt-oss-120b-medium, zor-test (kısmi)</td><td>Araçlı model</td><td class="n">4</td><td class="n">2</td></tr><tr><td>Usta</td><td class="n">6</td><td class="n">3</td></tr>
+    <tr><td rowspan="2">gpt-oss-120b-medium, zor-test</td><td>Araçlı model</td><td class="n">8</td><td class="n">5</td></tr><tr><td>Usta</td><td class="n">11</td><td class="n">4</td></tr>
+    <tr><td rowspan="2">qwen3:14b, dev</td><td>Araçlı model</td><td class="n">0</td><td class="n">10</td></tr><tr><td>Usta</td><td class="n">2</td><td class="n">0</td></tr>
     <tr><td rowspan="2">qwen3:14b, zor-dev tur 1</td><td>Araçlı model</td><td class="n">1</td><td class="n">6</td></tr><tr><td>Usta</td><td class="n">2</td><td class="n">5</td></tr>
     <tr><td>qwen3:14b, zor-dev tur 2</td><td>Usta</td><td class="n">6</td><td class="n">2</td></tr>
   </tbody>
@@ -208,6 +212,9 @@
   <tbody>
     <tr><td>Araçlı model</td><td class="n">26</td><td class="n">2</td><td class="n">4</td><td class="n">3</td><td class="n">-</td></tr>
     <tr><td>Usta</td><td class="n">27</td><td class="n">0</td><td class="n">50</td><td class="n">0</td><td class="n">30</td></tr>
+    <tr><th colspan="6" style="text-align:left">qwen3:14b, dev (16 senaryo)</th></tr>
+    <tr><td>Araçlı model</td><td class="n">16</td><td class="n">12</td><td class="n">16</td><td class="n">11</td><td class="n">-</td></tr>
+    <tr><td>Usta</td><td class="n">16</td><td class="n">0</td><td class="n">7</td><td class="n">0</td><td class="n">232</td></tr>
   </tbody>
 </table>
 <p>Usta'nın "riskli" sayısı harness'in ikinci, açık çağrıyla izin verdiği komutlardır (ör. bir dosya silme, kapsamı dar bir <code>delete</code>). qwen3:14b kısmi test koşusunda araçlı model 31 yıkıcı komut uyguladı, Usta'da bu sayı 0; harness 8 komutu durdurdu. flash-low dev'de yıkıcı komut iki basamakta da 0, harness 5 komutu durdurdu.</p>
@@ -219,10 +226,10 @@
 <table>
   <thead><tr><th>Ölçüt</th><th>Durum</th><th>Kanıt</th></tr></thead>
   <tbody>
-    <tr><td>1. Usta, ürünü uçtan uca yönetmede araçlı modelden üstün</td><td>Kısmen gösterildi, yalnızca ilk kümede</td><td>Aynı doğrulukta belirgin daha az adım (flash dev: 8,3'e karşı 14,1). gpt-oss gizli testte doğru 11'e 8, zararlı 1'e 4, eşli fark anlamlı değil (p=0,45)</td></tr>
-    <tr><td>2. Zor kümede doğruluk farkı</td><td><b>Gösterilmedi</b></td><td>zor-dev'de iki basamak da ~0/10; ayar zararı azalttı, doğruluğu getirmedi; zor-test kısmi, 0 doğru</td></tr>
+    <tr><td>1. Usta, ürünü uçtan uca yönetmede araçlı modelden üstün</td><td>Kısmen gösterildi, ilk kümelerde</td><td>Güçlü ve hafif modelde aynı doğrulukta belirgin daha az adım (flash dev: 8,3'e karşı 14,1). Küçük yerel modelde (qwen3:14b, dev) doğru 9'a 3, zararlı 0'a 10 (p=0,07). gpt-oss gizli testte doğru 11'e 8, zararlı 1'e 4 (p=0,45). Hiçbir eşli fark 0,05 altında değil</td></tr>
+    <tr><td>2. Zor kümede doğruluk farkı</td><td><b>Gösterilmedi</b></td><td>zor-dev'de iki basamak da ~0/10; ayar zararı azalttı, doğruluğu getirmedi; zor-test (gpt-oss) iki basamakta 0/17</td></tr>
     <tr><td>3. Erken uyarı kolu</td><td>Kodu var, ölçülmedi</td><td><code>docs/11</code>, <code>vardiya/saha/erken*.py</code></td></tr>
-    <tr><td>4. Kriz hızı</td><td>Kısmen</td><td>Adım bütçesi tabloları var (flash dev, gpt-oss bütçe 10). Ajan servisini yeniden başlatma senaryoları yazıldı, biri doğrulandı, ölçülmedi</td></tr>
+    <tr><td>4. Kriz hızı</td><td>Kısmen</td><td>Adım bütçesi tabloları var (flash dev, gpt-oss bütçe 10). Ajan servisi senaryoları: zor-test'teki üçü gpt-oss ile ölçüldü, iki basamakta da hiçbiri doğru değil</td></tr>
   </tbody>
 </table>
 
