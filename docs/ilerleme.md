@@ -25,6 +25,12 @@ doğrulaması da); koşular boşalınca DUR kaldırılıyor, yarım kalan doğru
 ayrıca buraya yazılacak; o zamana kadar diğer ajanlar yalnızca qwen3:14b kullansın. Yerel modellerde ajan
 döngüsüne bağlam disiplini eklendi (her kol için aynı; donuk kopya etiketi `saha-donuk-1c`, harness değişmedi).
 
+## Bellek kuralı (15:40)
+
+En çok üç lab kopyası açık. Ölçüm labları 1 ve 4; lab 5 katalog ve erken uyarı ajanlarının. Lab 2 durduruldu; lab 3
+doğrulamaları bitince otomatik durduruluyor. gpt-oss açılınca onun koşuları da lab 1 ve 4'e sıraya girer. Lab 2/3
+yeniden açılmadan önce boş fiziksel bellek 3 GB'ın üstünde olmalı. Windows konuğu ve gemma4 bu gece yok.
+
 ## Laboratuvarlar ve kuyruk
 
 | Lab | Kod | Sıra |
