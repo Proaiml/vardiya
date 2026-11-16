@@ -28,6 +28,8 @@ BEKLE, DUR, BEKCI_DUR, LOG = DURUM / "BEKLE", DURUM / "DUR", DURUM / "BEKCI_DUR"
 GPU_BEKLE, GPU_DEVAM, GPU_DUR = 76, 66, 84          # degrees C
 CPU_BEKLE, CPU_DEVAM = 70, 45                       # percent load, two minutes in a row to pause
 RAM_BEKLE, RAM_DEVAM, RAM_DUR = 3.0, 4.0, 1.5       # GB free
+GPU_BOS_MB = 2500                                   # the card counts as free below this (our model is unloaded while paused)
+HUB = pathlib.Path(os.environ.get("VARDIYA_HUB") or pathlib.Path.home() / "Desktop" / "hub" / "konuşmlar.txt")
 
 
 class MEMORYSTATUSEX(ctypes.Structure):
@@ -67,20 +69,42 @@ def cpu():
         return None
 
 
+def baskasi_kartta(hub=None, satir=40):
+    """True while another session has claimed the GPU in the shared notebook: its last line about the card says it
+    started and no later line of its own says it finished. The notebook is read only, never written here."""
+    try:
+        lines = (hub or HUB).read_text(encoding="utf-8", errors="replace").splitlines()[-satir:]
+    except OSError:
+        return False
+    kartta = False
+    for ln in lines:
+        low = ln.lower()
+        if "[vardiya]" in low or "]" not in ln:
+            continue
+        if "başlıyorum" in low or "basliyorum" in low:
+            kartta = "ekran kart" in low or "gpu" in low
+        elif any(w in low for w in ("bitti", "boş", "durduruldu", "kapalı")):
+            kartta = False
+    return kartta
+
+
 def karar(olcum, durum):
     """The next state ('calis', 'bekle', 'dur') and the reason, from one reading and the running counters.
     `durum` carries {"hal", "sicak", "serin"}: the current state and how many minutes in a row were hot or calm."""
     t, yuk, ram = olcum["gpu_c"], olcum["cpu"], olcum["ram"]
     if (t is not None and t >= GPU_DUR) or ram < RAM_DUR:
         return "dur", f"acil: gpu {t} C, bos bellek {ram:.1f} GB"
-    sicak = (t is not None and t >= GPU_BEKLE) or ram < RAM_BEKLE
+    baskasi = bool(olcum.get("baskasi"))
+    sicak = (t is not None and t >= GPU_BEKLE) or ram < RAM_BEKLE or baskasi
     yuklu = yuk is not None and yuk >= CPU_BEKLE
     durum["sicak"] = durum["sicak"] + 1 if (sicak or yuklu) else 0
-    serin = (t is None or t <= GPU_DEVAM) and (yuk is None or yuk <= CPU_DEVAM) and ram >= RAM_DEVAM
+    kart_bos = olcum.get("gpu_mb") is None or olcum["gpu_mb"] <= GPU_BOS_MB
+    serin = ((t is None or t <= GPU_DEVAM) and (yuk is None or yuk <= CPU_DEVAM) and ram >= RAM_DEVAM
+             and not baskasi and kart_bos)
     durum["serin"] = durum["serin"] + 1 if serin else 0
     if durum["hal"] == "calis":
         if sicak or durum["sicak"] >= 2:          # heat and memory pause at once; CPU load needs two minutes
-            return "bekle", f"gpu {t} C, islemci %{yuk}, bos bellek {ram:.1f} GB"
+            return "bekle", f"gpu {t} C, islemci %{yuk}, bos bellek {ram:.1f} GB" + (", kart baska oturumda" if baskasi else "")
         return "calis", ""
     if durum["serin"] >= 2:
         return "calis", f"sogudu: gpu {t} C, islemci %{yuk}, bos bellek {ram:.1f} GB"
@@ -108,14 +132,15 @@ def main(aralik=60):
     while not BEKCI_DUR.exists():
         t, u, m = gpu()
         ram, commit = bellek()
-        olcum = {"gpu_c": t, "gpu_yuk": u, "gpu_mb": m, "cpu": cpu(), "ram": ram, "commit": commit}
+        olcum = {"gpu_c": t, "gpu_yuk": u, "gpu_mb": m, "cpu": cpu(), "ram": ram, "commit": commit, "baskasi": baskasi_kartta()}
         yeni, neden = karar(olcum, durum)
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(LOG, "a", encoding="utf-8") as f:
-            f.write(f"{now} gpu={t}C %{u} {m}MB islemci=%{olcum['cpu']} bos_bellek={ram:.1f}GB bos_taahhut={commit:.1f}GB hal={yeni}\n")
+            f.write(f"{now} gpu={t}C %{u} {m}MB islemci=%{olcum['cpu']} bos_bellek={ram:.1f}GB bos_taahhut={commit:.1f}GB baskasi={int(olcum['baskasi'])} hal={yeni}\n")
         if yeni != durum["hal"]:
             if yeni == "bekle":
                 BEKLE.write_text(f"{now} {neden}\n", encoding="utf-8")
+                modelleri_bosalt()                   # a paused run needs no model; the card and the memory are given back
             elif yeni == "dur":
                 DUR.write_text(f"{now} isi bekcisi: {neden}\n", encoding="utf-8")
                 BEKLE.write_text(f"{now} {neden}\n", encoding="utf-8")
