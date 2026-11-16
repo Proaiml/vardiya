@@ -1,0 +1,241 @@
+{
+ "id": "k1-19-aft-hedef-dizin",
+ "aile": "ariza",
+ "tur": "aft",
+ "bilesik": false,
+ "baslik": "dosya (aft)",
+ "talep": "GUNSONU_AKTARIM klasorundeki GONDER isi bu sabah NOTOK bitti; arkasindaki ARSIVLE isi bekliyor. Karsi kurum dosyalari yalnizca kendi in dizininden aldigini hatirlatti. Gunluk dosyanin karsi tarafa eksiksiz gitmesini ve akisin bitmesini saglayin. Tanimda bir hata varsa kalici olarak duzeltin.",
+ "dis_sunucu": [
+  "dosya-sunucu"
+ ],
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "dosya-sunucu",
+    "cmd": "for u in mftuser banka rapor; do usermod -e '' -U $u 2>/dev/null; done; pgrep sshd >/dev/null || /usr/sbin/sshd; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/satis_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# satis gunluk dosya uretimi: /data/giden/satis_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/satis_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 25)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/satis_uret.sh",
+    "icerik": "#!/bin/sh\nset -e\n# satis gunluk dosya uretimi: /data/giden/satis_<gun>.csv\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/satis_${gun}.csv\n{ printf 'id,tarih,tutar\\n'; i=1; while [ $i -le 20 ]; do printf '%s,%s,%s\\n' $i $gun $((i * 25)); i=$((i + 1)); done; } > \"$out\"\necho \"uretildi: $out $(wc -l < \"$out\") satir\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "deploy": {
+    "GUNSONU_AKTARIM": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "satis_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_KARSI",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/satis_%%$ODATE.csv",
+        "Dest": "/home/mftuser/giden/satis_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVLE": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "URET",
+       "GONDER",
+       "ARSIVLE"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "GUNSONU_AKTARIM",
+    "bekle": {
+     "GONDER": "Ended Not OK"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "GUNSONU_AKTARIM",
+    "job": "URET",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "GUNSONU_AKTARIM",
+    "job": "GONDER",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "GUNSONU_AKTARIM",
+    "job": "ARSIVLE",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "dosya-sunucu",
+    "yol": "/home/mftuser/in/satis_{GUN}.csv",
+    "esit": {
+     "host": "ajan1",
+     "yol": "/data/arsiv/satis_{GUN}.csv"
+    },
+    "satir": 21
+   }
+  },
+  {
+   "tanim": {
+    "folder": "GUNSONU_AKTARIM",
+    "job": "GONDER",
+    "alan": {
+     "FileTransfers": [
+      {
+       "Dest": "~^/home/mftuser/in/"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "ls /data/giden/satis_{GUN}.csv /data/arsiv/satis_{GUN}.csv 2>/dev/null | wc -l",
+    "esit": "0"
+   }
+  }
+ ],
+ "kok_neden": "Aktarimin hedef dizini yanlis (karsi tarafta yok); dogru dizin in. Tanim duzeltilip yeniden siparis edilir.",
+ "cozum": [
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "GUNSONU_AKTARIM": {
+     "Type": "Folder",
+     "Host": "ajan1",
+     "RunAs": "batch",
+     "URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "satis_uret.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "GONDER": {
+      "Type": "Job:FileTransfer",
+      "ConnectionProfileSrc": "YEREL_BATCH",
+      "ConnectionProfileDest": "SFTP_KARSI",
+      "FileTransfers": [
+       {
+        "Src": "/data/giden/satis_%%$ODATE.csv",
+        "Dest": "/home/mftuser/in/satis_%%$ODATE.csv",
+        "TransferType": "Binary",
+        "TransferOption": "SrcToDest"
+       }
+      ]
+     },
+     "ARSIVLE": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "arsivle.sh"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "URET",
+       "GONDER",
+       "ARSIVLE"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:GUNSONU_AKTARIM/URET}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:GUNSONU_AKTARIM/GONDER}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:GUNSONU_AKTARIM/ARSIVLE}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order GUNSONU_AKTARIM"
+  },
+  {
+   "bekle": {
+    "folder": "GUNSONU_AKTARIM",
+    "job": "ARSIVLE",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "forum:ops-dev-104-aft-rename; bench:saha/b-os-izin-ve-hedef-dizin"
+ ],
+ "ariza": [
+  "aft_hedef_dizin"
+ ]
+}

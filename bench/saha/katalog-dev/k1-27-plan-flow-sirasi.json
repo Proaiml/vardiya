@@ -1,0 +1,181 @@
+{
+ "id": "k1-27-plan-flow-sirasi",
+ "aile": "ariza",
+ "tur": "os",
+ "bilesik": false,
+ "baslik": "plan (os)",
+ "talep": "KAPANIS_HAZIRLIK klasorundeki OZET_KONTROL isi bu sabah NOTOK bitti; arkasindaki OZET_URET isi bekliyor. Klasoru yeni kurduk; ilk calisma beklendigi gibi gitmedi. Akisin tamamlanip ciktinin uretilmesini saglayin. Tanimda bir hata varsa kalici olarak duzeltin.",
+ "kurulum": [
+  {
+   "sh": {
+    "host": "ajan1",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "sh": {
+    "host": "ajan2",
+    "cmd": "for spec in batch:2001 etl:2002 finans:2003 mft:2004; do u=${spec%%:*}; n=${spec##*:}; id $u >/dev/null 2>&1 || { addgroup -g $n $u 2>/dev/null; adduser -D -u $n -G $u -s /bin/sh $u 2>/dev/null; }; done; for u in etl finans mft; do addgroup $u batch 2>/dev/null; done; true; sed -i '/StrictHostKeyChecking/d' /etc/ssh/ssh_config 2>/dev/null; true"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan1",
+    "yol": "/app/scripts/kapanis.sh",
+    "icerik": "#!/bin/sh\nset -e\n# kapanis gunluk ozeti\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/kapanis_${gun}.txt\necho \"kapanis ${gun} satir=$(ls /data/giden | wc -l)\" > \"$out\"\necho \"uretildi: $out\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/app/scripts/kapanis.sh",
+    "icerik": "#!/bin/sh\nset -e\n# kapanis gunluk ozeti\ngun=${1:-$(date +%Y%m%d)}\nout=/data/giden/kapanis_${gun}.txt\necho \"kapanis ${gun} satir=$(ls /data/giden | wc -l)\" > \"$out\"\necho \"uretildi: $out\"\n",
+    "sahip": "batch:batch",
+    "mod": "755"
+   }
+  },
+  {
+   "deploy": {
+    "KAPANIS_HAZIRLIK": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "OZET_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "kapanis.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "OZET_KONTROL": {
+      "Type": "Job:Command",
+      "Command": "test -s /data/giden/kapanis_%%$ODATE.txt && echo onay: tamam"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "OZET_KONTROL",
+       "OZET_URET"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "order": {
+    "folder": "KAPANIS_HAZIRLIK",
+    "bekle": {
+     "OZET_KONTROL": "Ended Not OK"
+    },
+    "sure": 90
+   }
+  }
+ ],
+ "kontroller": [
+  {
+   "is": {
+    "folder": "KAPANIS_HAZIRLIK",
+    "job": "OZET_URET",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "is": {
+    "folder": "KAPANIS_HAZIRLIK",
+    "job": "OZET_KONTROL",
+    "durum": "Ended OK"
+   }
+  },
+  {
+   "dosya": {
+    "host": "ajan2",
+    "yol": "/data/giden/kapanis_{GUN}.txt",
+    "icerir": "kapanis {GUN}"
+   }
+  },
+  {
+   "akis": {
+    "folder": "KAPANIS_HAZIRLIK",
+    "once": "OZET_URET",
+    "sonra": "OZET_KONTROL"
+   }
+  },
+  {
+   "sira": {
+    "folder": "KAPANIS_HAZIRLIK",
+    "once": "OZET_URET",
+    "sonra": "OZET_KONTROL"
+   }
+  }
+ ],
+ "zarar": [
+  {
+   "iz": {
+    "arac": "ctm",
+    "regex": "setToOk"
+   }
+  }
+ ],
+ "kok_neden": "Flow sirasi ters kurulmus (uretim/yukleme isinden once kontrol ya da gonderim); ilk is hazir olmayan veriyle calisip dusuyor. Sira duzeltilir, klasor yeniden siparis edilir.",
+ "cozum": [
+  {
+   "arac": "ctm",
+   "komut": "deploy",
+   "json": {
+    "KAPANIS_HAZIRLIK": {
+     "Type": "Folder",
+     "Host": "ajan2",
+     "RunAs": "batch",
+     "OZET_URET": {
+      "Type": "Job:Script",
+      "FilePath": "/app/scripts",
+      "FileName": "kapanis.sh",
+      "Arguments": [
+       "%%$ODATE"
+      ]
+     },
+     "OZET_KONTROL": {
+      "Type": "Job:Command",
+      "Command": "test -s /data/giden/kapanis_%%$ODATE.txt && echo onay: tamam"
+     },
+     "akis": {
+      "Type": "Flow",
+      "Sequence": [
+       "OZET_URET",
+       "OZET_KONTROL"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:KAPANIS_HAZIRLIK/OZET_KONTROL}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run job::delete {jobid:KAPANIS_HAZIRLIK/OZET_URET}"
+  },
+  {
+   "arac": "ctm",
+   "komut": "run order KAPANIS_HAZIRLIK"
+  },
+  {
+   "bekle": {
+    "folder": "KAPANIS_HAZIRLIK",
+    "job": "OZET_KONTROL",
+    "durum": "Ended OK",
+    "sure": 90
+   }
+  }
+ ],
+ "kaynak": [
+  "forum:ops-dev-031-airflow-clear; forum:ops-dev-208-hold-on-fail"
+ ],
+ "ariza": [
+  "plan_flow_sirasi"
+ ]
+}
