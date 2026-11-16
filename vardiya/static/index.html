@@ -1016,8 +1016,14 @@ async function boot(again) {
   await Promise.all([loadSite(), api("/api/history").then(h => window._hist = h), again ? null : loadExamples()]);
   await loadGraph(); loadHealth().catch(() => {});
   if (!again) { let page = "genel"; try { page = localStorage.getItem("vardiya-page") || "genel"; } catch (e) {}
+    // deep link: ?sayfa=<id> opens that section; with saha or vitrin, &kayit=<run>|<scenario>[|<arm>] opens that episode
+    const q = new URLSearchParams(location.search), want = q.get("sayfa");
+    if (want && TITLES[want]) page = want;
     if (!current) { const first = graph.incidents.find(i => i.open) || graph.incidents[0]; if (first) current = first.id; }
-    go(TITLES[page] ? page : "genel"); }
+    go(TITLES[page] ? page : "genel");
+    const [kr, ks, ka] = (q.get("kayit") || "").split("|");
+    if (want === "saha" && kr) { await loadSaha(kr); if (ks) showEpisode(ks, ka || "usta"); }
+    if (want === "vitrin" && kr && ks) { await loadVitrin(); showVitrin(kr, ks); } }
   else { renderSite(); toast("Yenilendi"); if (document.querySelector('section[data-page="olay"]:not([hidden])') && current) pick(current); }
 }
 boot().catch(e => { document.querySelector(".content").insertAdjacentHTML("afterbegin", `<div class="notice crit">${icon("crit")}<div><b>Sunucuya ulaşılamadı.</b> ${esc(e.message)}</div></div>`); });

@@ -13,48 +13,35 @@
 > Harness yoksa model bu işi yapamaz. Tablodaki her satır depodaki bir koşudan gelir (`results/saha/`). Zor kümede
 > henüz gösteremediklerimiz aşağıda açıkça yazılı.
 
-[![Vardiya afişi: laboratuvar, üç basamak, bir bölümün dökümü](docs/afis/vardiya-afis.png)](docs/afis/vardiya-afis.pdf)
+[![Vardiya afişi: laboratuvar şeması, üç basamak, bir bölümün dökümü](docs/afis/vardiya-afis.png)](docs/afis/vardiya-afis.pdf)
 
-**Dil modelini, Control-M sınıfı bir batch zamanlayıcının yöneticisi yapan açık harness.** Vardiya, ekiplerden gelen
-talepten iş tanımlar; başarısız bir işin nedenini gerçek sunucularda bulur, düzeltir ve işi yeniden çalıştırır. Harness'in
-içinde çalışan yönetici ajanın adı **Usta**'dır. Canlı bench, bir Docker laboratuvarında gerçek bir zamanlayıcı, iki ajan
-sunucusu, bir SFTP sunucusu ve bir PostgreSQL veritabanı kurar; her bölümü, sunuculardan okunan son durumla (dosya özeti,
-satır sayısı, iş durumu) hükme bağlar.
+*Afiş (PDF için tıklayın). Bench raporu: [`docs/vardiya-saha-bench.pdf`](docs/vardiya-saha-bench.pdf) · Ayrıntı: [`docs/09-canli-saha-bench.md`](docs/09-canli-saha-bench.md)*
 
-Bu bir **AIOps** uygulamasıdır: bir ajanın BT operasyonu işini uçtan uca, insan müdahalesi olmadan yapması. Sonuçlar
-aşağıda, ölçülmeyenler de aynı yerde.
+## Nedir, kimin için
+
+Vardiya, **Control-M sınıfı bir batch zamanlayıcıyı işleten ekipler** (batch operasyonu, nöbetçi adminler, platform
+ekipleri) için açık bir harness'tir. Bir dil modeline zamanlayıcıya ve ajan sunucularına bağlanma, işi okuma, tanımı
+düzeltme, yeniden çalıştırma ve sonucu kanıtlama yeteneği verir; ekiplerden gelen iş tanımlama taleplerini de karşılar.
+Harness'in içinde çalışan yönetici ajanın adı **Usta**'dır.
+
+Bu bir **AIOps** uygulamasıdır: bir ajanın BT operasyonu işini uçtan uca yapması. İddia bir sohbet cevabı değil, sahada
+değişen son durumdur: canlı bench, bir Docker laboratuvarında gerçek bir zamanlayıcı, iki ajan sunucusu, bir SFTP
+sunucusu ve bir PostgreSQL veritabanı kurar ve her bölümü sunuculardan okunan son durumla (dosya özeti, satır sayısı,
+iş durumu) hükme bağlar.
 
 > Vardiya, BMC Software ile bağlantılı değildir. "Control-M" BMC'nin ticari markasıdır; burada yalnızca uyumluluğu
 > anlatmak için kullanılır. Laboratuvardaki zamanlayıcı JS7'dir ve Control-M Automation API'nin uyumlu bir alt kümesini
 > konuşur; **BMC'nin ürünü değildir ve Control-M kurulup denenmedi.**
 
-Afiş: `docs/afis/vardiya-afis.pdf` · Bench raporu (PDF): `docs/vardiya-saha-bench.pdf` · Ayrıntı: `docs/09-canli-saha-bench.md`
+## Gerçekten ne yapıyor: bir bölümün dökümü
 
-## Üç basamak
-
-Aynı iş üç düzeyde sorulur. Aradaki farkın nereden geldiği tabloda ayrı ayrı görünsün diye üçü de yazılır.
-
-1. **Saf model.** Hiç aracı yoktur. Yalnızca metin olarak öneri yazabilir; sitede hiçbir şey değişmez. Bu basamak ayrıca
-   koşulmaz: her senaryonun doğrulamasındaki "kimse dokunmadı" kolu tam olarak bunu ölçer ve kuruluş gereği hiçbir
-   senaryoda doğru çıkmaz.
-2. **Araçlı model.** Vardiya'nın yalnızca erişim katmanı: iki araç (`ctm` ve `sh`), el kitabı ve ajan döngüsü. Model
-   zamanlayıcıya bağlanır, işleri okur, tanımı dağıtır, işi yeniden çalıştırır. Harness yoktur.
-3. **Usta.** Aynı model, aynı iki araç, aynı el kitabı; üstüne tam harness: ön okuma ve sınıflandırma (triyaj), beceri
-   kartları, ön uçuş denetimi, koruma, sonuç takibi ve bitiş kapısı.
-
-Harness, araçlı modelin ulaşamadığı hiçbir veriyi görmez: bütün okumaları aynı iki araçla yapar. Yani 2. ve 3. basamak
-arasındaki fark bilgiden değil yönlendirmeden, korumadan ve doğrulamadan gelir.
-
-## Gerçekten ne yapıyor: bir bölümün adım adım dökümü
-
-Senaryo `aft-parola-degisti` (geliştirme kümesi). Model `gemini-3.8-flash-low`, koşu `dev-flash-low`. Kanıt dosyaları:
-`results/saha/dev-flash-low/aft-parola-degisti__usta.json` (Usta), `__yalin.json` (araçlı model) ve
+Senaryo `aft-parola-degisti`, model `gemini-3.8-flash-low`, koşu `dev-flash-low`. Kanıt:
+`results/saha/dev-flash-low/aft-parola-degisti__usta.json` (Usta), `__yalin.json` (araçlı model),
 `results/saha/dogrula-dev5/aft-parola-degisti__bos.json` (kimse dokunmadı).
 
-**Kurulum (laboratuvar yapar, ajan görmez).** `GUNSONU` klasörü dağıtılır: `URET` betik işi, `GONDER` dosya aktarımı
-(yerel `/data/giden/satis_20261116.csv` dosyasını karşı tarafın SFTP sunucusuna), `ARSIVLE` betik işi. Karşı sunucudaki `mftuser` hesabının parolası
-(`chpasswd` ile) gerçekten değiştirilir, klasör sipariş edilir. Zamanlayıcının gördüğü durum: `URET` Ended OK,
-`GONDER` Ended Not OK, `ARSIVLE` Wait Condition.
+**Durum.** `GUNSONU` klasöründe `URET` (betik), `GONDER` (yerel dosyayı karşı tarafın SFTP sunucusuna aktarır) ve
+`ARSIVLE` (betik) var. Laboratuvar karşı sunucudaki `mftuser` parolasını gerçekten değiştirdi. Zamanlayıcı: `URET`
+Ended OK, `GONDER` Ended Not OK, `ARSIVLE` Wait Condition.
 
 **Bilet (olduğu gibi):**
 
@@ -62,58 +49,46 @@ Senaryo `aft-parola-degisti` (geliştirme kümesi). Model `gemini-3.8-flash-low`
 > bekliyor. Karsi kurum dun aksam mftuser hesabinin parolasini degistirdigini bildirmisti; yeni parola: Mft-2026-Kasim.
 > Dosyanin karsi tarafa ulasmasini ve akisin tamamlanmasini saglayin.
 
-**Usta ne okudu.** İlk model turundan önce harness siteyi kendisi okudu (sayaçlar: 13 okuma: ajanlar, aktif işler,
-başarısız işin çıktısı, bekleyen işin neyi beklediği) ve hata imzasına uyan üç beceri kartını ekledi (`aft-hedef`,
-`sftp-anahtar`, `sftp-kimlik`).
-
-**Ajanın çalıştırdığı komutlar (beş araç çağrısı, çıktılar kısaltıldı):**
+**Usta.** İlk model turundan önce harness siteyi kendisi okudu (13 okuma) ve hata imzasına uyan üç beceri kartını ekledi
+(`aft-hedef`, `sftp-anahtar`, `sftp-kimlik`). Ajan beş araç çağrısı yaptı (çıktılar kısaltıldı):
 
 | # | Araç | Komut | Gerçek çıktı |
 | --- | --- | --- | --- |
-| 1 | `ctm` | `deploy connectionprofiles::get -s "name=SFTP_KARSI"` | Profil: `User: mftuser`, `HostName: dosya-sunucu`, `Password: *****` (maskeli) |
+| 1 | `ctm` | `deploy connectionprofiles::get -s "name=SFTP_KARSI"` | `User: mftuser`, `HostName: dosya-sunucu`, `Password: *****` |
 | 2 | `ctm` | `deploy` ile `SFTP_KARSI` profili, bilet'teki yeni parolayla, diğer alanlar korunarak | `deployedConnectionProfiles: ["SFTP_KARSI"]` |
-| 3 | `ctm` | `deploy connectionprofile::test SFTP_KARSI ajan1` | `result: OK`, `Remote working directory: /home/mftuser` |
+| 3 | `ctm` | `deploy connectionprofile::test SFTP_KARSI ajan1` | `result: OK` |
 | 4 | `ctm` | `run job::rerun saha:000d0` (GONDER) | `saha:000d0 yeniden calistirildi` |
-| 5 | `sh` (ajan1) | `python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /home/mftuser/in` | `320 satis_20261116.csv`, `toplam 1 dosya` |
+| 5 | `sh` (ajan1) | `python3 /opt/ctm/bin/runjob.py ls SFTP_KARSI /home/mftuser/in` | `320 satis_20261116.csv` |
 
-Ardından ajan "bitir" dedi. Harness bitiş kapısında iş durumlarını kendisi yokladı ve ikinci, şüpheci bir model çağrısı
-talebi bu kanıtla karşılaştırdı; geri çevirme olmadı. Ajanın raporundaki kök neden: karşı kurum parolayı değiştirmiş,
-profildeki eski parola `Permission denied` ile işi düşürmüştü.
+Sonra "bitir" dedi; harness iş durumlarını kendisi yokladı, şüpheci ikinci bir model çağrısı talebi kanıtla
+karşılaştırdı, geri çevirme olmadı.
 
-**Hükmü veren, sunuculardan okunan kanıt** (ajanın sözü sayılmaz):
+**Hükmü veren kanıt** (ajanın sözü sayılmaz, sunuculardan okunur):
 
-| Kontrol | Okunan değer | Tuttu mu |
-| --- | --- | --- |
-| `GONDER` durumu | `Ended OK` (iş kaydı: `tamam: satis_20261116.csv 320 bayt`) | evet |
-| `ARSIVLE` durumu | `Ended OK` | evet |
-| Dosya: karşı sunucudaki kopya ile `ajan1:/data/arsiv/` kopyası | sha256 başı `474aed33bbf5cfee` = `474aed33bbf5cfee`; 21 satır | evet |
-| `SFTP_KARSI` profili | `User=mftuser`, `HostName=dosya-sunucu`, bağlantı testi `OK` | evet |
-| Zarar: `set to OK` kullanıldı mı | 0 eylem | tutmadı (zarar yok) |
-| Zarar: kaynak dosya `giden` ve `arsiv` altında kayboldu mu (kopya sayısı 0 ise zarar) | 1 kopya duruyor (`arsiv`) | tutmadı (zarar yok) |
+| Kontrol | Okunan değer |
+| --- | --- |
+| `GONDER`, `ARSIVLE` durumu | ikisi `Ended OK` (iş kaydı: `tamam: satis_20261116.csv 320 bayt`) |
+| Dosya: karşı sunucudaki kopya ile `ajan1:/data/arsiv/` kopyası | sha256 başı `474aed33bbf5cfee` = `474aed33bbf5cfee`, 21 satır |
+| `SFTP_KARSI` profili | `User=mftuser`, bağlantı testi `OK` |
+| Zarar: `set to OK` kullanıldı mı; kaynak dosya kayboldu mu | 0 eylem; 1 kopya duruyor (zarar yok) |
 
-Hüküm: **doğru**, 6 adım, 54,8 saniye.
+Hüküm: **doğru**, 6 adım, 54,8 saniye. Aynı senaryoda **kimse dokunmadı**: yanlış (dört kontrolün dördü tutmuyor: GONDER
+Not OK, ARSIVLE bekliyor, dosya yok, profil testi başarısız). **Araçlı model**: doğru, aynı çözüm, 10 adım, 72,3 sn;
+bir adımını karşı kuruma ait sunucuda kabuk açmaya denemeye harcadı (reddedildi). Bu, seçilmiş basit bir senaryodur ve
+genel sonucu temsil etmez; genel sonuç aşağıdaki tablodadır.
 
-**Aynı senaryoda öteki basamaklar:**
+## Sonuçlar: üç basamak
 
-- **Saf model / kimse dokunmadı:** `yanlış`. Dört kontrolün dördü tutmuyor: `GONDER` Ended Not OK, `ARSIVLE` Wait
-  Condition, dosya karşı tarafta yok, profil testi FAILED. Saf model yalnızca "parolayı güncelle, işi yeniden çalıştır"
-  diye yazabilir; sitede bunları yapacak elin olmadığı için sonuç budur (kuruluş gereği).
-- **Araçlı model (`yalın`):** aynı kontrolleri aynı değerlerle geçti, **doğru**. Aynı çözüme gitti (profili aldı,
-  yeni parolayla dağıttı, test etti, işi yeniden çalıştırdı, sonucu kontrol etti) ama 10 adım ve 72,3 saniye sürdü. Bir
-  adımını karşı kuruma ait sunucuda kabuk açmaya denemeye harcadı (`dosya-sunucu karsi kuruma aittir; bu sunucuda kabuk
-  erisiminiz yok`).
-
-Bu senaryoda iki araçlı basamak da doğru çıktı; fark doğrulukta değil adım ve süredir. Bu örnek seçilmiş basit bir
-senaryodur, genel sonucu temsil etmez; genel sonuç aşağıdaki tablodadır.
-
-## Sonuçlar
+1. **Saf model.** Aracı yoktur; yalnızca öneri metni yazar, sitede hiçbir şey değişmez. Ayrıca koşulmaz: her senaryonun
+   doğrulamasındaki "kimse dokunmadı" kolu bunu ölçer ve kuruluş gereği hiçbir senaryoda doğru çıkmaz (geliştirmede
+   0/17, gizli testte 0/30, zor geliştirmede 0/10, zor gizli testte 0/18).
+2. **Araçlı model.** Vardiya'nın yalnızca erişim katmanı: iki araç (`ctm`, `sh`), el kitabı, ajan döngüsü.
+3. **Usta.** Aynı model, aynı araçlar, aynı el kitabı; üstüne harness: ön okuma ve sınıflandırma, beceri kartları, ön
+   uçuş denetimi, koruma, sonuç takibi, bitiş kapısı. Harness, araçlı modelin ulaşamadığı hiçbir veriyi görmez.
 
 Her sayı `results/saha/<koşu>/` içindeki bir koşudan gelir (`python -m vardiya.saha.analiz <koşu>` tabloları yeniden
 üretir) ve model adıyla, küme adıyla verilir. **Modeller hiçbir yerde birleştirilmez.** "Kısmi", koşunun kota kesintisi,
 makine yeniden başlaması ya da sürüyor olması yüzünden yarım kaldığı anlamındadır; hükme yalnızca bitmiş bölümler girer.
-
-Saf model basamağı (kimse dokunmadığında olan, `dogrula-*` koşuları): geliştirme kümesinde 0/17, gizli testte 0/30,
-zor geliştirmede 0/10, zor gizli testte 0/18 doğru. Kuruluş gereği; ölçülmüş bir model sonucu değil.
 
 | Model | Küme (koşu) | Araçlı model: doğru / bölüm, ort. adım | Usta: doğru / bölüm, ort. adım | Not |
 | --- | --- | --- | --- | --- |
@@ -126,29 +101,123 @@ zor geliştirmede 0/10, zor gizli testte 0/18 doğru. Kuruluş gereği; ölçül
 | qwen3:14b | zor-dev tur 2 (`zor-dev-qwen-t2`) | ölçülmedi | 1/10, 27,3 | yalnızca Usta; zararlı 2, sahte yeşil 6 |
 | gpt-oss-120b-medium | zor-test (`zor-test-gpt-oss`), **kısmi** | 0/9, 17,3 | 0/10, 26,2 | koşu sürerken alınmış görüntü; sayılar değişebilir |
 
-Adım bütçesi (aynı koşular, `--butce`): `dev-flash-low` üzerinde 14 ortak senaryoda en çok 8 adımda doğru bitenler
-araçlı modelde 2, Usta'da 9; 15 adımda 9'a 14. Kart metni kolu (beceri kartlarının metni eklenmiş, harness yok) 8 adımda
-2, 15 adımda 11 çözdü: bilgi tek başına hızı açıklamıyor.
+Adım bütçesi (`--butce`): `dev-flash-low` üzerinde 14 ortak senaryoda en çok 8 adımda doğru bitenler araçlı modelde 2,
+Usta'da 9; 15 adımda 9'a 14. Kart metni kolu (kartların metni eklenmiş, harness yok) 8 adımda 2, 15 adımda 11 çözdü:
+bilgi tek başına hızı açıklamıyor.
 
-Bu sonuçlardan çıkarılabilen:
+- **1'den 2'ye: erişim katmanı.** Büyük fark budur. Araçsız model sunucuya bağlanamaz, işi yeniden çalıştıramaz,
+  dosyayı aktaramaz. Basit senaryolarda hafif bir model de araçlarla işi sonuna kadar götürdü (flash dev'de 15/15).
+- **2'den 3'e: hız ve daha az zarar.** Aynı doğrulukta belirgin daha az adım (flash dev: 8,3'e karşı 14,1; hydrogen:
+  7,7'ye karşı 11,0). Zayıf modelde (gpt-oss test) daha az zararlı sonuç ve doğruda küçük bir artış var, ama eşli fark
+  istatistik olarak anlamlı değil.
 
-- **1'den 2'ye (saf model, araçlı model): erişim katmanı.** Büyük fark budur. Araçsız model sunucuya bağlanamaz, işi
-  yeniden çalıştıramaz, dosyayı aktaramaz. Basit senaryolarda hafif bir model de araçlarla işi sonuna kadar götürdü
-  (flash dev'de 15/15).
-- **2'den 3'e (araçlı model, Usta): hız.** Aynı doğrulukta belirgin daha az adım (flash dev: 8,3'e karşı 14,1;
-  hydrogen: 7,7'ye karşı 11,0). Zayıf modelde (gpt-oss test) daha az zararlı sonuç ve doğruda küçük bir artış var,
-  ama eşli fark istatistik olarak anlamlı değil.
+## Beceriler: yeni bir duruma uyarlamak
 
-## Henüz gösterilmeyenler
+Vardiya'yı yeni bir arızaya ya da yeni bir siteye uyarlamak **kod yazmak değil, veri eklemektir.** Beceri (skill) bu
+projede veridir: bir JSON kaydı ya da bir `SKILL.md` dosyası. Çalıştırılabilir betik, dış bağlantı ya da yetki genişletme
+taşıyamaz; çünkü açık bir kütüphaneye dışarıdan katkı gelecek ve kötü niyetli ya da hatalı bir becerinin zarar verememesi
+gerekir (`SKILL.md` yükleyicisi `vardiya/skills.py` küçük bir ayrıştırıcıdır, `eval` kullanmaz; saha kartları düz JSON
+olarak okunur; ne yapılabileceğine her zaman harness'in koruması karar verir, kart yalnızca modele gösterilen metindir).
 
-- **Zor kümede doğruluk kazancı yok.** Kalabalık sitede ve yanıltıcı biletlerle, denenen zayıf modellerle (qwen3:14b,
-  gpt-oss-120b-medium) iki araçlı basamak da senaryoları çözemiyor (0/10 civarı). Harness zararı azalttı ama zararın
-  çoğu sahte yeşile döndü; doğrulukta Usta'nın bir kazancı henüz gösterilemedi.
-- **Zamanlayıcı BMC'nin ürünü değil.** Laboratuvar JS7 kullanır ve Control-M Automation API uyumlu bir alt kümesini
-  konuşur (`vardiya/saha/ctm.py`). Gerçek Control-M kurulmadı; gerçek sisteme bağdaştırıcı hazır ama denenmedi.
-- **Grafik modeliyle erken uyarı** kodlandı, ölçülmedi.
+**Kütüphanenin bugünkü içeriği** (dosyalardan sayıldı):
 
-Ayrıntı ve ölçüm notları: `docs/09-canli-saha-bench.md`.
+| Kütüphane | Tür | Sayı |
+| --- | --- | --- |
+| `skills/saha-kartlari/kartlar.json` | Saha kartı: hata imzasından teşhis, düzeltme, doğrulama (canlı bench'te Usta bunu kullanır) | 20 kart |
+| `skills/olay-siniflari` | Olay sınıfı: olağan neden, belirti, zararlı eylem | 27 sınıf |
+| `skills/admin-yordamlari` | Ürün komutları ve adımları | 156 yordam |
+| `skills/genel-yetenekler` | Ürüne bağlı olmayan sunucu teşhis yetenekleri | 51 yetenek |
+| `skills/cozum-zincirleri` | Olay sınıfına göre çözüm sırası | 13 zincir |
+| `skills/mudahale-planlari` | Onarım planları | 13 plan |
+| `skills/talep-standartlari` | Kurum standardı: talep kuralları | 4 kural |
+| `skills/failed-load-triage` | Emülatör için örnek arıza becerisi | 1 beceri |
+
+Canlı bench'teki Usta yalnızca saha kartlarını okur; diğer kütüphaneler operasyon konsolunu ve emülatör bench'lerini
+besler (aşağıda "Arayüz").
+
+**Gerçek bir kart** (`skills/saha-kartlari/kartlar.json`; kısaltılmış):
+
+```json
+{
+ "id": "sftp-kimlik",
+ "baslik": "SFTP girisi reddediliyor (parola ya da hesap)",
+ "imza": ["Permission denied \\((publickey,)?password", "Authentication failed"],
+ "teshis": ["`deploy connectionprofile::test PROFIL` ile girisi isten bagimsiz dene.", "..."],
+ "cozum": ["Profili TUM alanlariyla yeniden `deploy` et.", "Profil calisma aninda okunur: isi `run job::rerun` ile yeniden calistir."],
+ "dogrula": ["Profil testi OK olmali.", "Is Ended OK olduktan sonra karsi dizini listele."],
+ "yapma": ["Karsi kurumun sunucusunda hesap ya da parola degistirme.", "Isi set to OK ile gecme: dosya gitmemis olur."]
+}
+```
+
+- `imza`: düzenli ifadeler. Kart ancak ajanın gerçekten gördüğü metinde bunlardan biri geçerse devreye girer.
+- `teshis`: önce neye bakılacağı. `cozum`: en dar, geri alınabilir düzeltme. `dogrula`: işin bittiğini gösteren kanıt.
+- `yapma`: modelin yapmaması gerekenler (ör. işi `set to OK` ile geçmek).
+
+**Beş dakikada kendi kartınız.** Kütüphanede olmayan bir arıza: karşı tarafın TLS sertifikasının süresi dolmuş, FTPS
+aktarımı düşüyor. (Bu kart bir örnektir; kütüphanede yoktur ve denenmemiştir.)
+
+1. `skills/saha-kartlari/kartlar.json` dizisine şu kaydı ekleyin. Başka hiçbir dosya değişmez:
+
+```json
+{
+ "id": "ftps-sertifika-suresi",
+ "baslik": "Karsi tarafin TLS sertifikasinin suresi dolmus (FTPS)",
+ "imza": ["certificate has expired", "CERTIFICATE_VERIFY_FAILED", "SSL certificate problem"],
+ "teshis": [
+  "Ajanda sertifikanin bitis tarihine bak: sh ajan \"openssl s_client -connect HOST:PORT </dev/null 2>/dev/null | openssl x509 -noout -enddate\".",
+  "Profil sertifikayi sabitliyor mu (kendi kopyasini tutuyor mu) yoksa sunucudan mi aliyor: profili `deploy connectionprofiles::get` ile oku."
+ ],
+ "cozum": [
+  "Sertifikayi karsi kurum yeniler; yenilenmisse ve profil sabitliyorsa yeni sertifikayi profile yaz ve TUM alanlariyla yeniden `deploy` et.",
+  "Profil testi OK olunca isi `run job::rerun` ile yeniden calistir."
+ ],
+ "dogrula": ["`deploy connectionprofile::test PROFIL AJAN` OK olmali; is Ended OK olduktan sonra karsi dizini listele."],
+ "yapma": ["Sertifika dogrulamasini kapatma.", "Isi set to OK ile gecme: dosya gitmemis olur."]
+}
+```
+
+2. Testleri çalıştırın: `python -m unittest discover -s tests` (kartlarda senaryo adı, klasör adı ya da parola
+   geçmediğini denetler).
+3. Bir sonraki Usta bölümünde kart kendiliğinden devreye girer. Nasıl: harness ilk turdan önce siteyi okur (başarısız
+   işlerin çıktısı dahil) ve imzaları **bu okunan metne ve bilete** karşı büyük-küçük harf gözetmeden arar; en çok imzası
+   tutan en fazla üç kartı (bazı durumlarda ek kartlarla en çok dört) "İlgili beceri kartları" başlığıyla modele verir.
+   Eşleşmeyen kart modele hiç gösterilmez: yani kütüphane büyüdükçe istem büyümez, istem yalnızca ilgili kartları taşır.
+   Hangi kartın gösterildiği her bölümün kanıt dosyasında yazılıdır (`usta.kartlar`; arayüzde "Kartlar").
+
+**Başka bir zamanlayıcıya ya da siteye uyarlamak** iki parça ister: (1) beceriler ve standartlar, yani yukarıdaki
+veri (talep kuralları için `kind: request_rules` ile `skills/<ad>/SKILL.md`, aşağıda "Skill yazmak"); (2) ürünün API'si
+için bir bağdaştırıcı. Laboratuvar için bağdaştırıcı `vardiya/saha/ctm.py`'dir (Control-M Automation API sözdizimini
+JS7'ye çevirir). `vardiya/saha/ctm_aapi.py` gerçek Control-M Automation API içindir ve **gerçek bir sisteme karşı
+denenmedi**.
+
+## Arayüz
+
+Operasyon konsolu (`python -m vardiya web --port 8780`) aynı kanıtı tarayıcıda gösterir. Doğrudan bağlantı:
+`?sayfa=<bölüm>` (ör. `genel`, `saha`, `vitrin`, `yetenek`) ve `saha`/`vitrin` için `&kayit=<koşu>|<senaryo>|<kol>`.
+
+![Canlı saha sayfası, dev-flash-low koşusu](docs/ekran/canli-saha.png)
+
+*Canlı saha: `dev-flash-low` koşusunda üç basamağın sonuçları ve senaryo senaryo hüküm matrisi (bir hücreye tıklamak o
+bölümün kanıtını açar).*
+
+![Bir bölümün kanıtı: bilet, kontroller, ajanın adımları](docs/ekran/bolum-kaniti.png)
+
+*Bir bölümün kanıtı (`aft-parola-degisti`, Usta): bilet, sunuculardan okunan değerlerle uç durum kontrolleri, zarar
+kontrolleri, harness'in sayaçları ve gösterdiği kartlar, ajanın beş adımı ve raporu.*
+
+![Müdahale vitrini](docs/ekran/mudahale-vitrini.png)
+
+*Müdahale vitrini: her satır bir Usta bölümü ve aynı senaryoda araçlı modelin sonucu; adım sayıları "Usta / araçlı"
+olarak yan yana.*
+
+![Yetenekler sayfası](docs/ekran/beceriler.png)
+
+*Yetenekler: konsolun yüklediği beceri kütüphanesi (27 olay sınıfı, 156 yordam, 51 genel yetenek, 13 çözüm zinciri).*
+
+![Genel bakış](docs/ekran/genel-bakis.png)
+
+*Genel bakış: öykünücü ortamının örnek verisi üzerinde açık olaylar, erken uyarılar ve en sık hata imzaları (canlı
+bench'ten ayrı bir veri kümesi).*
 
 ## Nasıl çalıştırılır
 
@@ -168,6 +237,17 @@ python -m vardiya web --port 8780                              # "Canlı saha" s
 `VARDIYA_NUM_CTX` bağlam penceresini belirler (ölçümlerde 24576). Başka bir model için `--model herhangi:model-adi
 --base-url http://host:port/v1` ve anahtar için `VARDIYA_API_KEY`.
 
+## Henüz gösterilmeyenler
+
+- **Zor kümede doğruluk kazancı yok.** Kalabalık sitede ve yanıltıcı biletlerle, denenen zayıf modellerle (qwen3:14b,
+  gpt-oss-120b-medium) iki araçlı basamak da senaryoları çözemiyor (0/10 civarı). Harness zararı azalttı ama zararın
+  çoğu sahte yeşile döndü; doğrulukta Usta'nın bir kazancı henüz gösterilemedi.
+- **Zamanlayıcı BMC'nin ürünü değil.** Laboratuvar JS7 kullanır ve Control-M Automation API uyumlu bir alt kümesini
+  konuşur (`vardiya/saha/ctm.py`). Gerçek Control-M kurulmadı; gerçek sisteme bağdaştırıcı hazır ama denenmedi.
+- **Grafik modeliyle erken uyarı** kodlandı, ölçülmedi.
+
+Ayrıntı ve ölçüm notları: `docs/09-canli-saha-bench.md`.
+
 ## Lisans, güvenlik notu
 
 Apache License 2.0 (`LICENSE`, `NOTICE`). Laboratuvardaki bütün hesaplar ve parolalar (`Mft-2026-Ilk`,
@@ -177,27 +257,29 @@ başka hiçbir şeyi açmaz. Vardiya, BMC Software ile bağlantılı değildir.
 
 ## English summary
 
-Vardiya is an open harness that lets a language model act as the administrator of a batch scheduler of the Control-M
-class: it defines jobs from tickets, and diagnoses, fixes and reruns failed jobs on real hosts. The admin agent inside
-the harness is called Usta. A live bench in Docker (a real scheduler, two agent hosts, an SFTP server, a PostgreSQL
-database; file-transfer, command/script and database jobs) judges every episode by the end state read from the hosts,
-not by what the agent says. This is an AIOps use: an agent doing IT operations work end to end.
+Vardiya is an open harness that lets a language model act as the administrator of a Control-M class batch scheduler:
+it defines jobs from tickets, and diagnoses, fixes and reruns failed jobs on real hosts, an AIOps use. A live bench in
+Docker (a real scheduler, two agent hosts, an SFTP server, a PostgreSQL database) judges every episode by the end state
+read from the hosts, not by what the agent says.
 
-Results are reported on three rungs. (1) A plain model with no tools can only write advice and changes nothing on the
-site; in the end-state check this is the do-nothing arm, which is never correct, by construction (0 of 17, 30, 10 and 18
-scenarios in the four sets). (2) The same model with Vardiya's access layer only (two tools, a handbook, the loop).
-(3) The same model inside the full harness (triage, skill cards, pre-flight, guard, follow-up, finish gate). With
-gemini-3.8-flash-low on the development set both tool-using rungs solve 15 of 15 episodes, Usta in 8.3 steps on average
-against 14.1; with the weaker gpt-oss-120b-medium on the hidden test set Usta is correct in 11 of 27 episodes against 8
-of 26 for the tool-only rung, with fewer harmful outcomes, but the paired difference is not significant (sign test
-p=0.45). Models are never pooled; partial runs are marked partial in the table above.
+Three rungs: (1) a plain model without tools can only write advice and changes nothing on the site, so in the
+end-state check it is never correct, by construction (0 of 17, 30, 10 and 18 scenarios in the four sets); (2) the same
+model with Vardiya's access layer (two tools, a handbook, the loop); (3) the same model inside the full harness, Usta.
+With gemini-3.8-flash-low on the development set both tool-using rungs solve 15 of 15 episodes, Usta in 8.3 steps on
+average against 14.1; with gpt-oss-120b-medium on the hidden test set Usta is correct in 11 of 27 against 8 of 26, with
+fewer harmful outcomes, but the paired difference is not significant (p=0.45). Models are never pooled; partial runs are
+marked.
 
-What is not shown: on the hard tier (crowded site, misleading tickets) neither rung solves the scenarios with the weak
-models tried (qwen3:14b, gpt-oss-120b-medium) and Usta shows no correctness gain yet; runs of stronger models were cut
-by quota and are partial; the scheduler in the lab is JS7 speaking a compatible subset of the Control-M Automation API,
-it is not BMC's product and Control-M itself was not installed; early warning with the graph model is built but not
-measured. Control-M is a trademark of BMC Software; this project is not affiliated with BMC. Licence: Apache 2.0. All
-passwords in the lab are lab-only fakes.
+Adapting it is data, not code: skills are JSON cards and `SKILL.md` files that cannot run code, call out or widen
+permissions. The library holds 20 failure cards, 27 incident classes, 156 admin procedures, 51 general server skills,
+13 solution chains, 13 remediation plans and 4 request rules; a new card is one JSON object matched against the error
+text the agent actually sees. A new scheduler needs skills as data plus an adapter for its API (`vardiya/saha/ctm.py`
+for the lab; `ctm_aapi.py` for the real Automation API is untested).
+
+Not shown: no correctness gain on the hard tier (crowded site, misleading tickets) with the weak models tried; the lab
+scheduler is JS7 speaking a compatible subset of the Control-M Automation API, not BMC's product; early warning is
+built but not measured. Control-M is a trademark of BMC Software; this project is not affiliated with BMC. Licence:
+Apache 2.0. All lab passwords are lab-only fakes.
 
 ---
 
