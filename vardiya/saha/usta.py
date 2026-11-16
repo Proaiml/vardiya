@@ -219,6 +219,39 @@ def hesap_uyusmazligi(where, j, cp_defs):
     return errs
 
 
+def ornek_profil(name, tip="SFTP"):
+    """A ready deploy call for a connection profile, the only way profiles are made or changed here."""
+    if tip == "PostgreSQL":
+        body = {name: {"Type": "ConnectionProfile:Database:PostgreSQL", "Host": "appdb", "Port": "5432", "User": "HESAP",
+                       "Password": "PAROLA", "DatabaseName": "uygulama"}}
+    else:
+        body = {name: {"Type": "ConnectionProfile:FileTransfer:SFTP", "HostName": "dosya-sunucu", "Port": "22", "User": "HESAP",
+                       "Password": "PAROLA"}}
+    return json.dumps({"arac": "ctm", "komut": "deploy", "json": body}, ensure_ascii=False)
+
+
+def komut_ogret(text):
+    """A ctm command the product does not have, answered with the call that does the intended thing."""
+    t = text.strip()
+    m = re.search(r"connectionprofiles?::(create|add|set|update|new)\s*(\S*)", t)
+    if m:
+        name = m.group(2) if m.group(2) and not m.group(2).startswith("-") else "PROFIL_ADI"
+        tip = "PostgreSQL" if re.search(r"postgres|database|PG_", t, re.I) else "SFTP"
+        return ("Profil olusturmak ya da degistirmek icin ayri bir komut yok: profil JSON ile dagitilir (ayni ad varsa uzerine yazar, "
+                "baska hicbir sey silinmez). Ornek, yalnizca degerleri doldur:\n" + ornek_profil(name, tip)
+                + "\nSonra: deploy connectionprofile::test " + name + " ajan1")
+    m = re.search(r"(folder|job)s?::(create|add|set|update|get|new|modify)\s*(\S*)", t)
+    if m:
+        name = m.group(3).split("/")[0] if m.group(3) and not m.group(3).startswith("-") else "KLASOR"
+        return ("Klasor ya da is icin ayri olusturma/degistirme komutu yok. Okumak: `deploy jobs::get -s \"folder=" + name + "\"`. "
+                "Degistirmek ya da eklemek: okudugun klasor tanimini butun olarak, degisikligi icine koyarak gonder: "
+                '{"arac": "ctm", "komut": "deploy", "json": {"' + name + '": {"Type": "Folder", "Host": "ajan1", "RunAs": "batch", '
+                '"IS_ADI": {"Type": "Job:Command", "Command": "..."}}}}. Klasordeki mevcut isleri aynen birak.')
+    if re.search(r"\s-f\s|\.json", t):
+        return 'Tanim dosyadan okunmaz; tanimi "json" alanina koy: {"arac": "ctm", "komut": "deploy", "json": {...}}.'
+    return None
+
+
 def bekleme_zinciri(rows, tanimlar, klasorler=None):
     """Lines like 'A/X bekliyor: EV <- B/Y (Ended Not OK)' for every waiting job (in the given folders), so a
     wait whose giver sits in another folder or has failed is visible at once."""
@@ -400,6 +433,19 @@ class Usta:
             self.sayac["red"] += 1
             return ("USTA REDDETTI: set to OK isi CALISTIRMADAN yesile ceker; dosya gitmemis, veri yuklenmemis olur ve ardil isler "
                     "eksik veriyle calisir. Talep bunu istemiyor. Kok nedeni duzelt ve isi rerun et (ya da duzeltilmis tanimla yeniden siparis et).")
+        tekrar = self._tekrar(eylem, key, text)
+        if tekrar:
+            return tekrar
+        if eylem.get("arac") == "ctm":
+            why = self._kalici_silme(text)
+            if why:
+                self.sayac["red"] += 1
+                return f"USTA REDDETTI: {why}"
+        if eylem.get("arac") == "sh":
+            why = self._oturum_hedefi(eylem, text)
+            if why:
+                self.sayac["red"] += 1
+                return f"USTA REDDETTI: {why}"
         if eylem.get("arac") == "ctm" and "kapsam:" + key not in self.onay:
             why = self._kapsam_disi(eylem, text) or self._elle_olay(text)
             if why:
@@ -416,6 +462,66 @@ class Usta:
         if eylem.get("arac") == "ctm" and text.strip().split()[:1] == ["deploy"] and len(text.split()) == 1 and isinstance(eylem.get("json"), (dict, str)):
             return self._onucus(eylem, key)
         return None
+
+    def _silme_istendi(self):
+        return bool(re.search(r"\bsil(in|insin|mek|me)?\b|kaldir|iptal et|devreden cikar|sonlandir", _fold(self.talep)))
+
+    def _kalici_silme(self, text):
+        """Deleting a definition or a connection profile that exists cannot be undone and takes every job that uses
+        it along; a weak model reaches for it to 'start over'. Refused unless the ticket asks for a removal."""
+        if self._silme_istendi():
+            return None
+        m = re.search(r"\bdeploy\s+(folder|connectionprofile)::delete\s+(\S+)", text)
+        if not m:
+            return None
+        kind, name = m.groups()
+        var = name in (self.tanimlar or self._tanimlar()) if kind == "folder" else name in self._profiller()
+        if not var:
+            return None
+        if kind == "folder":
+            return (f"{name} klasorunu silmek icindeki butun isleri ve tanimlarini kalici olarak goturur; talep bir silme istemiyor. "
+                    f"Bir isi duzeltmek icin: `deploy jobs::get -s \"folder={name}\"` ile tanimi al, yalnizca gereken alani degistir ve "
+                    "klasoru butun olarak {\"arac\": \"ctm\", \"komut\": \"deploy\", \"json\": {...}} ile yeniden gonder.")
+        return (f"{name} profilini silmek onu kullanan butun isleri bozar; talep bir silme istemiyor. Profili duzeltmek icin silmeden ayni "
+                "adla yeniden gonder: " + ornek_profil(name))
+
+    def _profiller(self):
+        try:
+            return json.loads(self._tam("deploy connectionprofiles::get"))
+        except ValueError:
+            return {}
+
+    def _oturum_hedefi(self, eylem, text):
+        """Terminating a database session: only one that really blocks another (pg_blocking_pids) may go."""
+        pids = re.findall(r"pg_(?:terminate|cancel)_backend\s*\(\s*(\d+)\s*\)", text)
+        if not pids or eylem.get("sunucu") in self.a.dis:
+            return None
+        rc, out = self._sh("appdb", "psql -U postgres -d uygulama -At -c \"select distinct unnest(pg_blocking_pids(pid)) from pg_stat_activity\"")
+        if rc:
+            return None
+        engel = set(out.split())
+        yanlis = [p for p in pids if p not in engel]
+        if not yanlis:
+            return None
+        return (f"oturum {', '.join(yanlis)} hicbir oturumu engellemiyor (engelleyenler: {', '.join(sorted(engel)) or 'yok'}). Canli bir "
+                "uygulama oturumunu sonlandirmak onun isini geri alir. Engelleyeni bul: select pid, application_name, state, query from "
+                "pg_stat_activity where pid in (select unnest(pg_blocking_pids(pid)) from pg_stat_activity); yalnizca o pid'i sonlandir.")
+
+    def _tekrar(self, eylem, key, text):
+        """The same call a third time with the same result teaches nothing; a weak model loops on it. Reads that
+        wait for a change (status, output) are let through."""
+        n = self.cagri.get(key, 0)
+        if n < 3 or re.search(r"status|output|waitingInfo|log::get|events::get|agents::get|ping", text):
+            return None
+        self.sayac["dongu"] += 1
+        return ("USTA: bu cagriyi " + str(n - 1) + " kez yaptin ve sonucu yukarida; yeniden calistirmiyorum. Sonucu kullanarak ilerle. "
+                + self._siradaki())
+
+    def _siradaki(self):
+        """A short reminder of what is left: the acceptance items the gate will check, so a weak model keeps the plan."""
+        if not getattr(self, "kabul", None):
+            return "Ilerlemiyorsan farkli bir kanit topla ya da yaptiklarini ve kalan engeli rapora yazip bitir."
+        return "Kabul listesi (harness denetleyecek): " + " | ".join(f"{i}. {m[:110]}" for i, m in enumerate(self.kabul[:6], 1))
 
     def _hedef_klasorler(self, eylem, text):
         """Folders a changing ctm command acts on (empty for reads)."""
@@ -503,11 +609,12 @@ class Usta:
         for fname, fdef in folders.items():
             old = state.get(fname) or {}
             gone = [k for k, v in old.items() if isinstance(v, dict) and str(v.get("Type", "")).startswith("Job:") and k not in fdef]
-            if gone and key not in self.onay:
+            if gone and (not self._silme_istendi() or key not in self.onay):
                 self.onay.add(key)
                 errs.append(f"{fname}: deploy klasoru butun olarak degistirir; bu tanimda olmayan mevcut isler SILINECEK: {', '.join(gone)}. "
-                            f"Talep bunu istemiyorsa `deploy jobs::get -s \"folder={fname}\"` ile mevcut tanimi al ve yeni isi ona ekleyerek gonder. "
-                            f"Silmek gercekten isteniyorsa ayni deploy'u tekrar gonder.")
+                            f"`deploy jobs::get -s \"folder={fname}\"` ile mevcut tanimi al ve degisikligi ona ekleyerek, mevcut isleri "
+                            f"aynen koruyarak gonder." + (" Silmek gercekten isteniyorsa ayni deploy'u tekrar gonder." if self._silme_istendi() else
+                                                         " Talep bir silme istemedigi icin bu dagitim yapilmaz."))
             for jn, j in fdef.items():
                 if not (isinstance(j, dict) and str(j.get("Type", "")).startswith("Job:")):
                     continue
@@ -651,6 +758,14 @@ class Usta:
             self.dokunulan |= hedef
             if hedef and text.strip().startswith("deploy"):
                 self.tanimlar = self._tanimlar()
+        if eylem.get("arac") == "ctm" and "bilinmeyen komut" in sonuc:
+            ders = komut_ogret(text)
+            if ders:
+                self.sayac["ogretim"] = self.sayac.get("ogretim", 0) + 1
+                notes.append(ders)
+        self._adim = getattr(self, "_adim", 0) + 1
+        if self._adim % 6 == 0 and getattr(self, "kabul", None):
+            notes.append(self._siradaki())
         if getattr(self, "_uyari", None):
             notes.append("ON UCUS UYARILARI (dagitim yapildi, bunlari duzeltmeden is basarisiz olabilir):\n- " + "\n- ".join(self._uyari))
             self._uyari = None
@@ -731,9 +846,13 @@ class Usta:
 
     # ---- finish gate ----------------------------------------------------------------
     def bitis(self, rapor, eylem):
-        if self.sayac["bitis_red"] >= 3:
+        # twice at most: sending a weak model back again and again mostly buys more changes, not a better end state
+        if self.sayac["bitis_red"] >= 2:
             return None
         sorun = self._yoklamalar(rapor)
+        if re.search(r"degisiklik yapmadan|dokunmadan|yalnizca raporla|bulgunuzu .*raporlayin", _fold(self.talep)):
+            # the ticket allows "find and report without changing the site": a red job is then not the admin's to fix
+            sorun = [s for s in sorun if not re.search(r"Ended Not OK|Wait Condition|Wait Host|calisiyor", s)]
         if not sorun and self.elestirmen is not None and self.sayac["elestiri"] < 1:
             sorun = self._elestir(rapor)
         if not sorun:

@@ -372,3 +372,51 @@ class ContextDiscipline(unittest.TestCase):
         self.assertIsNone(ajan.baglam_siniri(M()))
         M.spec = "ollama:qwen3:14b"
         self.assertGreater(ajan.baglam_siniri(M()), 30000)
+
+
+class WeakModelGuards(unittest.TestCase):
+    def setUp(self):
+        class Ctm:
+            def cli(self, line, body=None):
+                if "connectionprofiles::get" in line:
+                    return json.dumps({"SFTP_KARSI": {"Type": "ConnectionProfile:FileTransfer:SFTP", "User": "mftuser"}})
+                if "jobs:status::get" in line:
+                    return json.dumps({"statuses": []})
+                return json.dumps(SITE)
+
+        class Lab:
+            def sh(self, host, cmd, timeout=40):
+                return 0, "4242"
+
+        class A:
+            dis, iz, ctm, lab = {"dosya-sunucu"}, [], Ctm(), Lab()
+        self.u = usta.Usta.__new__(usta.Usta)
+        self.u.a, self.u.talep, self.u.onay, self.u.cagri, self.u.dagitilan = A(), "Kapanis isi dusmedi, duzeltin.", set(), {}, set()
+        self.u.sayac = {"red": 0, "onay_istendi": 0, "yoklama": 0, "dongu": 0}
+        self.u.kapsam, self.u.tanimlar, self.u.dokunulan, self.u.kabul = set(), SITE, set(), ["kapanis kaydi var"]
+
+    def test_deleting_an_existing_folder_or_profile_is_refused_unless_asked(self):
+        self.assertIn("REDDETTI", self.u.once({"arac": "ctm", "komut": "deploy folder::delete MUHASEBE_KAPANIS"}))
+        self.assertIn("REDDETTI", self.u.once({"arac": "ctm", "komut": "deploy connectionprofile::delete SFTP_KARSI"}))
+        self.u.talep = "ESKI klasorunu tamamen kaldirin."
+        self.assertNotIn("REDDETTI", self.u.once({"arac": "ctm", "komut": "deploy folder::delete MUHASEBE_KAPANIS"}) or "")
+
+    def test_only_a_blocking_session_may_be_terminated(self):
+        cmd = {"arac": "sh", "sunucu": "appdb", "komut": "psql -c 'select pg_terminate_backend(1111)'"}
+        self.assertIn("engellemiyor", self.u.once(cmd))
+        ok = {"arac": "sh", "sunucu": "appdb", "komut": "psql -c 'select pg_terminate_backend(4242)'"}
+        self.assertNotIn("REDDETTI", self.u.once(ok) or "")
+
+    def test_third_identical_call_is_not_run_and_the_plan_is_recalled(self):
+        act = {"arac": "ctm", "komut": "deploy jobs::get -s \"folder=STOK_GUNSONU\""}
+        self.assertIsNone(self.u.once(act))
+        self.assertIsNone(self.u.once(act))
+        self.assertIn("Kabul listesi", self.u.once(act))
+        st = {"arac": "ctm", "komut": "run job:status::get saha:1"}
+        for _ in range(4):
+            self.assertIsNone(self.u.once(st))
+
+    def test_unknown_commands_are_answered_with_the_real_call(self):
+        self.assertIn('"komut": "deploy"', usta.komut_ogret('deploy connectionprofile::create SFTP_ASYA -s "Type=SFTP"'))
+        self.assertIn("jobs::get", usta.komut_ogret("deploy folder::create STOK"))
+        self.assertIsNone(usta.komut_ogret("run order X"))
