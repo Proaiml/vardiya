@@ -193,6 +193,8 @@ Adım bütçesine göre (dev, 14 ortak senaryo; en çok k adımda doğru bitenle
 | zor-test, `saha-donuk-2` | Araçlı model | 17 | 0 | 4 | 0 | 8 | 5 | 18.7 |
 | zor-test, `saha-donuk-2` | Usta | 17 | 0 | 2 | 0 | 11 | 4 | 23.2 |
 
+Katalog gizli yarısı (`katalog-test --parca 1/2`, `saha-donuk-2`, `katalog-test-gpt-oss`), **kısmi**: 17 Kasım 00:40'ta `DUR` dosyasıyla durdu; 30 senaryonun 14'ünde iki kol da var (1 bölüm kurulamadı). Araçlı model 14 bölümde 3 doğru, 1 yarım, 3 sahte yeşil, 7 zararlı (20.7 adım); Usta 13 bölümde 3 doğru, 1 yarım, 7 sahte yeşil, 2 zararlı (26.2 adım). Eşli: 13 çift, yalnız Usta doğru 2, yalnız araçlı model doğru 1. Katalog kümesinin bir senaryosu (`k2-55-host-ajan-kapali-tasi-aft-parola-degisti`) doğrulamadan geçmedi; ölçülen 14 senaryonun içinde değil.
+
 Eşli karşılaştırma (aynı senaryolar, araçlı modele karşı Usta): bütçe 40'ta 26 çift; yalnız Usta doğru 5, yalnız
 araçlı model doğru 2, işaret testi p=0.45. Bütçe 10'da 15 çift; 3'e 2, p=1.0. Fark anlamlı değil.
 
@@ -290,7 +292,7 @@ Usta 4 zararlı; sahte yeşil 8'e 11. Zor kümede doğruluk farkı yok.
   bellek için kaldırıldı; hiç kullanılmadı. Canlı bench'te Windows sunucusu ve WinRM yolu yok.
 - **Gerçek Control-M.** Kurulmadı (hesabın indirme hakkı yok). Ölçümler JS7 üzerindeki Control-M sözdizimli katmanda.
 - **Öykünmeyle olaylar.** Laboratuvarda üretilemeyen olaylar için planlandı (`docs/10`), yapılmadı.
-- **Katalog kümeleri** (`bench/saha/katalog-*`). Ölçülmedi. Gizli yarının doğrulaması yeniden başlatmada yarım kaldı.
+- **Katalog kümeleri** (`bench/saha/katalog-*`). `katalog-test` doğrulaması tamamlandı (59/60). Gizli yarının yarısının ölçümü kısmi kaldı (14/30 senaryo); harness ayarı `katalog-dev` ile yapılmadı.
 - **Senaryo yazarının körlüğü.** Yazar `skills/`, `usta.py`, `tests/test_saha.py`, `opsbench.py`, `desk.py`,
   `checks.py`, `skills.py`, `docs/ilerleme.md` ve `bench/saha/test/`'in hiçbirini açmadığını bildirdi. Bir grep
   `usta.py`'nin ilgisiz tek bir satırını gösterdi; dosyayı açmadı. Yanlış adrese giden mesaj bilinen bir sızıntıya yol

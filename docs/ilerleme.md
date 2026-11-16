@@ -1,6 +1,19 @@
 # İlerleme (baş işçi)
 
-Son güncelleme: 16 Kasım 2026, 14:45
+Son güncelleme: 17 Kasım 2026, 00:50
+
+## Son durum
+
+- **Durdu.** 17 Kasım 00:40'ta `results/saha/durum/DUR` belirdi (ısı bekçisi o anda `hal=calis` gösteriyordu; kim koyduğu
+  bilinmiyor). Baş işçi DUR'u kaldırmadı. `katalog-test-gpt-oss` 28 satırda (14 senaryo iki kolla) kısmi kaldı.
+- **Tamamlananlar.** `zor-test-gpt-oss` (17 senaryo, iki kol, 0/17 ve 0/17), `dev-qwen3-14b` (16 senaryo: araçlı model
+  3 doğru 10 zararlı, Usta 9 doğru 0 zararlı), `katalog-test` doğrulaması (59/60, `k2-55` geçmedi). Rapor, README, afiş,
+  bench PDF'i, `docs/13`, devir notu güncel; kanıt dizinleri commit edildi.
+- **Sıradaki komut** (DUR kalkınca, lab 1, ısı bekçisi `hal=calis` iken):
+  `PYTHONIOENCODING=utf-8 python -u -m vardiya.saha.kosu kos --split katalog-test --parca 1/2 --kollar yalin,usta --model agy:gpt-oss-120b-medium --ad katalog-test-gpt-oss --atla`
+  sonra `python -m vardiya.saha.analiz katalog-test-gpt-oss` ile `docs/09`'daki kısmi satır yenilenir.
+- **Sonra yapılabilecekler.** Flash ve hydrogen 21 Kasım'dan sonra `--atla` ile tamamlanır; `test-gpt-oss-b10` 1/2;
+  `test-qwen3-14b` tamamlanır; yeni bir gizli küme yazılır (eski gizli kümeler yayınla açıldı).
 
 ## Model kotası
 
