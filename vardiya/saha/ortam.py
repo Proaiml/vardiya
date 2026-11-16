@@ -32,6 +32,9 @@ if grep -q ajan-denetci /proc/1/cmdline 2>/dev/null; then
 fi
 """
 
+KILL_MARKED = r"""for p in /proc/[0-9]*; do grep -qz '^SAHA_ARIZA=1' $p/environ 2>/dev/null && kill -9 ${p#/proc/} 2>/dev/null; done; true"""
+AGENT_SERVICE_RESTART = r"""grep -q ajan-denetci /proc/1/cmdline 2>/dev/null && /opt/ctm/bin/ctmag restart sifirlama; true"""
+
 AGENT_RESET = r"""
 for p in /proc/[0-9]*; do grep -qz '^SAHA_ARIZA=1' $p/environ 2>/dev/null && kill -9 ${p#/proc/} 2>/dev/null; done
 for u in batch etl finans mft; do pkill -u $u 2>/dev/null; passwd -u $u >/dev/null 2>&1; done
@@ -115,12 +118,21 @@ def sifirla(lab, ctm, bekle=120):
         elif state != ["true", "false"]:
             lab.power(host, "start")
     for host in AGENTS:
+        # a stray process from the previous scene (it may hold the agent's port) goes first, then the service
+        lab.sh(host, KILL_MARKED, timeout=30)
         lab.sh(host, AGENT_SERVICE_RESET, timeout=60)
     for _ in range(40):
         if lab.sh("appdb", "pg_isready -U postgres -d uygulama")[0] == 0:
             break
         time.sleep(1)
-    lab.wait_ready(bekle)
+    try:
+        lab.wait_ready(min(bekle, 60))
+    except RuntimeError:
+        # an agent that runs but does not couple (wrong port, stale state): restart its service once
+        for host, state in (lab.agent_states() or {}).items():
+            if state != "COUPLED":
+                lab.sh(host, AGENT_SERVICE_RESTART, timeout=90)
+        lab.wait_ready(bekle)
     ctm.reset()
     for host in AGENTS:
         rc, out = lab.sh(host, AGENT_RESET)

@@ -219,7 +219,8 @@ class Saha:
         return ok, seen
 
     def _c_sql(self, a, iz, rapor):
-        rows = self.lab.sql(a["sorgu"])
+        # a held table lock must not stall the judge: wait at most 5 s, then the check counts as not holding
+        rows = self.lab.sql("set lock_timeout = '5s'; " + a["sorgu"])
         seen = "|".join(rows[0]) if rows else ""
         if "esit" in a:
             return seen == str(a["esit"]), seen
