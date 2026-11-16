@@ -106,3 +106,13 @@ Bu ölçütler iki yeni iş doğurur (Aşama 3'e eklenir):
 4. Her senaryonun gerçekten koşulduğu ve hükmün sunucudan okunan değerlere dayandığı kanıt dosyalarından ve
    arayüzden görülebiliyor.
 5. Belgeler ve depo güncel.
+
+## Laboratuvarda yaşatılamayan olaylar: öykünme (16 Kasım 2026, İlhan)
+
+Gerçek ortamda üretilemeyen durumlar (Windows sunucusunda WinRM ile ajan yeniden başlatma, takvim ve New Day, kaynak
+takılması, bellek yetersizliği, zamanlayıcı veritabanı bozulması, z/OS) öykünmeyle ölçülür: Usta aynı araçlarla aynı
+eylemi alır, karşısında o davranışı taklit eden katman durur ve sonuç öyle işlenir. Mevcut müdahale kolu öykünücüsü
+(`vardiya/opsworld.py`, `docs/08`) bunun temelidir; yeniden yazılmaz.
+
+Şart: öykünme sonuçları raporda ve vitrinde "öykünme" etiketiyle, gerçek ortam sonuçlarından ayrı durur; ikisi tek
+sayıda toplanmaz. Sıra: gizli kümelerin gerçek ortam ölçümünden sonra.
