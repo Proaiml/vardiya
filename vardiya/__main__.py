@@ -38,6 +38,13 @@ def main(argv=None):
     if argv[:1] == ["olay"]:
         from . import olaybench
         return olaybench.main(argv[1:])
+    if argv[:1] == ["saha"]:
+        if argv[1:2] == ["kur"]:
+            from .saha.lab import Lab, kur
+            print("\n".join(kur(Lab())))
+            return 0
+        from .saha import kosu
+        return kosu.main(argv[1:])
     if argv[:1] == ["sab"]:
         from . import sab
         return sab.main(argv[1:])

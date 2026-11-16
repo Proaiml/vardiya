@@ -57,6 +57,9 @@ services:
     volumes:
       - ajan1-var:/var/sos-berlin.com/js7/agent
       - ./agent/bin:/opt/ctm/bin:ro
+    # Kucuk bir disk bolumu: dolunca gercek "No space left on device" hatasi verir.
+    tmpfs:
+      - /data/dar:size=4m,mode=1777
 
   ajan2:
     <<: *ajan
@@ -70,6 +73,8 @@ services:
     volumes:
       - ajan2-var:/var/sos-berlin.com/js7/agent
       - ./agent/bin:/opt/ctm/bin:ro
+    tmpfs:
+      - /data/dar:size=4m,mode=1777
 
   joc:
     image: sosberlin/js7:joc-2-9-1-1
@@ -117,6 +122,8 @@ services:
     build: ./sftp
     image: vardiya/saha-sftp:1
     hostname: dosya-sunucu
+    tmpfs:
+      - /srv/dar:size=3m,mode=1777
     networks:
       saha:
         ipv4_address: ${SAHA_AG:-172.31.57}.15

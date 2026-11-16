@@ -94,11 +94,13 @@ class AgyModel:
 
     The tool is an agent, so it is run in an empty directory: it has nothing to read and is only
     asked for text. A conversation is continued by id, so each turn sends only the new message."""
+    CHUNK = 9000
+
     def __init__(self, spec, timeout=420, **_):
         self.spec, self.name, self.timeout, self.calls = spec, spec.partition(":")[2], timeout, 0
         self.think = None
-        self._sent, self._conversation = [], None
-        self._cwd = pathlib.Path(tempfile.gettempdir()).resolve() / "vardiya-agy-bos"
+        self._sent, self._conversation, self.tokens = [], None, 0
+        self._cwd =pathlib.Path(tempfile.gettempdir()).resolve() / "vardiya-agy-bos"
         self._cwd.mkdir(exist_ok=True)
 
     def chat(self, messages):
@@ -110,17 +112,29 @@ class AgyModel:
             prompt = "\n\n".join(f"[{m['role'].upper()}]\n{m['content']}" for m in messages)
             extra = []
         prompt += "\n\nDo not use any tools. Reply with ONE JSON object only, no other text."
-        cmd = ["agy", "-p", prompt, "--model", self.name, "--output-format", "json",
-               "--print-timeout", f"{self.timeout}s"] + extra
-        try:
-            run = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, encoding="utf-8",
-                                 errors="replace", timeout=self.timeout + 30)
-            out = json.loads(run.stdout.strip().splitlines()[-1])
-        except (subprocess.TimeoutExpired, ValueError, IndexError, OSError) as e:
-            raise urllib.error.URLError(f"agy cagrisi basarisiz: {e}") from None
-        if out.get("status") != "SUCCESS":
-            raise urllib.error.URLError(f"agy durumu: {out.get('status')}")
-        self.calls += 1
+        # The prompt travels on the command line (about 32,000 characters at most on Windows). A long one goes
+        # in parts within the same conversation; only the answer to the last part counts.
+        parts = [prompt[i:i + self.CHUNK] for i in range(0, len(prompt), self.CHUNK)] or [""]
+        out = {}
+        for k, part in enumerate(parts, 1):
+            if len(parts) > 1 and k < len(parts):
+                part = (f"[PART {k} of {len(parts)} of one long message. Do not act on it yet. "
+                        f'Reply only with {{"part": {k}}}.]\n\n' + part)
+            elif len(parts) > 1:
+                part = f"[PART {k} of {len(parts)}, the last one. Now answer the whole message.]\n\n" + part
+            cmd = ["agy", "--model", self.name, "--output-format", "json", "--print-timeout", f"{self.timeout}s"] + extra + ["-p=" + part]
+            try:
+                run = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, encoding="utf-8",
+                                     errors="replace", timeout=self.timeout + 30)
+                out = json.loads(run.stdout.strip().splitlines()[-1])
+            except (subprocess.TimeoutExpired, ValueError, IndexError, OSError) as e:
+                raise urllib.error.URLError(f"agy cagrisi basarisiz: {e}") from None
+            if out.get("status") != "SUCCESS":
+                raise urllib.error.URLError(f"agy durumu: {out.get('status')}")
+            self.calls += 1
+            self.tokens += (out.get("usage") or {}).get("total_tokens", 0)
+            if out.get("conversation_id"):
+                extra = ["--conversation", out["conversation_id"]]
         self._sent, self._conversation = list(messages), out.get("conversation_id")
         return out.get("response", "")
 

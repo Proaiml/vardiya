@@ -42,7 +42,13 @@ class Lab:
 
     def sh(self, host, command, user=None, timeout=60, stdin=None):
         """Run a shell command on a lab host. Returns (exit code, combined output)."""
-        args = ["exec", "-i"] + (["-u", user] if user else []) + [self.container(host), "sh", "-c", command]
+        # Without input for the command itself, the command travels on stdin (`sh -s`): Windows argument quoting
+        # would otherwise mangle quotes, dollar signs and newlines on their way to the container.
+        base = ["exec", "-i"] + (["-u", user] if user else []) + [self.container(host), "sh"]
+        if stdin is None:
+            args, stdin = base + ["-s"], command + "\n"
+        else:
+            args = base + ["-c", command]
         try:
             return self.docker(*args, stdin=stdin.encode("utf-8") if isinstance(stdin, str) else stdin, timeout=timeout)
         except subprocess.TimeoutExpired:

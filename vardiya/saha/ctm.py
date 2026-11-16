@@ -520,15 +520,18 @@ class Ctm:
             if st == "SUSPENDED":
                 return {"status": "Wait User", "held": True}
             return {"status": "Wait Host" if down else "Executing", "held": held}
+        # The history record is opened when the order starts and closed a moment after it ends: only a closed
+        # record (it has an end time and a final order state) says how the job ended.
+        closed = lambda x: x is not None and x.get("endTime") and x.get("orderState", {}).get("_text") in ("FINISHED", "CANCELLED", "FAILED")  # noqa: E731
         h = self._history(oid)
-        for _ in range(8):            # the history record trails the order by a moment
-            if h is not None:
+        for _ in range(12):
+            if closed(h):
                 break
             time.sleep(0.5)
             if oid in self._live():
                 return self._status(a)
             h = self._history(oid)
-        if h is None:
+        if not closed(h):
             return {"status": "Executing", "held": False}
         ok = h.get("state", {}).get("_text") == "SUCCESSFUL" and h.get("orderState", {}).get("_text") == "FINISHED"
         res = {"status": "Ended OK" if ok else "Ended Not OK", "held": False}

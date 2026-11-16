@@ -255,7 +255,21 @@ def file_watcher(spec):
         time.sleep(every)
 
 
+def browse(name, pattern):
+    """`runjob.py ls PROFILE PATH`: list files on a file transfer profile's side (what the job itself would see)."""
+    end = End(profile(name, "FileTransfer"), name)
+    files, err = end.listing(pattern if any(c in os.path.basename(pattern) for c in "*?[") else os.path.join(pattern, "*"))
+    if files is None:
+        die(2, f"listelenemedi ({name}): {err}")
+    for n, size in sorted(files):
+        say(f"{size:>10} {n}")
+    say(f"toplam {len(files)} dosya")
+
+
 def main():
+    if len(sys.argv) == 4 and sys.argv[1] == "ls":
+        browse(sys.argv[2], sys.argv[3])
+        return
     try:
         spec = json.loads(base64.b64decode(os.environ.get("CTM_SPEC", "")))
     except ValueError:
