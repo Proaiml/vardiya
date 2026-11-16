@@ -115,3 +115,46 @@ Arayüzdeki "Canlı saha" sayfası aynı dosyaları gösterir.
 ## Sonuçlar
 
 SONUCLAR_BURAYA
+
+## Bench'ler arası ilişki
+
+Projede dört bench var. Hepsi aynı soruyu sorar (aynı model harness içinde yardımsız hâlinden iyi mi) ama farklı
+şeyi, farklı yerde ölçer.
+
+| Bench | Belge | Ne ölçer | Neyin üzerinde | Hüküm neye dayanır |
+| --- | --- | --- | --- | --- |
+| Scheduler Admin Bench (SAB) | `docs/03` | Tanım ve değişiklik talebini doğru uygulamak ya da gerekçesiyle iade etmek | Emülatördeki site; bir bölümü JS7 üzerinde (`js7bench`) | Tanımların ve talep biletinin son durumu |
+| Zamanlayıcı Ops Bench | `docs/07` | Forumlardaki gerçek yönetici sorunlarında teşhis ve doğru adım (metin cevap) | Vaka metni; ortam yok | Cevaptaki beklenen adımlar ve zararlı öneriler (sözcük kümeleri) |
+| Müdahale kolu | `docs/08` | Arızayı araçlarla bulup düzeltmek ve işi yeniden yeşile çekmek | Emülatör (`opsworld.py`): 13 arıza, 12 bileşik çift | Emülatör dünyasının son durumu |
+| Canlı saha | bu belge | Aynı işleri gerçek zamanlayıcı, gerçek sunucular, gerçek dosya ve veritabanıyla uçtan uca yapmak | Docker laboratuvarı (JS7, iki ajan, SFTP, PostgreSQL) | Sunuculardan okunan uç durum (iş durumu, sha256, SQL, tanım, çalışma sırası) |
+
+Canlı saha ötekilerin üstüne kurulur: zor kümenin her senaryosu `kaynak` alanında hangi vakadan geldiğini yazar
+(`ops-dev:<vaka>`, `opsworld:<arıza>`, `sab:<aile>`). Kapsama haritası (geliştirme ve zor geliştirme kümelerinden;
+gizli kümelerin kaynakları senaryo yazarının raporunda):
+
+| Emülatör arızası (`opsworld`) | Canlı karşılığı |
+| --- | --- |
+| `agent_down` | `yonetim-ajan-bakimda` (sunucu kapalı, iş taşınır), `ajan-servisi-bakimdan-donmedi`, `ajan-servisi-ayar-bozuk` (ajan servisi durmuş; `ctmag` ile başlatılır) |
+| `password_rotated` | `aft-parola-degisti`, `b-db-parola-ve-mukerrer`, `zd-parola-donusum` (aynı hesabı kullanan iki profil) |
+| `disk_full` | `os-disk-dolu`, `zd-disk-standart` (temizlik işinin kapsamı) |
+| `pred_setok` | `zd-bos-mutabakat` |
+| `ghost_pred` | `zd-yetim-olay` (olayı veren iş başka klasörde düşmüş) |
+| `run_as_right` | `os-betik-izni`, `b-os-izin-ve-hedef-dizin`, `zd-yetim-olay` (ikinci arıza) |
+| `file_late` | `zd-eksik-sube` |
+| `lock_table` | `db-kilit-bekleyen`, `zd-gece-kilit` |
+| `resource_stuck`, `oom_kill`, `env_path`, `cert_expired`, `db_corrupt` | Geliştirme kümelerinde karşılığı yok |
+
+| SAB ailesi | Canlı karşılığı |
+| --- | --- |
+| `yeni`, `yeni-tip` | `tanim-tek-aft`, `tanim-zincir-bes-is`, `zd-asya-tedarik` |
+| `degisiklik` | `tanim-mevcuda-ekleme`, `zd-arsiv-sirasi`, `zd-hareket-rapor` |
+| `t-mevcut` | `zd-asya-tedarik` (klasördeki mevcut iş korunmalı), `zd-profil-paylasim` |
+| `t-standart`, `t-sablon` | `zd-asya-tedarik`, `zd-disk-standart` (sunucudaki standart belgesi) |
+| `t-referans` | `zd-asya-tedarik` |
+| `t-bagimli` | `zd-profil-paylasim` (başka işin kullandığı profil değiştirilmemeli) |
+| `takvim`, `t-takvim`, `t-dongu`, `t-olmayan`, `kaldir`, `aciklamali`, `t-celiski`, `t-belirsiz`, `t-tip`, `t-uyumsuz` | Canlı karşılığı yok |
+
+Canlı bench'in kapsamadıkları: takvimler ve New Day (gün dönümü), zamanlama kriterleri (saat, takvim, döngüsel
+işler), kaynak sayaçları (quantitative resource), Windows sunucuları ve WinRM (bir Windows konuğu `lab/saha/windows`
+altında hazırlandı ama makinenin belleği yetmediği için koşturulmadı), z/OS ve SAP gibi uygulama ajanları, sertifika
+süresi ve zamanlayıcının kendi veritabanının bozulması.
