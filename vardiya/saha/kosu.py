@@ -193,7 +193,15 @@ def main(argv=None):
         print(f"bu laboratuvarda baska bir kosu suruyor ({kilit}); iki kosu ayni ortami bozar. Bitmesini bekleyin.")
         return 3
     dur = OUT / "durum" / "DUR"
-    lab.wait_ready(120)
+    try:
+        lab.wait_ready(120)
+    except RuntimeError:
+        # the previous episode may have left an agent service stopped (agent-service scenarios): bring it back
+        for host in ortam.AGENTS:
+            lab.sh(host, ortam.KILL_MARKED, timeout=30)
+            lab.sh(host, ortam.AGENT_SERVICE_RESET, timeout=60)
+            lab.sh(host, ortam.AGENT_SERVICE_RESTART if host in [h for h, s in (lab.agent_states() or {}).items() if s != "COUPLED"] else "true", timeout=90)
+        lab.wait_ready(180)
     if os.environ.get("SAHA_AAPI"):          # a real Control-M behind the same tools (see ctm_aapi.py)
         from .ctm_aapi import CtmAapi
         ctm = CtmAapi(lab)
