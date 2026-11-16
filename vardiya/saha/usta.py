@@ -77,6 +77,9 @@ dosya hedefte mi, satir sayisi tutuyor mu).
   degisiklikleri ve dogrulama kanitini (gordugun sayi/dosya) yaz."""
 
 
+KONU_DISI = re.compile(r"konusu degil|dokunmayin|dokunulmamali|ilgilenmeyin|kapsam(i)? disi")
+
+
 def kartlar():
     return json.loads(KARTLAR.read_text(encoding="utf-8"))
 
@@ -113,35 +116,68 @@ def _kokler(text):
     return [w for w in re.split(r"[^a-z0-9]+", _fold(text)) if len(w) >= 4]
 
 
+def _parcalar(ad):
+    return _kokler(ad.replace("_", " ").replace("-", " "))
+
+
+def _anar(words, tok):
+    return any(w.startswith(tok) or (len(w) >= 5 and tok.startswith(w)) for w in words)
+
+
 def ilgi(talep, ad):
     """How many name parts of a folder or job (split at _ and -) the ticket mentions, allowing Turkish suffixes
     (KAPANIS matches 'kapanisini') and the plain-word form of a name ('muhasebe kapanisi')."""
     words = set(_kokler(talep))
-    n = 0
-    for tok in _kokler(ad.replace("_", " ").replace("-", " ")):
-        if any(w.startswith(tok) or (len(w) >= 5 and tok.startswith(w)) for w in words):
-            n += 1
-    return n
+    return sum(1 for tok in _parcalar(ad) if _anar(words, tok))
+
+
+def adlanan(talep, tanimlar):
+    """Folders the ticket names exactly: an existing folder, the folder of an existing job, or a new folder name
+    (with an underscore) that the ticket asks to be built."""
+    tanimlar = tanimlar or {}
+    isler = {jn: fn for fn, fd in tanimlar.items() if isinstance(fd, dict) for jn, j in fd.items() if _is_job(j)}
+    out = set()
+    for ident in set(re.findall(r"\b[A-Z][A-Z0-9_]{3,}\b", talep)):
+        if ident in tanimlar:
+            out.add(ident)
+        elif ident in isler:
+            out.add(isler[ident])
+        elif "_" in ident and not re.match(r"(SFTP|PG|YEREL)_", ident) and re.search(rf"\b{ident}\b\s+(adinda|adli|isimli)?\s*(yeni\s+)?(bir\s+)?klasor", talep, re.I):
+            out.add(ident)            # the new folder the ticket asks for
+    return out
 
 
 def kapsam_hesapla(talep, tanimlar, rows=()):
-    """Folders the ticket is about: those whose name (or a job name in them) the ticket mentions, plus, through the
-    event graph, every folder whose jobs post an event an in-scope job waits for (the root cause may sit upstream in
-    another folder). Empty when the ticket names nothing: then everything counts as in scope."""
-    puan = {}
-    for fname, fdef in (tanimlar or {}).items():
-        p = 2 * ilgi(talep, fname)
-        if isinstance(fdef, dict):
-            p += max([ilgi(talep, jn) for jn, j in fdef.items() if _is_job(j)] or [0])
-        if re.search(rf"\b{re.escape(fname.lower())}\b", talep.lower()):
-            p += 5
-        if p:
-            puan[fname] = p
-    if not puan:
-        return set()
-    top = max(puan.values())
-    kapsam = {f for f, p in puan.items() if p >= (top / 2 if top >= 2 else 1)}
-    return kapsam | yukari_zincir(kapsam, tanimlar)
+    """Folders the ticket is about, plus, through the event graph, every folder whose jobs post an event an in-scope
+    job waits for (the root cause may sit upstream in another folder).
+
+    A folder or job the ticket names exactly decides alone (a folder that does not exist yet counts: it is the one
+    to be built). Otherwise the ticket's words are matched to name parts, a part weighted by how rare it is on the
+    site (RAPOR or GONDER in many names says little; KAPANIS in one says much). Empty when nothing is clear: then
+    everything counts as in scope, as before."""
+    tanimlar = tanimlar or {}
+    isler = {jn: fn for fn, fd in tanimlar.items() if isinstance(fd, dict) for jn, j in fd.items() if _is_job(j)}
+    exact = adlanan(talep, tanimlar)
+    if exact:
+        kapsam = exact
+    else:
+        words = set(_kokler(talep))
+        sayi = {}
+        for ad in list(tanimlar) + list(isler):
+            for tok in set(_parcalar(ad)):
+                sayi[tok] = sayi.get(tok, 0) + 1
+        puan = {}
+        for fname, fd in tanimlar.items():
+            p = sum(2 / sayi[t] for t in set(_parcalar(fname)) if _anar(words, t))
+            jp = [sum(1 / sayi[t] for t in set(_parcalar(jn)) if _anar(words, t)) for jn in fd if _is_job(fd[jn])] if isinstance(fd, dict) else []
+            p += max(jp or [0])
+            if p:
+                puan[fname] = p
+        if not puan or max(puan.values()) < 1.0:
+            return set()
+        top = max(puan.values())
+        kapsam = {f for f, p in puan.items() if p >= 0.6 * top}
+    return kapsam | yukari_zincir(kapsam & set(tanimlar), tanimlar)
 
 
 def yukari_zincir(klasorler, tanimlar):
@@ -162,6 +198,25 @@ def yukari_zincir(klasorler, tanimlar):
                         out.add(gf)
                         todo.append(gf)
     return out
+
+
+def hesap_uyusmazligi(where, j, cp_defs):
+    """A transfer whose remote path is in one account's home (/home/<hesap>/...) but whose profile logs in as another
+    account delivers to the wrong place and still ends OK."""
+    errs = []
+    for t in j.get("FileTransfers") or []:
+        for path, cp_field in ((t.get("Dest"), "ConnectionProfileDest"), (t.get("Src"), "ConnectionProfileSrc")):
+            m = re.match(r"/home/([\w.-]+)/", str(path or ""))
+            cp = cp_defs.get(j.get(cp_field) or "")
+            if not m or not isinstance(cp, dict) or "SFTP" not in str(cp.get("Type", "")):
+                continue
+            user = str(cp.get("User", ""))
+            if user and user != m.group(1):
+                errs.append(f"{where}: {cp_field} '{j.get(cp_field)}' karsi tarafa '{user}' hesabiyla giriyor ama yol '{path}' "
+                            f"'{m.group(1)}' hesabinin dizini. Profilin adi yaniltici olabilir: once `deploy connectionprofiles::get` ile "
+                            f"profilin gercek hesabina bak. Dogru hesapla giren profil yoksa yeni bir profil tanimla (mevcut profili baska "
+                            f"isler de kullaniyor olabilir). Bu dogruysa ayni deploy'u tekrar gonder.")
+    return errs
 
 
 def bekleme_zinciri(rows, tanimlar, klasorler=None):
@@ -210,7 +265,7 @@ class Usta:
         self.sayac = {"red": 0, "onay_istendi": 0, "onucus_red": 0, "onucus_uyari": 0, "kart": 0, "takip": 0, "dongu": 0,
                       "bitis_red": 0, "elestiri": 0, "yoklama": 0}
         self.bitis_notlari = []
-        self.kapsam, self.tanimlar, self.dokunulan = set(), {}, set()
+        self.kapsam, self.odak, self.tanimlar, self.dokunulan = set(), set(), {}, set()
         self.kabul = []
         self.tanim_talebi = bool(re.search(r"tanimla|olustur|yeni (bir )?(is|klasor|akis)|ekle(yin|nsin)?\b|devreye al|kur(un|ulsun)", _fold(talep)))
 
@@ -264,11 +319,16 @@ class Usta:
         parts.append("Ajanlar: " + _one_line(self._ctm("config server:agents::get")))
         rows = self._statuses()
         self.tanimlar = self._tanimlar()
-        self.kapsam = kapsam_hesapla(talep, self.tanimlar, rows)
-        icinde = lambda f: not self.kapsam or f in self.kapsam  # noqa: E731
+        self.odak = kapsam_hesapla(talep, self.tanimlar, rows)
+        # the scope also limits the gate and guards only when it is sure: the ticket names the folder, or says that
+        # the other failures on the site are not its subject; a guess from words only orders what is shown first
+        kesin = bool(adlanan(talep, self.tanimlar)) or bool(KONU_DISI.search(_fold(talep)))
+        self.kapsam = set(self.odak) if kesin else set()
+        icinde = lambda f: not self.odak or f in self.odak  # noqa: E731
         seen = ""
-        if self.kapsam:
-            parts.append("Talebin kapsami (harness, talepte gecen adlardan ve olay zincirinden cikardi): " + ", ".join(sorted(self.kapsam))
+        if self.odak:
+            parts.append("Talebin kapsami (harness, talepte gecen adlardan ve olay zincirinden cikardi" + ("" if kesin else "; tahmin") + "): "
+                         + ", ".join(sorted(self.odak))
                          + ". Kapsam disindaki islere talep istemedikce dokunma; kok neden kapsam disinda bir klasordeyse "
                          "onu kanitla ve yalnizca o isi duzelt.")
         if rows:
@@ -285,7 +345,7 @@ class Usta:
                              f" kosu={r['numberOfRuns']}{extra}")
             if disarda:
                 parts.append("Kapsam disi (yalnizca bilgi): " + "; ".join(f"{f}: {', '.join(v)}" for f, v in sorted(disarda.items())))
-            zincir = bekleme_zinciri(rows, self.tanimlar, self.kapsam or None)
+            zincir = bekleme_zinciri(rows, self.tanimlar, self.odak or None)
             if zincir:
                 parts.append("Bekleme zinciri (bekleyen is <- olayi veren is):\n" + "\n".join(zincir[:8]))
             failed = sorted([x for x in rows if x["status"] == "Ended Not OK"], key=lambda x: not icinde(x["folder"]))
@@ -302,10 +362,13 @@ class Usta:
         else:
             parts.append("Aktif is yok.")
         named = {f for f in self.tanimlar if re.search(rf"\b{re.escape(f)}\b", talep)}
-        folders = sorted(named | (self.kapsam or {r["folder"] for r in rows}), key=lambda f: (f not in named, f))
+        folders = sorted(named | (self.odak or {r["folder"] for r in rows}), key=lambda f: (f not in named, f))
         for f in folders[:3]:
             d = json.dumps({f: self.tanimlar[f]}, ensure_ascii=False) if f in self.tanimlar else self._ctm(f'deploy jobs::get -s "folder={f}"')
             parts.append(f"Tanim {f}:\n" + _compact_json(d, 1800))
+        self.standart = self._standartlar() if (self.tanim_talebi or "standart" in _fold(talep)) else ""
+        if self.standart:
+            parts.append("## Site standartlari (harness sunucularda buldu; yeni ve degisen tanimlar bunlara uymali)\n" + self.standart)
         self.kabul = self._kabul_listesi(talep)
         if self.kabul:
             parts.append("## Kabul listesi (harness talepten cikardi; bitis kapisi her maddeyi ayri denetler, raporunda her madde icin "
@@ -428,6 +491,15 @@ class Usta:
         except ValueError:
             pass
         have_cp |= set(profiles)
+        try:
+            cp_defs = json.loads(self._tam("deploy connectionprofiles::get"))
+        except ValueError:
+            cp_defs = {}
+        if "profil:" + key not in self.onay:
+            pe = self._profil_etkisi(profiles, cp_defs, folders)
+            if pe:
+                self.onay.add("profil:" + key)
+                errs += pe
         for fname, fdef in folders.items():
             old = state.get(fname) or {}
             gone = [k for k, v in old.items() if isinstance(v, dict) and str(v.get("Type", "")).startswith("Job:") and k not in fdef]
@@ -472,6 +544,11 @@ class Usta:
                             warns.append(f"{where}: profil {cp} {host} uzerinden giris yapamiyor ({t}); is NOTOK biter")
                 if j["Type"] == "Job:FileTransfer":
                     warns += self._aktarim_uyarilari(where, host, j)
+                    if "hesap:" + key not in self.onay:
+                        he = hesap_uyusmazligi(where, j, {**cp_defs, **profiles})
+                        if he:
+                            self.onay.add("hesap:" + key)
+                            errs += he
                 text = json.dumps(j, ensure_ascii=False)
                 if re.search(r"(password|parola|sifre)\s*[=:]\s*\S+|PGPASSWORD=|sshpass\s+-p", text, re.I) and j["Type"] in ("Job:Command", "Job:Script"):
                     warns.append(f"{where}: komut icinde parola var; baglanti profili kullan")
@@ -482,6 +559,50 @@ class Usta:
             self.sayac["onucus_uyari"] += 1
             self._uyari = warns
         return None
+
+    def _profil_etkisi(self, profiles, cp_defs, folders):
+        """A profile that already exists and is redeployed with another account or server changes every job that
+        uses it, in other folders too."""
+        errs = []
+        tanim = self.tanimlar or self._tanimlar()
+        for name, new in (profiles or {}).items():
+            old = cp_defs.get(name)
+            if not isinstance(old, dict) or not isinstance(new, dict):
+                continue
+            changed = [f for f in ("User", "HostName", "Host", "DatabaseName") if f in old and str(new.get(f, old[f])) != str(old[f])]
+            if not changed:
+                continue
+            users = [f"{fn}/{jn}" for fn, fd in tanim.items() if fn not in folders and isinstance(fd, dict)
+                     for jn, j in fd.items() if _is_job(j) and name in (j.get("ConnectionProfile"), j.get("ConnectionProfileSrc"), j.get("ConnectionProfileDest"))]
+            if users:
+                errs.append(f"profil {name} zaten var ve su isler de onu kullaniyor: {', '.join(users[:5])}. {', '.join(changed)} alanini degistirmek "
+                            "onlarin da hedefini degistirir. Yeni bir hesap/sunucu gerekiyorsa yeni adla ayri bir profil tanimla; bu profili "
+                            "degistirmek gercekten isteniyorsa ayni deploy'u tekrar gonder.")
+        return errs
+
+    def _ayni_hesap(self, deployed):
+        """After a profile is deployed: other profiles that log in to the same server with the same account (a changed
+        password breaks them too), and the jobs that use them."""
+        if not deployed:
+            return None
+        try:
+            defs = json.loads(self._tam("deploy connectionprofiles::get"))
+        except ValueError:
+            return None
+        tanim = self.tanimlar or self._tanimlar()
+        lines = []
+        for name in deployed:
+            d = defs.get(name) or {}
+            same = [n for n, x in defs.items() if n not in deployed and isinstance(x, dict) and x.get("User") == d.get("User")
+                    and (x.get("HostName") or x.get("Host")) == (d.get("HostName") or d.get("Host")) and x.get("Type") == d.get("Type")]
+            for n in same:
+                users = [f"{fn}/{jn}" for fn, fd in tanim.items() if isinstance(fd, dict) for jn, j in fd.items()
+                         if _is_job(j) and n in (j.get("ConnectionProfile"), j.get("ConnectionProfileSrc"), j.get("ConnectionProfileDest"))]
+                lines.append(f"- {n}: ayni sunucuya ayni hesapla ({d.get('User')}) giriyor; kullanan isler: {', '.join(users[:5]) or 'yok'}")
+        if not lines:
+            return None
+        return ("Ayni hesabi kullanan baska profiller var. Hesabin parolasi ya da anahtari degistiyse bunlar da guncellenmeli, "
+                "yoksa onlari kullanan isler dusmeye devam eder:\n" + "\n".join(lines))
 
     def _profil_test(self, cp, host):
         if not hasattr(self, "_cp_cache"):
@@ -540,6 +661,9 @@ class Usta:
                 done = {}
             new = set(done.get("deployedFolders", []))
             self.dagitilan |= new
+            ikiz = self._ayni_hesap(done.get("deployedConnectionProfiles", []))
+            if ikiz:
+                notes.append(ikiz)
             stale = [r for r in self._statuses() if r["folder"] in new and r["status"] != "Ended OK"]
             if stale:
                 k = next(k for k in self.kartlar if k["id"] == "kopya-tanim")
@@ -650,6 +774,21 @@ class Usta:
             sorun.append("Rapor cok kisa: kok neden, yapilan degisiklik ve dogrulama kaniti (gordugun sayi/dosya) yazilmali")
         return sorun
 
+    def _standartlar(self):
+        """Site standards documents (a definition request must follow them), looked for where sites keep them."""
+        out = []
+        for host in ("ajan1", "ajan2"):
+            rc, files = self._sh(host, "find /app /data /opt/ctm /etc/ctm -maxdepth 2 -type f \\( -iname '*standart*' -o -iname '*standard*' "
+                                       "-o -iname '*kural*' \\) 2>/dev/null | head -3")
+            for f in files.splitlines():
+                if f.strip() and not any(f in o for o in out):
+                    rc, body = self._sh(host, f"head -c 2500 '{f.strip()}'")
+                    if rc == 0 and body:
+                        out.append(f"{host}:{f.strip()}\n{body}")
+            if out:
+                break
+        return "\n\n".join(out)[:4000]
+
     def _kabul_listesi(self, talep):
         """The ticket split into checkable acceptance items by a separate model call; the list lives outside the
         agent's context and is what the finish gate checks item by item."""
@@ -685,6 +824,8 @@ class Usta:
                   f"## Yapilan eylemler\n{eylemler}\n\n## Yoneticinin raporu\n{rapor}\n\n"
                   + (("## Kabul listesi\n" + "\n".join(f"{i}. {m}" for i, m in enumerate(self.kabul, 1)) + "\n\nHer maddeyi sirayla denetle; "
                       "tanim maddelerini yukaridaki tanimlarla alan alan karsilastir.\n") if getattr(self, "kabul", None) else "") +
+                  (("## Site standartlari\n" + self.standart[:2500] + "\n\nYeni ya da degisen tanimlar bu standartlara uyuyor mu, alan alan bak.\n")
+                     if getattr(self, "standart", "") else "") +
                   "Talepteki her istegi tek tek kontrol et: karsilandigina dair KANIT var mi? Kalici cozum istenmisse tanim duzeltilmis mi? "
                   "Istenmeyen bir sey degistirilmis ya da silinmis mi?\n"
                   'Yalnizca JSON yaz: {"eksik": ["<karsilanmayan ya da kanitsiz istek; yoksa bos liste>"]}')

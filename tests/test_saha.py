@@ -196,6 +196,87 @@ class Scope(unittest.TestCase):
         self.assertIsNone(u.once(ev))
 
 
+class UstaFlow(unittest.TestCase):
+    """The whole harness path (triage, pre-flight, follow-up, gate, critic) against a fake site, to catch errors that
+    only show at run time."""
+
+    def setUp(self):
+        profiles = {"SFTP_RAPOR": {"Type": "ConnectionProfile:FileTransfer:SFTP", "HostName": "dosya-sunucu", "User": "mftuser", "Password": "*****"},
+                    "YEREL_BATCH": {"Type": "ConnectionProfile:FileTransfer:Local", "User": "batch"}}
+        site = json.loads(json.dumps(SITE))
+        site["ESKI_PAYLASIM"] = {"Type": "Folder", "Host": "ajan1", "ESKI_GONDER": {
+            "Type": "Job:FileTransfer", "ConnectionProfileSrc": "YEREL_BATCH", "ConnectionProfileDest": "SFTP_RAPOR",
+            "FileTransfers": [{"Src": "/data/giden/a.csv", "Dest": "/home/mftuser/in/"}]}}
+        rows = [{"jobId": "saha:1", "folder": "MUHASEBE_KAPANIS", "name": "KAPANIS_BASLAT", "type": "Command", "host": "ajan1",
+                 "status": "Wait Condition", "numberOfRuns": 0, "waitingFor": {"events": ["STOK_KAPANDI"]}},
+                {"jobId": "saha:2", "folder": "STOK_GUNSONU", "name": "STOK_KAPAT", "type": "Command", "host": "ajan1",
+                 "status": "Ended Not OK", "numberOfRuns": 1},
+                {"jobId": "saha:3", "folder": "DEPO_SAYIM", "name": "SAYIM_YUKLE", "type": "Command", "host": "ajan2",
+                 "status": "Ended Not OK", "numberOfRuns": 1}]
+
+        class C:
+            state = {"folders": site}
+
+            def cli(self, line, body=None):
+                if "jobs:status::get" in line:
+                    return json.dumps({"statuses": rows})
+                if line.startswith("deploy jobs::get"):
+                    return json.dumps(site)
+                if "connectionprofiles::get" in line:
+                    return json.dumps(profiles)
+                if "agents::get" in line:
+                    return json.dumps([{"nodeid": "ajan1", "status": "Available"}])
+                return "is ciktisi\nPermission denied"
+
+            def build(self, body):
+                return {k: v for k, v in body.items() if v.get("Type") == "Folder"}, {k: v for k, v in body.items() if "Profile" in v.get("Type", "")}
+
+        class L:
+            def sh(self, host, cmd, timeout=40):
+                if "find /app" in cmd:
+                    return 0, "/app/STANDARTLAR.txt"
+                if cmd.startswith("head -c"):
+                    return 0, "1. Her iste Description yazilir."
+                return 0, "var\ncalisir"
+
+        class A:
+            dis, iz = {"dosya-sunucu"}, []
+            ctm, lab = C(), L()
+
+            def cagir(self, eylem, kayit=True):
+                return self.ctm.cli(eylem["komut"])
+
+        class M:
+            def __init__(self):
+                self.calls = 0
+
+            def ask_json(self, messages):
+                self.calls += 1
+                return {"maddeler": ["kapanis kaydi bugun icin 12 kalem"]} if "kabul maddelerine" in messages[-1]["content"] else {"eksik": []}
+        self.critic = M()
+        self.u = usta.Usta(A(), "Muhasebe kapanisi bugun dusmedi. Sitede baska isler de basarisiz; onlar bu talebin konusu degil.", elestirmen=self.critic)
+
+    def test_triage_gate_and_preflight(self):
+        pack = self.u.baslangic(self.u.talep)
+        self.assertIn("STOK_GUNSONU/STOK_KAPAT (Ended Not OK)", pack)
+        self.assertIn("Kabul listesi", pack)
+        self.assertNotIn("Site standartlari", pack)          # not a definition request
+        gate = self.u.bitis("Kok neden bulundu, betik duzeltildi, is yeniden calisti ve dogrulandi; kayit tabloda 12 satir.", {})
+        self.assertIn("STOK_KAPAT", gate)
+        self.assertNotIn("SAYIM_YUKLE", gate)                 # another team's failure is not this ticket's work
+        body = {"RAPOR_DAGITIM": {"Type": "Folder", "Host": "ajan1", "RunAs": "batch", "OZET_GONDER": {
+            "Type": "Job:FileTransfer", "ConnectionProfileSrc": "YEREL_BATCH", "ConnectionProfileDest": "SFTP_RAPOR",
+            "FileTransfers": [{"Src": "/data/giden/ozet.csv", "Dest": "/home/rapor/in/"}]}}}
+        stop = self.u.once({"arac": "ctm", "komut": "deploy", "json": body})
+        self.assertIn("mftuser", stop)
+        prof = {"SFTP_RAPOR": {"Type": "ConnectionProfile:FileTransfer:SFTP", "HostName": "dosya-sunucu", "User": "rapor", "Password": "x"}}
+        stop = self.u.once({"arac": "ctm", "komut": "deploy", "json": prof})
+        self.assertIn("ESKI_PAYLASIM/ESKI_GONDER", stop)
+        self.u.elestirmen = self.critic
+        self.u.sayac["elestiri"] = 0
+        self.assertEqual(self.u._elestir("rapor"), [])
+
+
 class Analysis(unittest.TestCase):
     def test_budget_is_read_from_the_run_name(self):
         from vardiya.saha import analiz
