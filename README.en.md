@@ -17,7 +17,7 @@
 
 [![Vardiya poster: lab diagram, three rungs, the log of one episode](docs/afis/vardiya-afis.png)](docs/afis/vardiya-afis.pdf)
 
-*Poster (click for the PDF; the poster text is in Turkish). SchedOps-Bench report: [`docs/vardiya-saha-bench.pdf`](docs/vardiya-saha-bench.pdf) · scenarios: [`docs/schedops-bench-senaryolar.pdf`](docs/schedops-bench-senaryolar.pdf) · Detail: [`docs/09-canli-saha-bench.md`](docs/09-canli-saha-bench.md) · English benchmark description: [`docs/en/schedops-bench.md`](docs/en/schedops-bench.md) · English scenario catalogue: [`docs/en/schedops-bench-scenarios.md`](docs/en/schedops-bench-scenarios.md)*
+*Poster (click for the PDF; the poster text is in Turkish). **SchedOps-Bench in English (PDF, description and all 165 scenarios): [`docs/schedops-bench-en.pdf`](docs/schedops-bench-en.pdf)** · Turkish report: [`docs/vardiya-saha-bench.pdf`](docs/vardiya-saha-bench.pdf) · scenarios: [`docs/schedops-bench-senaryolar.pdf`](docs/schedops-bench-senaryolar.pdf) · Detail: [`docs/09-canli-saha-bench.md`](docs/09-canli-saha-bench.md) · English benchmark description: [`docs/en/schedops-bench.md`](docs/en/schedops-bench.md) · English scenario catalogue: [`docs/en/schedops-bench-scenarios.md`](docs/en/schedops-bench-scenarios.md)*
 
 ## SchedOps-Bench
 

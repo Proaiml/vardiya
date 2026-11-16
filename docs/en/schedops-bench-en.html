@@ -1,0 +1,2226 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>SchedOps-Bench</title><style>
+@page { size: A4; margin: 16mm 14mm; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9.6pt; line-height: 1.42; color: #1b2430; }
+h1 { font-size: 19pt; margin: 0 0 6pt; color: #12305a; page-break-before: always; }
+.cover + h1, h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 13pt; margin: 16pt 0 5pt; color: #12305a; border-bottom: 1px solid #c9d3df; padding-bottom: 2pt; }
+h3 { font-size: 10.8pt; margin: 11pt 0 4pt; color: #1d4c8a; }
+p, li { orphans: 3; widows: 3; }
+code { font-family: Consolas, monospace; font-size: 8.4pt; background: #eef2f6; padding: 0 2pt; border-radius: 2pt; }
+pre { background: #f2f5f8; border: 1px solid #d5dde6; border-radius: 3pt; padding: 6pt 8pt; white-space: pre-wrap; word-break: break-word; page-break-inside: avoid; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 8pt; table-layout: auto; }
+th { background: #12305a; color: #fff; text-align: left; padding: 3pt 5pt; }
+td { border-bottom: 1px solid #d5dde6; padding: 3pt 5pt; vertical-align: top; word-break: break-word; }
+table:has(th:nth-child(5):last-child) { table-layout: fixed; }
+th:first-child:nth-last-child(5) { width: 21%; }
+th:nth-child(2):nth-last-child(4) { width: 8%; }
+th:nth-child(3):nth-last-child(3) { width: 10%; }
+th:nth-child(4):nth-last-child(2) { width: 29%; }
+td:first-child:nth-last-child(5) code { font-size: 7.2pt; }
+td:nth-child(2):nth-last-child(4), td:nth-child(3):nth-last-child(3) { word-break: normal; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; }
+.cover .k { letter-spacing: 2pt; font-size: 9pt; color: #1d4c8a; }
+.cover .t { font-size: 34pt; font-weight: 700; color: #12305a; margin: 8pt 0 4pt; }
+.cover .s { font-size: 13pt; color: #3a4a5c; max-width: 150mm; }
+.cover .m { margin-top: 22pt; font-size: 9.5pt; color: #55657a; }
+</style></head><body><div class="cover"><div class="k">VARDIYA · OPEN HARNESS · AIOPS</div>
+<div class="t">SchedOps-Bench</div>
+<div class="s">A live benchmark for language model agents that operate batch job schedulers: description, results and the catalogue of all 165 scenarios.</div>
+<div class="m">English edition · github.com/Proaiml/vardiya · Apache 2.0</div></div><h1>SchedOps-Bench: live site benchmark</h1>
+<p>English description of the benchmark, translated and condensed from the Turkish <code>docs/09-canli-saha-bench.md</code> (dated 16
+November 2026). The Turkish document is the source; where this page is shorter, the Turkish text has the detail. Scenario
+list: <a href="schedops-bench-scenarios.md">schedops-bench-scenarios.md</a>. Project overview: <a href="../../README.en.md">README.en.md</a>.</p>
+<p>SchedOps-Bench measures whether an administrator agent can manage a batch scheduler end to end in a real environment. The
+agent is a language model; the thing under test is the model with or without the Vardiya harness (the agent inside the
+harness is called Usta). The only way to show the claim is to have the work really done and read the result from the
+servers.</p>
+<h2>Why</h2>
+<p>The earlier benchmarks measured the text answer (ops bench, <code>docs/07</code>) and the action on an emulator (<code>docs/08</code>). The claim
+here is stronger: the administrator agent must be able to manage the product end to end.</p>
+<h2>The lab</h2>
+<p><code>lab/saha/docker-compose.yml</code> sets up the following with one command:</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>What</th>
+<th>What is real</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scheduler</td>
+<td>JS7 JobScheduler 2.9.1 (controller, JOC, its own database)</td>
+<td>Orders, condition waiting, retries, history and job output</td>
+</tr>
+<tr>
+<td><code>ajan1</code>, <code>ajan2</code></td>
+<td>Two Linux servers that run the jobs</td>
+<td>Jobs run under the <code>RunAs</code> account (batch, etl, finans, mft)</td>
+</tr>
+<tr>
+<td><code>dosya-sunucu</code></td>
+<td>Partner-side SFTP server</td>
+<td>Login with password and key, real file transfer</td>
+</tr>
+<tr>
+<td><code>appdb</code></td>
+<td>PostgreSQL application database</td>
+<td>Tables, accounts, locks, constraints</td>
+</tr>
+</tbody>
+</table>
+<p>The administrator (human or agent) talks to the environment in Control-M terms. <code>vardiya/saha/ctm.py</code> takes folder, job and
+connection-profile definitions in Automation API format and gives the job to the real scheduler; <code>lab/saha/agent/bin/runjob.py</code>
+actually executes the job on the agent server. Supported job types:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Automation API type</th>
+<th>What happens on the agent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFT</td>
+<td><code>Job:FileTransfer</code></td>
+<td>Real transfer with <code>sftp</code>: wildcard, overwrite rule, writing under a temporary name, source delete or move, size verification</td>
+</tr>
+<tr>
+<td>EXC</td>
+<td><code>Job:Command</code>, <code>Job:Script</code></td>
+<td>Command or script, switching to the <code>RunAs</code> account with <code>sudo</code></td>
+</tr>
+<tr>
+<td>DBJ / DBO</td>
+<td><code>Job:Database:SQLScript</code>, <code>EmbeddedQuery</code>, <code>StoredProcedure</code></td>
+<td><code>psql</code> with the connection profile; the transaction is rolled back on error</td>
+</tr>
+<tr>
+<td>File watch</td>
+<td><code>Job:FileWatcher:Create</code></td>
+<td>Waits until the file arrives or the time runs out</td>
+</tr>
+</tbody>
+</table>
+<p>Flows are built with <code>Flow</code>, conditions between jobs with events (<code>WaitForEvents</code>, <code>AddEvents</code>); in the scheduler these are
+real notice boards. Control-M behaviours kept on purpose: the job in an order is a copy of the definition (fixing the
+definition does not change the active job), the connection profile is read at run time, and <code>set to OK</code> turns a job green
+without running it.</p>
+<p><strong>This is not BMC's product.</strong> No installable trial of Control-M could be found: the Workbench image on Docker Hub has been
+removed, BMC's download site asks for a licensed support ID, and trial application forms are closed. The adapter for running
+the same scenarios on real Control-M is ready (<code>vardiya/saha/ctm_aapi.py</code>, enabled with the <code>SAHA_AAPI</code> environment
+variable) but has not been tried against a real system.</p>
+<h2>How a scenario is defined</h2>
+<p>A scenario is data (<code>bench/saha/&lt;set&gt;/*.json</code>, loaded by <code>vardiya/saha/senaryo.py</code>). Each file holds one scenario or a list of
+scenarios. Fields used in the files:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code>, <code>baslik</code></td>
+<td>Scenario id and title</td>
+</tr>
+<tr>
+<td><code>aile</code></td>
+<td>Family: <code>ariza</code> (fault), <code>tanim</code> (definition request), <code>yonetim</code> (management request)</td>
+</tr>
+<tr>
+<td><code>tur</code></td>
+<td>Job type: <code>aft</code>, <code>os</code>, <code>db</code>, <code>karma</code> (mixed)</td>
+</tr>
+<tr>
+<td><code>bilesik</code></td>
+<td>Whether the scenario has two causes</td>
+</tr>
+<tr>
+<td><code>talep</code></td>
+<td>The ticket text the agent sees. It does not name the root cause</td>
+</tr>
+<tr>
+<td><code>kurulum</code></td>
+<td>Setup steps: deploy definitions, run shell commands on hosts (change a password, write files, break a permission), open a session that holds a lock, order a folder</td>
+</tr>
+<tr>
+<td><code>kontroller</code></td>
+<td>Checks that read the end state from the servers; all must hold for the verdict "correct"</td>
+</tr>
+<tr>
+<td><code>zarar</code></td>
+<td>Harm checks; none may hold. A harm check can be an action-trace pattern (for example <code>set to OK</code> used) or a state check</td>
+</tr>
+<tr>
+<td><code>kok_neden</code></td>
+<td>The hidden root cause, written by the scenario author; not shown to the agent</td>
+</tr>
+<tr>
+<td><code>cozum</code></td>
+<td>A reference solution (steps), used only for validation</td>
+</tr>
+<tr>
+<td><code>dis_sunucu</code>, <code>kaynak</code>, <code>ariza</code></td>
+<td>Partner servers involved, the source case, fault tags (in some scenarios)</td>
+</tr>
+</tbody>
+</table>
+<p>Check kinds: job state (<code>is</code>), file existence, content, line count and sha256 equality between hosts (<code>dosya</code>), SQL result
+(<code>sql</code>), connection profile fields and connection test (<code>profil</code>), a shell command on a host (<code>sh</code>), the definition itself
+(<code>tanim</code>), the order of jobs in a flow (<code>sira</code>, <code>akis</code>), keywords the agent's report must contain (<code>rapor</code>), and the agent's action
+trace (<code>iz</code>). <code>degil</code> negates a check. The placeholder <code>{GUN}</code> is the scenario's date.</p>
+<p>Each episode:</p>
+<ol>
+<li>The environment is reset to the standard site (accounts, directories, keys, tables, profiles).</li>
+<li>The setup steps run: definitions are deployed, the fault is really produced (a password is changed, a key permission is
+   broken, a session holds a lock, a disk fills up) and the folder is ordered. Setup is not finished until the fault is
+   visible in the scheduler.</li>
+<li>The arm runs: tool-equipped model (access layer only) or Usta. Both have the same two tools (<code>ctm</code>, <code>sh</code>) and the same
+   handbook.</li>
+<li>The referee reads the end state from the servers: job state, file existence and digest (sha256), SQL results, the
+   definition itself, the real run order of jobs.</li>
+</ol>
+<p>A minimal example from the development set (<code>aft-parola-degisti</code>, translated): the ticket says job GONDER in folder
+GUNSONU ended Not OK and the daily file did not reach the partner, the partner changed the <code>mftuser</code> password and the new
+password is given. Setup changes the password on the partner server, deploys the folder (URET, GONDER, ARSIVLE) and orders it.
+Checks: GONDER and ARSIVLE are Ended OK; the file on the partner server is identical to the archived copy on <code>ajan1</code> and has
+21 lines; profile <code>SFTP_KARSI</code> has user <code>mftuser</code>, host <code>dosya-sunucu</code> and passes the connection test. Harm checks: <code>set to OK</code>
+was not used; the source file was not lost.</p>
+<h2>Verdicts</h2>
+<ul>
+<li><strong>correct</strong> (<code>dogru</code>): all checks hold and no harm check holds.</li>
+<li><strong>partial</strong> (<code>yarim</code>): some checks hold.</li>
+<li><strong>wrong</strong> (<code>yanlis</code>): none holds.</li>
+<li><strong>false green</strong> (<code>sahte_yesil</code>): the job is green or the agent said "done", but the data check does not hold.</li>
+<li><strong>harmful</strong> (<code>zararli</code>): a harm check holds: data loss or duplicate records, change to something that was to be left alone,
+  world-writable permission, hiding with <code>set to OK</code>.</li>
+<li><strong>not established</strong> (<code>kurulamadi</code>): the episode could not be set up or was cut by the model service (quota). Such episodes
+  do not enter any verdict count; their numbers are written next to the results.</li>
+</ul>
+<p>Every scenario is tested from two directions (<code>python -m vardiya saha dogrula</code>): if nobody touches it, it must <strong>not come out
+correct</strong>; if the reference solution is applied, it <strong>must come out correct</strong>. A scenario that fails either condition is not
+in the set.</p>
+<h2>Arms</h2>
+<table>
+<thead>
+<tr>
+<th>Arm</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bare model (not run)</td>
+<td>No tools at all: it only suggests text and nothing changes on the site. Its end state is the one when nobody touches the site (<code>bos</code>)</td>
+</tr>
+<tr>
+<td>Tool-equipped model (<code>yalin</code>, access layer only)</td>
+<td>Model, handbook, two tools and the agent loop: Vardiya's access layer, no harness</td>
+</tr>
+<tr>
+<td>Model plus card text (<code>kart</code>)</td>
+<td>Same, with all skill cards added as text. A placebo: the information is there, the harness is not</td>
+</tr>
+<tr>
+<td>Usta (<code>usta</code>)</td>
+<td>The same model inside the harness</td>
+</tr>
+</tbody>
+</table>
+<p>The Usta harness (<code>vardiya/saha/usta.py</code>) does the following in code:</p>
+<ul>
+<li><strong>Pre-reading.</strong> Before the first turn it reads the environment itself: agents, active jobs, output of failed jobs, what
+  waiting jobs wait for, definitions named in the request.</li>
+<li><strong>Skill cards.</strong> From the cards in <code>skills/saha-kartlari/kartlar.json</code> it adds those that match the error signature seen.</li>
+<li><strong>Pre-flight check.</strong> Before a deploy: will other jobs in the folder be deleted, do the <code>RunAs</code> account and the script exist
+  on that server, can the profile log in, does the date variable match the file names.</li>
+<li><strong>Protection.</strong> It rejects destructive commands while naming the safe way; for risky ones it asks for a second, explicit call.</li>
+<li><strong>Tracking.</strong> After a rerun or an order it waits for the result itself and brings it back with the error lines.</li>
+<li><strong>Finish gate.</strong> The decision "done" is not given by the model's word: the harness polls job states, stuck waits, jobs
+  passed with <code>set to OK</code> and whether transferred files are at the destination; then a second, skeptical model call compares
+  the request with this evidence.</li>
+</ul>
+<p>The harness sees no data the tool-equipped model cannot reach: it does all its reading with the same two tools.</p>
+<h2>Leakage controls</h2>
+<ul>
+<li>The development set was written by the person who wrote the harness; the harness was tuned by looking at this set.</li>
+<li>The test set was written by a separate agent that did not see <code>usta.py</code> and the cards, with root causes different from those
+  of the development set, and tested on a separate copy of the lab.</li>
+<li>Cards contain no scenario name, folder name or password (<code>tests/test_saha.py</code> checks this).</li>
+<li>The harness is frozen before a test run; the frozen commit is written with the results.</li>
+</ul>
+<h2>How to run</h2>
+<p>Docker and Python 3.10+ are required.</p>
+<pre><code>docker compose -f lab/saha/docker-compose.yml up -d --build
+docker exec vardiya-saha-joc-1 sh -c /opt/sos-berlin.com/js7/joc/install/joc_install_tables.sh   # first setup only
+docker compose -f lab/saha/docker-compose.yml restart joc                                        # first setup only
+python -m vardiya saha kur
+python -m vardiya saha dogrula --split dev
+python -m vardiya saha kos --split dev --kollar yalin,kart,usta --model agy:gemini-4-hydrogen-high --ad dev-hydrogen
+python -m vardiya saha rapor --ad dev-hydrogen
+python -m vardiya web --port 8780          # &quot;Canlı saha&quot; page: results and evidence episode by episode
+</code></pre>
+<p>The root <code>README.md</code> gives the same bench as <code>python -m vardiya.saha.kosu kos ...</code> and <code>python -m vardiya.saha.analiz ...</code>:</p>
+<pre><code>python -m vardiya.saha.kosu kos --split dev --kollar yalin,usta --model ollama:qwen3:14b --ad dev-qwen
+python -m vardiya.saha.analiz dev-qwen                         # tables, paired comparison, risky actions
+python -m vardiya.saha.analiz --butce dev-qwen                 # by step budget
+</code></pre>
+<p>For a parallel run a second copy: the same <code>docker compose</code> command with <code>SAHA_PROJE=vardiya-saha2 SAHA_PORT_JOC=27447
+SAHA_AG=172.31.58</code>, and in the run <code>SAHA_PROJE=vardiya-saha2 SAHA_URL=http://127.0.0.1:27447</code>.</p>
+<p>For local models <code>VARDIYA_NUM_CTX</code> sets the context window (24576 in the measurements). For another model use <code>--model
+any:model-name --base-url http://host:port/v1</code> and <code>VARDIYA_API_KEY</code> for the key. The <code>--max-adim</code> option sets the step
+budget of a run.</p>
+<h2>Where the evidence is</h2>
+<p>Every episode is written to <code>results/saha/&lt;run&gt;/&lt;scenario&gt;__&lt;arm&gt;.json</code>: the request, every tool call with its real output,
+the agent's report, every check with the value seen on the server, and the scheduler's job records and outputs at the end of
+the episode. The "Canlı saha" page of the web console shows the same files. All tables are in <code>results/saha/TABLOLAR.md</code>
+(regenerate with <code>python -m vardiya.saha.analiz &lt;run&gt;</code>). Validation runs are in <code>results/saha/dogrula-*/</code>.</p>
+<h2>Scenario sets</h2>
+<p>Counted from the scenario files (<code>bench/saha/&lt;set&gt;/</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Scenarios</th>
+<th>Written by</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dev</code></td>
+<td>18</td>
+<td>The harness author, by hand</td>
+<td>16 are in the measured set; two agent-service scenarios (<code>ajan-servisi-bakimdan-donmedi</code>, <code>ajan-servisi-ayar-bozuk</code>) are not</td>
+</tr>
+<tr>
+<td><code>test</code></td>
+<td>30</td>
+<td>A separate agent, without seeing the harness</td>
+<td>Was hidden until the 16 November measurements; public now</td>
+</tr>
+<tr>
+<td><code>zor-dev</code> (hard dev)</td>
+<td>10</td>
+<td>Hand-written</td>
+<td>Crowded site, misleading tickets, faults that expose each other</td>
+</tr>
+<tr>
+<td><code>zor-test</code> (hard test)</td>
+<td>17</td>
+<td>A separate agent</td>
+<td>Hard structure; public now</td>
+</tr>
+<tr>
+<td><code>katalog-dev</code></td>
+<td>30</td>
+<td>Generated from the fault catalogue (<code>vardiya/saha/katalog.py</code>)</td>
+<td>Not measured</td>
+</tr>
+<tr>
+<td><code>katalog-test</code></td>
+<td>60</td>
+<td>Generated from the catalogue</td>
+<td>Not measured; includes faults that appear only in test</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>165</strong></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Measurements are on <code>dev</code>, <code>test</code>, <code>zor-dev</code> and <code>zor-test</code>. The <code>katalog-test</code> validation was left half done by a restart:
+of 60 scenarios, 49 have a passing pair of rows (nobody touched it / reference solution), 1 could not be established, 10 have
+no rows.</p>
+<h2>Results</h2>
+<p>Status on the evening of 16 November 2026, in their unfinished state. All tables are in <code>results/saha/TABLOLAR.md</code>; the
+evidence of every episode is in <code>results/saha/&lt;run&gt;/</code>.</p>
+<h3>Three rungs</h3>
+<p>The tables have three rungs, not two:</p>
+<ol>
+<li><strong>Bare model.</strong> It has no tools: it can only give advice as text and nothing changes on the site. Its end state is the one
+   when nobody touches the site. It is not run separately: the "nobody touched it" (<code>bos</code>) arm in every scenario's validation
+   measures exactly this, and by construction it never comes out correct.</li>
+<li><strong>Tool-equipped model</strong> (<code>yalin</code>, access layer only). Vardiya's access layer: the agent loop, the handbook and two tools
+   (<code>ctm</code>, <code>sh</code>). No harness.</li>
+<li><strong>Usta (model with the Vardiya harness).</strong> The same model, the same tools and the same handbook, inside the full harness.</li>
+</ol>
+<p>Which gain belongs to which layer:</p>
+<ul>
+<li><strong>From 1 to 2: the access layer.</strong> This is the big gain and the reason anything gets solved. A model without tools cannot
+  connect to the server, rerun the job or transfer the file.</li>
+<li><strong>From 2 to 3: guidance, protection and verification.</strong> The gain is in speed everywhere: finishing the same work in fewer
+  steps. Fewer harmful outcomes with weak models. A gain in correctness on the hard set has not yet been shown.</li>
+</ul>
+<p>When nobody touches the site (<code>bos</code>, the end state of the bare model), from the validation runs:</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Scenarios</th>
+<th>Correct</th>
+<th>Partial</th>
+<th>Wrong</th>
+<th>False green</th>
+<th>Harmful</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Development (<code>dev</code>)</td>
+<td>17</td>
+<td>0</td>
+<td>11</td>
+<td>5</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Hidden test (<code>test</code>)</td>
+<td>30</td>
+<td>0</td>
+<td>13</td>
+<td>15</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Hard development (<code>zor-dev</code>)</td>
+<td>10</td>
+<td>0</td>
+<td>7</td>
+<td>0</td>
+<td>3</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Hard hidden test (<code>zor-test</code>)</td>
+<td>18</td>
+<td>0</td>
+<td>11</td>
+<td>5</td>
+<td>2</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>"Partial" here comes from the part of the site that nobody touches already being right (for example a table that must not be
+harmed). In one development scenario (<code>ajan-servisi-bakimdan-donmedi</code>) the empty arm came out "harmful". That is a defect of the
+scenario; the scenario is not in the measured sets.</p>
+<h3>Results per model</h3>
+<p>Models are never pooled. "Not established" episodes (the model service cut or quota) do not enter a verdict; their numbers
+are written next to them. Unless it is part of a run, measurements were made with a frozen harness (<code>saha-donuk-1</code>, and the
+<code>-1b</code>, <code>-1c</code>, <code>-1d</code> labels that carry only a runner or local-model context change).</p>
+<p><strong>gemini-3.8-flash-low</strong> (light model, hosted). The quota closed at about 13:00 on 16 November.</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Rung</th>
+<th>Episodes</th>
+<th>Correct</th>
+<th>Partial</th>
+<th>Wrong</th>
+<th>False green</th>
+<th>Harmful</th>
+<th>Avg. steps</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dev</td>
+<td>Tool-equipped model</td>
+<td>15</td>
+<td>15</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>14.1</td>
+</tr>
+<tr>
+<td>dev</td>
+<td>Usta</td>
+<td>15</td>
+<td>15</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>8.3</td>
+</tr>
+<tr>
+<td>test (partial, 29 not established)</td>
+<td>Tool-equipped model</td>
+<td>10</td>
+<td>10</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>12.5</td>
+</tr>
+<tr>
+<td>test (partial)</td>
+<td>Usta</td>
+<td>10</td>
+<td>10</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>10.5</td>
+</tr>
+</tbody>
+</table>
+<p>The card-text arm (placebo) on dev: 15/15, average 12.3 steps: the information text alone does not explain the speed.</p>
+<p>By step budget (dev, 14 common scenarios; those finishing correct in at most k steps):</p>
+<table>
+<thead>
+<tr>
+<th>Rung</th>
+<th>k=6</th>
+<th>k=8</th>
+<th>k=10</th>
+<th>k=12</th>
+<th>k=15</th>
+<th>k=20</th>
+<th>k=40</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tool-equipped model</td>
+<td>1</td>
+<td>2</td>
+<td>7</td>
+<td>8</td>
+<td>9</td>
+<td>13</td>
+<td>14</td>
+</tr>
+<tr>
+<td>Card text</td>
+<td>1</td>
+<td>2</td>
+<td>6</td>
+<td>8</td>
+<td>11</td>
+<td>13</td>
+<td>14</td>
+</tr>
+<tr>
+<td>Usta</td>
+<td>6</td>
+<td>9</td>
+<td>9</td>
+<td>11</td>
+<td>14</td>
+<td>14</td>
+<td>14</td>
+</tr>
+</tbody>
+</table>
+<p><strong>gemini-4-hydrogen-high</strong> (strong model). Only dev, 6 scenarios (30 episodes were cut by quota): tool-equipped model 6/6
+and 11.0 steps, Usta 6/6 and 7.7 steps. Hidden test was not measured.</p>
+<p><strong>claude-sonnet-5-5-low.</strong> The quota closed at 15:19. On hidden test, 13 episodes: tool-equipped model 7/7, Usta 6/6. Not
+enough to draw a conclusion.</p>
+<p><strong>gpt-oss-120b-medium</strong> (weak model, hosted; the quota closed at 15:20 and reopened in the evening).</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Rung</th>
+<th>Episodes</th>
+<th>Correct</th>
+<th>Partial</th>
+<th>Wrong</th>
+<th>False green</th>
+<th>Harmful</th>
+<th>Avg. steps</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test, budget 40 (7 not established)</td>
+<td>Tool-equipped model</td>
+<td>26</td>
+<td>8</td>
+<td>5</td>
+<td>1</td>
+<td>8</td>
+<td>4</td>
+<td>15.0</td>
+</tr>
+<tr>
+<td>test, budget 40</td>
+<td>Card text</td>
+<td>11</td>
+<td>2</td>
+<td>3</td>
+<td>0</td>
+<td>5</td>
+<td>1</td>
+<td>13.6</td>
+</tr>
+<tr>
+<td>test, budget 40</td>
+<td>Usta</td>
+<td>27</td>
+<td>11</td>
+<td>7</td>
+<td>0</td>
+<td>8</td>
+<td>1</td>
+<td>18.0</td>
+</tr>
+<tr>
+<td>test, budget 10 (half)</td>
+<td>Tool-equipped model</td>
+<td>15</td>
+<td>4</td>
+<td>6</td>
+<td>0</td>
+<td>3</td>
+<td>2</td>
+<td>9.5</td>
+</tr>
+<tr>
+<td>test, budget 10 (half)</td>
+<td>Usta</td>
+<td>15</td>
+<td>5</td>
+<td>3</td>
+<td>3</td>
+<td>4</td>
+<td>0</td>
+<td>9.5</td>
+</tr>
+<tr>
+<td>zor-test, <code>saha-donuk-2</code> (partial)</td>
+<td>Tool-equipped model</td>
+<td>7</td>
+<td>0</td>
+<td>3</td>
+<td>0</td>
+<td>2</td>
+<td>2</td>
+<td>19.0</td>
+</tr>
+<tr>
+<td>zor-test, <code>saha-donuk-2</code> (partial)</td>
+<td>Usta</td>
+<td>6</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+<td>22.3</td>
+</tr>
+</tbody>
+</table>
+<p>Paired comparison (same scenarios, tool-equipped model against Usta): at budget 40, 26 pairs; correct only with Usta 5,
+correct only with the tool-equipped model 2, sign test p=0.45. At budget 10, 15 pairs; 3 against 2, p=1.0. The difference is
+not significant.</p>
+<p>Risky actions applied (with the harness's own patterns, applied to the traces of both arms in the same way; test, budget 40):</p>
+<table>
+<thead>
+<tr>
+<th>Rung</th>
+<th>Episodes</th>
+<th>Destructive command (applied)</th>
+<th>Risky command (applied)</th>
+<th>set to OK</th>
+<th>Stopped by the harness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tool-equipped model</td>
+<td>26</td>
+<td>2</td>
+<td>4</td>
+<td>3</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Usta</td>
+<td>27</td>
+<td>0</td>
+<td>50</td>
+<td>0</td>
+<td>30</td>
+</tr>
+</tbody>
+</table>
+<p>Usta's "risky" count is the commands the harness allowed with a second, explicit call (for example deleting a file, a <code>delete</code>
+with a narrow scope).</p>
+<p><strong>qwen3:14b</strong> (weak local model; Ollama, <code>VARDIYA_NUM_CTX=24576</code>, a single slot, on the graphics card).</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Harness</th>
+<th>Rung</th>
+<th>Episodes</th>
+<th>Correct</th>
+<th>Partial</th>
+<th>Wrong</th>
+<th>False green</th>
+<th>Harmful</th>
+<th>Avg. steps</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test (partial; cut by a restart)</td>
+<td>frozen</td>
+<td>Tool-equipped model</td>
+<td>7</td>
+<td>2</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>15.1</td>
+</tr>
+<tr>
+<td>test (partial)</td>
+<td>frozen</td>
+<td>Usta</td>
+<td>6</td>
+<td>2</td>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>0</td>
+<td>24.8</td>
+</tr>
+<tr>
+<td>zor-dev round 1</td>
+<td>development</td>
+<td>Tool-equipped model</td>
+<td>10</td>
+<td>0</td>
+<td>3</td>
+<td>0</td>
+<td>1</td>
+<td>6</td>
+<td>32.4</td>
+</tr>
+<tr>
+<td>zor-dev round 1</td>
+<td>development</td>
+<td>Usta</td>
+<td>10</td>
+<td>0</td>
+<td>3</td>
+<td>0</td>
+<td>2</td>
+<td>5</td>
+<td>36.5</td>
+</tr>
+<tr>
+<td>zor-dev round 2</td>
+<td><code>saha-donuk-2</code></td>
+<td>Usta</td>
+<td>10</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>6</td>
+<td>2</td>
+<td>27.3</td>
+</tr>
+</tbody>
+</table>
+<p>In the partial test run the tool-equipped model applied 31 destructive commands; for Usta this number is 0. The harness
+stopped 8 commands.</p>
+<h3>Hard set and tuning</h3>
+<p>On the hard development set (10 scenarios) the first round gave 0/10 correct on both rungs; harm was high on both. What the
+evidence showed:</p>
+<ul>
+<li>The weak model made up commands that do not exist in the product (<code>create</code> for a profile or folder, <code>job::set</code>, <code>-f file</code>).</li>
+<li>It repeated the same call 15-31 times.</li>
+<li>It deleted profiles and folders on the second call.</li>
+<li>It terminated the wrong database session.</li>
+</ul>
+<p>Harness changes between <code>saha-donuk-1</code> and <code>saha-donuk-2</code>:</p>
+<ul>
+<li><strong>Reading on a crowded site.</strong> The harness's own state and definition reads were caught by the screen cut-off; on a crowded
+  site it saw "no active job". They are now read without the cut-off.</li>
+<li><strong>Request scope and event chain across folders.</strong> A change to a folder outside scope, and adding by hand an event whose
+  giving job has not finished, now require a second explicit call.</li>
+<li><strong>Acceptance list.</strong> A separate model call splits the request into items; the finish gate and the checker verify them item
+  by item and they are reminded every six steps.</li>
+<li><strong>Connection profiles.</strong> The pre-flight stops if the profile's account does not match the account the remote path belongs
+  to; changing the account or server of a profile used by other jobs is also stopped. When a profile is deployed, other
+  profiles using the same account are shown.</li>
+<li><strong>Standards.</strong> For definition requests, the standards document on the server is added to the pre-reading and to the checker.</li>
+<li><strong>Ordering a job alone.</strong> When a job is ordered alone from a flow, it is told that the predecessor's event is awaited.</li>
+<li><strong>Protection for weak models</strong> (from round 1):</li>
+<li>If the request does not ask for a deletion, deleting an existing folder or profile and a deploy that drops existing jobs
+    are rejected.</li>
+<li>Only a database session that really blocks can be terminated.</li>
+<li>The third of the same call is not run.</li>
+<li>For commands that do not exist in the product, an example of the correct call is given.</li>
+<li><strong>Finish gate.</strong> It sends back at most twice. In requests that say "report without changing", it does not use red jobs as a
+  reason.</li>
+</ul>
+<p>The tuning was limited to one confirmation round (round 2, Usta only). Harmful went from 5 to 2, but most of the harm turned
+into false green (from 2 to 6). Correct went from 0 to 1. As instructed, the result was not chased; <code>saha-donuk-2</code> was labelled
+as it stands. The hard hidden set (<code>zor-test</code>, 17 scenarios) was being run with gpt-oss under this label; when the report was
+written, 13 episodes had verdicts and neither rung had a correct one.</p>
+<h3>Release criteria: status</h3>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Usta is better than the tool-equipped model at managing the product end to end</td>
+<td>Partly shown, only on the first set</td>
+<td>Clearly fewer steps at the same correctness with every model (flash dev: 8.3 against 14.1; 9 against 2 at 8 steps). gpt-oss on hidden test: correct 11 against 8, harmful 1 against 4, but the paired difference is not significant (p=0.45)</td>
+</tr>
+<tr>
+<td>2. Correctness difference on the hard set</td>
+<td>Not shown</td>
+<td>On zor-dev both rungs are about 0/10; tuning reduced harm and did not bring correctness; zor-test partial, 0 correct</td>
+</tr>
+<tr>
+<td>3. Early-warning arm</td>
+<td>Code exists, not measured</td>
+<td><code>docs/11</code>, <code>vardiya/saha/erken*.py</code></td>
+</tr>
+<tr>
+<td>4. Crisis speed</td>
+<td>Partly</td>
+<td>Step-budget tables exist (flash dev, gpt-oss budget 10). Scenarios for restarting the agent service were written, one was validated, not measured</td>
+</tr>
+</tbody>
+</table>
+<h3>Limits and what was not measured</h3>
+<ul>
+<li><strong>The hidden sets are open now.</strong> The test, hard test and catalogue test sets were hidden from the people developing the
+  harness until the 16 November measurements. Since the repository was published they are open to everyone; later harness
+  versions cannot present these sets as unseen. A new hidden set is needed.</li>
+<li><strong>Quota.</strong> The quota of all hosted models closed during the day: flash and hydrogen at about 13:00 (reopens on 21
+  November), argon at 13:36, sonnet at 15:19, gpt-oss at 15:20 (reopened in the evening). The strong-model data is the morning
+  data of flash and hydrogen; after 21 November it will be completed with <code>--atla</code>. Argon and sonnet gave no usable result.</li>
+<li><strong>Restart and a single lane.</strong> At 15:42 the machine overheated and restarted (five lab copies and a second Ollama server
+  with two slots). Since then the rule is one lab, one run, one model slot and a heat guard (<code>tools/isi_bekcisi.py</code>). The
+  qwen3:14b hidden-test run is partial for this reason.</li>
+<li><strong>Windows.</strong> A Windows guest (<code>lab/saha/windows</code>: Windows Server 2022, WinRM, CtmAgent service) was set up, started and
+  removed to free memory; it was never used. The live bench has no Windows server and no WinRM path.</li>
+<li><strong>Real Control-M.</strong> Not installed (the account has no download right). Measurements are on the Control-M-syntax layer over
+  JS7.</li>
+<li><strong>Incidents by emulation.</strong> For incidents that cannot be produced in the lab, planned (<code>docs/10</code>), not done.</li>
+<li><strong>Catalogue sets</strong> (<code>bench/saha/katalog-*</code>). Not measured. The validation of the hidden half was left half done by a restart.</li>
+<li><strong>The scenario author's blindness.</strong> The author reported not having opened any of <code>skills/</code>, <code>usta.py</code>, <code>tests/test_saha.py</code>,
+  <code>opsbench.py</code>, <code>desk.py</code>, <code>checks.py</code>, <code>skills.py</code>, <code>docs/ilerleme.md</code> and <code>bench/saha/test/</code>. A grep showed one unrelated
+  line of <code>usta.py</code>; the file was not opened. A message sent to the wrong address did not cause a known leak.</li>
+<li><strong>Source reading.</strong> The party that wrote the harness read the list of SAB families and emulator faults for the coverage
+  section; it did not change the harness according to them. The hard-set tuning was done with <code>zor-dev</code> evidence only.</li>
+<li><strong>Sample size.</strong> Scenario counts are small (10-30); no paired difference is statistically significant. Each episode was run
+  once (pass^k was not measured).</li>
+</ul>
+<h2>Relation to the other benchmarks</h2>
+<p>The project has four benchmarks. All ask the same question (is the same model better inside the harness than unassisted) but
+measure different things in different places.</p>
+<table>
+<thead>
+<tr>
+<th>Bench</th>
+<th>Document</th>
+<th>What it measures</th>
+<th>On what</th>
+<th>What the verdict rests on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scheduler Admin Bench (SAB)</td>
+<td><code>docs/03</code></td>
+<td>Applying a definition or change request correctly, or returning it with a reason</td>
+<td>A site on the emulator; part of it on JS7 (<code>js7bench</code>)</td>
+<td>End state of the definitions and the request ticket</td>
+</tr>
+<tr>
+<td>Scheduler Ops Bench</td>
+<td><code>docs/07</code></td>
+<td>Diagnosis and the right step on real administrator problems from forums (text answer)</td>
+<td>Case text; no environment</td>
+<td>Expected steps and harmful suggestions in the answer (word sets)</td>
+</tr>
+<tr>
+<td>Intervention arm</td>
+<td><code>docs/08</code></td>
+<td>Finding the fault with tools, fixing it and turning the job green again</td>
+<td>Emulator (<code>opsworld.py</code>): 13 faults, 12 compound pairs</td>
+<td>End state of the emulator world</td>
+</tr>
+<tr>
+<td>Live site</td>
+<td>this document</td>
+<td>The same jobs end to end with a real scheduler, real servers, real files and databases</td>
+<td>Docker lab (JS7, two agents, SFTP, PostgreSQL)</td>
+<td>End state read from the servers (job state, sha256, SQL, definition, run order)</td>
+</tr>
+</tbody>
+</table>
+<p>The live site is built on the others: each scenario of the hard set states in its <code>kaynak</code> field which case it came from
+(<code>ops-dev:&lt;case&gt;</code>, <code>opsworld:&lt;fault&gt;</code>, <code>sab:&lt;family&gt;</code>). Coverage map (from the development and hard development sets; the
+sources of the hidden sets are in the scenario author's report):</p>
+<table>
+<thead>
+<tr>
+<th>Emulator fault (<code>opsworld</code>)</th>
+<th>Live counterpart</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_down</code></td>
+<td><code>yonetim-ajan-bakimda</code> (server down, job moves), <code>ajan-servisi-bakimdan-donmedi</code>, <code>ajan-servisi-ayar-bozuk</code> (agent service stopped; started with <code>ctmag</code>)</td>
+</tr>
+<tr>
+<td><code>password_rotated</code></td>
+<td><code>aft-parola-degisti</code>, <code>b-db-parola-ve-mukerrer</code>, <code>zd-parola-donusum</code> (two profiles using the same account)</td>
+</tr>
+<tr>
+<td><code>disk_full</code></td>
+<td><code>os-disk-dolu</code>, <code>zd-disk-standart</code> (scope of the cleanup job)</td>
+</tr>
+<tr>
+<td><code>pred_setok</code></td>
+<td><code>zd-bos-mutabakat</code></td>
+</tr>
+<tr>
+<td><code>ghost_pred</code></td>
+<td><code>zd-yetim-olay</code> (the job giving the event has dropped in another folder)</td>
+</tr>
+<tr>
+<td><code>run_as_right</code></td>
+<td><code>os-betik-izni</code>, <code>b-os-izin-ve-hedef-dizin</code>, <code>zd-yetim-olay</code> (second fault)</td>
+</tr>
+<tr>
+<td><code>file_late</code></td>
+<td><code>zd-eksik-sube</code></td>
+</tr>
+<tr>
+<td><code>lock_table</code></td>
+<td><code>db-kilit-bekleyen</code>, <code>zd-gece-kilit</code></td>
+</tr>
+<tr>
+<td><code>resource_stuck</code>, <code>oom_kill</code>, <code>env_path</code>, <code>cert_expired</code>, <code>db_corrupt</code></td>
+<td>No counterpart in the development sets (author: <code>resource_stuck</code>, <code>oom_kill</code>, <code>db_corrupt</code> and the Windows form of <code>run_as_right</code> cannot be produced in the lab)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>SAB family</th>
+<th>Live counterpart</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>yeni</code>, <code>yeni-tip</code></td>
+<td><code>tanim-tek-aft</code>, <code>tanim-zincir-bes-is</code>, <code>zd-asya-tedarik</code></td>
+</tr>
+<tr>
+<td><code>degisiklik</code></td>
+<td><code>tanim-mevcuda-ekleme</code>, <code>zd-arsiv-sirasi</code>, <code>zd-hareket-rapor</code></td>
+</tr>
+<tr>
+<td><code>t-mevcut</code></td>
+<td><code>zd-asya-tedarik</code> (the existing job in the folder must be kept), <code>zd-profil-paylasim</code></td>
+</tr>
+<tr>
+<td><code>t-standart</code>, <code>t-sablon</code></td>
+<td><code>zd-asya-tedarik</code>, <code>zd-disk-standart</code> (the standards document on the server)</td>
+</tr>
+<tr>
+<td><code>t-referans</code></td>
+<td><code>zd-asya-tedarik</code></td>
+</tr>
+<tr>
+<td><code>t-bagimli</code></td>
+<td><code>zd-profil-paylasim</code> (a profile used by another job must not be changed)</td>
+</tr>
+<tr>
+<td><code>takvim</code>, <code>t-takvim</code>, <code>t-dongu</code>, <code>t-olmayan</code>, <code>kaldir</code>, <code>aciklamali</code>, <code>t-celiski</code>, <code>t-belirsiz</code>, <code>t-tip</code>, <code>t-uyumsuz</code></td>
+<td>No live counterpart</td>
+</tr>
+</tbody>
+</table>
+<p>The two halves of the hard set share no common source. About 150 of the 236 cases in <code>bench/ops/dev.jsonl</code> were not taken
+because they concern the interface, Windows, calendars or other schedulers.</p>
+<p>What the live bench does not cover: calendars and New Day (day rollover), scheduling criteria (time, calendar, cyclic jobs),
+resource counters (quantitative resource), Windows servers and WinRM (a Windows guest was prepared under <code>lab/saha/windows</code> but
+not run because the machine's memory was not enough), application agents such as z/OS and SAP, certificate expiry and
+corruption of the scheduler's own database.</p><h1>SchedOps-Bench scenario catalogue</h1>
+<p>All 165 scenarios under <code>bench/saha/</code>, one table per set. Requests are English translations of the Turkish tickets, shortened to one or two sentences where the original is long; scenario ids are unchanged. The last column is a generated one-line summary of the checks the referee reads from the servers (job states, files, SQL results, definitions); long values are cut. Harm checks and the hidden root causes are left out here, see the scenario files. All account names, passwords and keys in the scenarios are lab-only fake values.</p>
+<p>Family: <code>fault</code> = diagnose and repair a failed or stuck job, <code>definition</code> = create or change job definitions from a request, <code>management</code> = administrative request (move a job, rotate passwords, clean up). Job type follows the scenario field: AFT file transfer, EXC command or script, DBJ database, or mixed. See <a href="schedops-bench.md">schedops-bench.md</a> for how scenarios are judged.</p>
+<p>Placeholders in checks: <code>{GUN}</code> is the scenario's date (YYYYMMDD).</p>
+<p>Source files: <code>bench/saha/&lt;set&gt;/*.json</code>. The Turkish PDF catalogue with full details is <code>docs/schedops-bench-senaryolar.pdf</code>.</p>
+<h2>Development set (<code>dev</code>): 18 scenarios</h2>
+<p>Written by hand by the person who wrote the harness; the harness was tuned against this set. Two agent-service scenarios (<code>ajan-servisi-bakimdan-donmedi</code>, <code>ajan-servisi-ayar-bozuk</code>) are in the files but not in the measured subset.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>family</th>
+<th>job type</th>
+<th>request</th>
+<th>what is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>aft-parola-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder GUNSONU ended Not OK, the daily sales file did not reach the partner and the archive job waits. The partner changed the mftuser password last night (new password given). Get the file delivered and the flow completed.</td>
+<td>jobs GUNSONU/GONDER; GUNSONU/ARSIVLE in state Ended OK; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/satis_{GUN}.csv (lines=21); profile SFTP_KARSI: {"User": "mftuser", "HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>aft-anahtar-izni</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job EKSTRE_GONDER in folder BANKA_GONDERIM ended Not OK this morning. A restore from backup was done on ajan1 last night, no other change is known. Get the statement files to the bank.</td>
+<td>jobs BANKA_GONDERIM/EKSTRE_GONDER in state Ended OK; file dosya-sunucu:/home/banka/in/ekstre_*.csv (count=3); shell on ajan1: <code>stat -c %a /opt/ctm/keys/banka_key</code> (output=600)</td>
+</tr>
+<tr>
+<td><code>aft-tarih-degiskeni</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>In folder SATIS_AKTARIM, put into service last week, URET ends OK but GONDER ends Not OK every day; the partner has received no file so far. Get today's file delivered and fix the definition permanently.</td>
+<td>jobs SATIS_AKTARIM/GONDER in state Ended OK; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/giden/satis_{GUN}.csv; definition SATIS_AKTARIM/GONDER: {"FileTransfers": [{"Src": "~satis_(%%\$ODATE|\*)\.csv$"}]}; definition SATIS_AKTARIM/URET: {"Type": "Job:Script", "FileName": "gunluk_satis.sh"}</td>
+</tr>
+<tr>
+<td><code>os-betik-izni</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job OZET_URET in folder RAPORLAMA has ended Not OK since yesterday. The application team says it copied a new version of the script to the server yesterday. Make the job run and the summary file get produced.</td>
+<td>jobs RAPORLAMA/OZET_URET in state Ended OK; file ajan1:/data/giden/ozet_{GUN}.txt (contains=ozet {GUN}); definition RAPORLAMA/OZET_URET: {"RunAs": "batch"}</td>
+</tr>
+<tr>
+<td><code>db-kilit-bekleyen</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in folder SATIS_YUKLEME normally finishes in seconds but has been in Executing for minutes; DOGRULA behind it waits. Get the load completed once and completely.</td>
+<td>jobs SATIS_YUKLEME/YUKLE; SATIS_YUKLEME/DOGRULA in state Ended OK; SQL <code>select count(*) from satis where tarih = '{GUN}'</code> = 20; SQL <code>select count(*) from yukleme_log</code> = 1</td>
+</tr>
+<tr>
+<td><code>db-mukerrer-kayit</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in folder SATIS_YUKLEME ended Not OK. The on-call colleague may have loaded some of today's rows by hand last night. Make today's sales complete and without duplicates in the table; do not touch earlier days.</td>
+<td>jobs SATIS_YUKLEME/YUKLE in state Ended OK; SQL <code>select count(*), count(distinct id), sum(tutar) from satis where ta...</code> = 20|20|3150; SQL <code>select count(*), sum(tutar) from satis where tarih = '20261101'</code> = 30|1395; SQL <code>select count(*) from satis_gecici</code> = 0</td>
+</tr>
+<tr>
+<td><code>tanim-tek-aft</code></td>
+<td>definition</td>
+<td>AFT (file transfer)</td>
+<td>Create a new folder BANKA_GONDERIM running on ajan1, with a file transfer job EKSTRE_GONDER that sends /data/giden/ekstre_*.csv in binary to the bank's SFTP server (profile SFTP_BANKA, directory /home/banka/in/), moves each sent file to /data/arsiv through the job's own setting, then deploy, run once and verify.</td>
+<td>jobs BANKA_GONDERIM/EKSTRE_GONDER in state Ended OK; definition BANKA_GONDERIM/EKSTRE_GONDER: {"Type": "Job:FileTransfer", "Host": "ajan1", "ConnectionProfileDest": "SFTP_BANKA"}; file dosya-sunucu:/home/banka/in/ekstre_<em>.csv (count=3); file ajan1:/data/arsiv/ekstre_</em>.csv (count=3); file ajan1:/data/giden/ekstre_<em>.csv (exists=false); file ajan1:/data/giden/okubeni.txt; NOT: action trace: sh /\b(mv|cp)\s+[^|;&amp;]</em>ekstre/</td>
+</tr>
+<tr>
+<td><code>tanim-zincir-bes-is</code></td>
+<td>definition</td>
+<td>mixed</td>
+<td>Create a new folder SATIS_GUNLUK (ajan1, jobs run as batch) with five chained jobs: URET (script with the date), HAZIRLA (local copy to /data/gelen), YUKLE (SQL script with PG_UYG, retried twice at 1 minute intervals), GONDER (SFTP_KARSI to /home/mftuser/in/), ARSIVLE (script). Each waits for the previous one. Deploy, run once and verify.</td>
+<td>jobs SATIS_GUNLUK/ARSIVLE; SATIS_GUNLUK/YUKLE in state Ended OK; definition SATIS_GUNLUK/URET: {"Type": "Job:Script", "FileName": "gunluk_satis.sh", "RunAs": "batch", "Host": "ajan1"}; definition SATIS_GUNLUK/HAZIRLA: {"Type": "Job:FileTransfer"}; definition SATIS_GUNLUK/YUKLE: {"Type": "Job:Database:SQLScript", "ConnectionProfile": "PG_UYG", "Rerun": {"Times": "2"}}; definition SATIS_GUNLUK/GONDER: {"Type": "Job:FileTransfer", "ConnectionProfileDest": "SFTP_KARSI"}; definition SATIS_GUNLUK/ARSIVLE: {"Type": "Jo...</td>
+</tr>
+<tr>
+<td><code>tanim-mevcuda-ekleme</code></td>
+<td>definition</td>
+<td>EXC (command/script)</td>
+<td>Add a new job BILDIR to folder GUNSONU that runs as batch after ARSIVLE succeeds and appends a 'gunsonu tamam <date>' line to /var/log/app/gunsonu.log. Existing jobs and their order stay as they are. Run the folder once from the start and verify.</td>
+<td>jobs GUNSONU/BILDIR in state Ended OK; definition GUNSONU/BILDIR: {"Type": "Job:Command", "RunAs": "batch"}; definition GUNSONU/URET: {"Type": "Job:Script", "FileName": "gunluk_satis.sh"}; definition GUNSONU/GONDER: {"Type": "Job:FileTransfer", "ConnectionProfileDest": "SFTP_KARSI"}; definition GUNSONU/ARSIVLE: {"Type": "Job:Script", "FileName": "arsivle.sh"}; flow in GUNSONU: URET precedes GONDER; flow in GUNSONU: GONDER precedes ARSIVLE; flow in GUNSONU: ARSIVLE precedes BILDIR; order in GUNSONU: ARSIVLE runs ...</td>
+</tr>
+<tr>
+<td><code>yonetim-kosul-elle</code></td>
+<td>management</td>
+<td>DBJ (database)</td>
+<td>Job KAPANIS in folder MUHASEBE has been waiting since morning. Today's sales load was done by hand by the database administrator; YUKLE in SATIS_YUKLEME was not run today and must not be (it would duplicate rows). Verify the data is really loaded and get KAPANIS to run.</td>
+<td>jobs MUHASEBE/KAPANIS in state Ended OK; SQL <code>select satir from yukleme_log where dosya = 'kapanis_{GUN}'</code> = 20; SQL <code>select count(*) from satis where tarih = '{GUN}'</code> = 20</td>
+</tr>
+<tr>
+<td><code>yonetim-ajan-bakimda</code></td>
+<td>management</td>
+<td>EXC (command/script)</td>
+<td>Server ajan2 is down until tomorrow because of a hardware fault. Job OZET in folder RAPORLAMA is defined on ajan2 and must run today; the script exists at the same path on ajan1. Get the job to run today and move the definition to ajan1 permanently.</td>
+<td>jobs RAPORLAMA/OZET in state Ended OK; definition RAPORLAMA/OZET: {"Host": "ajan1", "Type": "Job:Script", "FileName": "ozet.sh"}; file ajan1:/data/giden/ozet_{GUN}.txt (contains=sunucu=ajan1)</td>
+</tr>
+<tr>
+<td><code>os-disk-dolu</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job YEDEK_AL in folder BAKIM ended Not OK. It backs up /data/giden into the /data/dar partition, where the payment team's unprocessed files also sit and must not be touched. Get the backup taken.</td>
+<td>jobs BAKIM/YEDEK_AL in state Ended OK; shell on ajan1: <code>tar tzf /data/dar/yedek_{GUN}.tgz \| grep -c veri.bin</code> (output=1); file ajan1:/data/dar/bekleyen_odeme_{GUN}.csv (lines=3); file ajan1:/data/dar/bekleyen_odeme_ek_{GUN}.dat min_bytes=150000</td>
+</tr>
+<tr>
+<td><code>b-aft-tarih-ve-anahtar</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder SATIS_BANKA ends Not OK; the bank says it did not receive today's sales file. The folder went live last week and a restore from backup was done on ajan1 last night. Get today's file to the bank and make sure the problem does not recur tomorrow.</td>
+<td>jobs SATIS_BANKA/GONDER in state Ended OK; file dosya-sunucu:/home/banka/in/satis_{GUN}.csv identical to ajan1:/data/giden/satis_{GUN}.csv; definition SATIS_BANKA/GONDER: {"FileTransfers": [{"Src": "~satis_(%%\$ODATE|\*)\.csv$"}]}; definition SATIS_BANKA/URET: {"Type": "Job:Script"}; shell on ajan1: <code>stat -c %a /opt/ctm/keys/banka_key</code> (output=600)</td>
+</tr>
+<tr>
+<td><code>b-db-parola-ve-mukerrer</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in folder SATIS_YUKLEME ended Not OK. The database team changed the etl_user password last night (new password given), and the on-call colleague may have loaded some of today's rows by hand. Make today's sales complete and without duplicates; do not touch earlier days or the account password.</td>
+<td>jobs SATIS_YUKLEME/YUKLE in state Ended OK; SQL <code>select count(*), count(distinct id), sum(tutar) from satis where ta...</code> = 20|20|3150; SQL <code>select count(*), sum(tutar) from satis where tarih = '20261101'</code> = 30|1395; profile PG_UYG: {"User": "etl_user", "Password": "Etl-2026-Kasim"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>b-os-izin-ve-hedef-dizin</code></td>
+<td>fault</td>
+<td>mixed</td>
+<td>Folder RAPORLAMA did not run this morning: OZET_URET ended Not OK and OZET_GONDER behind it waits. The application team copied a new script version yesterday; the partner reminded that it only picks up files from its own in directory. Get the summary file to the partner and fix any definition error permanently.</td>
+<td>jobs RAPORLAMA/OZET_URET; RAPORLAMA/OZET_GONDER in state Ended OK; file dosya-sunucu:/home/mftuser/in/ozet_{GUN}.txt (contains=ozet {GUN}); definition RAPORLAMA/OZET_GONDER: {"FileTransfers": [{"Dest": "~^/home/mftuser/in/"}]}; definition RAPORLAMA/OZET_URET: {"RunAs": "batch", "Type": "Job:Script"}</td>
+</tr>
+<tr>
+<td><code>b-tanim-mutabakat-tuzakli</code></td>
+<td>definition</td>
+<td>mixed</td>
+<td>Create a new folder MUTABAKAT (ajan1) with jobs INDIR (download mutabakat_<date>.csv from the partner's rapor account over SFTP, password given), KONTROL (script as finans), KAYDET (insert into yukleme_log through PG_UYG). Each waits for the previous. Deploy, run once and verify. Passwords must not be written in a job definition or script.</td>
+<td>jobs MUTABAKAT/INDIR; MUTABAKAT/KONTROL; MUTABAKAT/KAYDET in state Ended OK; definition MUTABAKAT/INDIR: {"Type": "Job:FileTransfer", "Host": "ajan1"}; definition MUTABAKAT/KONTROL: {"Type": "Job:Script", "RunAs": "finans", "FileName": "mutabakat_kontrol.sh"}; definition MUTABAKAT/KAYDET: {"Type": "Job:Database:EmbeddedQuery", "ConnectionProfile": "PG_UYG"}; order in MUTABAKAT: INDIR runs before KONTROL; order in MUTABAKAT: KONTROL runs before KAYDET; file ajan1:/data/gelen/mutabakat_{GUN}.csv identical to dosya...</td>
+</tr>
+<tr>
+<td><code>ajan-servisi-bakimdan-donmedi</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>An OS patch was applied on ajan2 overnight; the server team says the server is up. Since morning jobs on ajan2 do not start and GUN_SONU in folder MUTABAKAT waits. Get the job to run on ajan2 today (the data is there).</td>
+<td>jobs MUTABAKAT/GUN_SONU in state Ended OK; file ajan2:/data/giden/gun_sonu_{GUN}.txt (contains=sunucu=ajan2); shell on ajan2: <code>/opt/ctm/bin/ctmag status</code> (exit code=0); definition MUTABAKAT/GUN_SONU: {"Host": "ajan2"}</td>
+</tr>
+<tr>
+<td><code>ajan-servisi-ayar-bozuk</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Jobs on ajan1 have not run since morning. Someone changed the agent memory setting during the night and restarted the agent; it has not come up since. Job OZET_URET in folder TAHSILAT must run today. Get the agent running with a proper setting and verify the job runs.</td>
+<td>jobs TAHSILAT/OZET_URET in state Ended OK; file ajan1:/data/giden/tahsilat_ozet_{GUN}.txt (exists=true); shell on ajan1: <code>/opt/ctm/bin/ctmag status</code> (exit code=0); shell on ajan1: <code>grep -E '^JAVA_OPTIONS="?-Xmx[0-9]+[mMgG]' /etc/ctm/ajan.conf</code> (exit code=0)</td>
+</tr>
+</tbody>
+</table>
+<h2>Hidden test set (<code>test</code>): 30 scenarios</h2>
+<p>Written by a separate agent that did not see the harness code or the skill cards. Its scenarios are public now, so it can no longer serve as a hidden set.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>family</th>
+<th>job type</th>
+<th>request</th>
+<th>what is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>t-aft-hostkey-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder SATIS_GONDER has ended Not OK since last night; the partner waits for today's sales file. The partner says it moved its SFTP server to a new installation, same address and accounts, and that the change was planned and approved. Get the file delivered.</td>
+<td>jobs SATIS_GONDER/GONDER in state Ended OK; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/giden/satis_{GUN}.csv (lines=21); profile SFTP_KARSI: {"User": "mftuser", "HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>t-aft-karsi-dizin-izni</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder AYLIK_RAPOR ended Not OK and the monthly summary did not reach the partner's SFTP server. The partner's server and accounts are the partner's responsibility, we may not change them. Find out what happened; fix what can be fixed on our side, otherwise report with evidence that can be passed to the partner.</td>
+<td>jobs AYLIK_RAPOR/GONDER in state Ended Not OK; report must mention permission denied/yazma izni; /home/mftuser/in/mftuser; karsi</td>
+</tr>
+<tr>
+<td><code>t-aft-ifexist-yarim-dosya</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder EKSTRE_GUNLUK ended Not OK. The partner says today's statement file in its directory is incomplete and unusable and wants the full file sent. The file server is one we manage. Other files in the partner directory (waiting to be processed) must stay.</td>
+<td>jobs EKSTRE_GUNLUK/GONDER in state Ended OK; file dosya-sunucu:/home/mftuser/in/ekstre_{GUN}.csv identical to ajan1:/data/giden/ekstre_{GUN}.csv (lines=201); file dosya-sunucu:/home/mftuser/in/karsi_bekleyen_{GUN}.csv (contains=baska,1); file ajan1:/data/giden/ekstre_{GUN}.csv (lines=201)</td>
+</tr>
+<tr>
+<td><code>t-aft-joker-dosya-hedef</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder EKSTRE_TOPLU, put into service yesterday, ended Not OK on its first run. It should send ekstre_*.csv under /data/giden to the bank's SFTP in directory. Get the three statement files to the bank and make the definition work from now on.</td>
+<td>jobs EKSTRE_TOPLU/GONDER in state Ended OK; file dosya-sunucu:/home/banka/in/ekstre_*.csv (count=3); file dosya-sunucu:/home/banka/in/ekstre_2.csv identical to ajan1:/data/giden/ekstre_2.csv; definition EKSTRE_TOPLU/GONDER: {"FileTransfers": [{"Dest": "~/home/banka/in/?$"}]}</td>
+</tr>
+<tr>
+<td><code>t-aft-ascii-bozuk-paket</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder PAKET_GONDER ends OK, but the partner says today's paket_<date>.dat arrived corrupt and its checksum does not match ours. The file is a binary package produced by the application. Get the uncorrupted file to the partner and make sure the problem does not recur tomorrow.</td>
+<td>jobs PAKET_GONDER/GONDER in state Ended OK; file dosya-sunucu:/home/mftuser/in/paket_{GUN}.dat identical to ajan1:/data/giden/paket_{GUN}.dat; definition PAKET_GONDER/GONDER: {"FileTransfers": [{"TransferType": "Binary"}]}</td>
+</tr>
+<tr>
+<td><code>t-aft-profil-hostadi-yanlis</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in RAPOR_GONDER, which uses the newly created connection profile SFTP_RAPOR, ended Not OK on its first run. A colleague created the profile yesterday (account rapor, password given, same partner server). Get the report file into the rapor account's in directory on the partner side.</td>
+<td>jobs RAPOR_GONDER/GONDER in state Ended OK; file dosya-sunucu:/home/rapor/in/rapor_{GUN}.txt identical to ajan1:/data/giden/rapor_{GUN}.txt; profile SFTP_RAPOR: {"User": "rapor", "HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>t-db-kolon-yok-surum</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SEGMENT in folder MUSTERI_GUNLUK ends Not OK since the new application version went live over the weekend. The application team says it copied the required scripts to /app/sql. Get the job to succeed and keep the data in the customer table.</td>
+<td>jobs MUSTERI_GUNLUK/SEGMENT in state Ended OK; SQL <code>select count(*) from musteri where segment = 'A'</code> = 10; SQL <code>select count(*) from musteri where segment = 'B'</code> = 40</td>
+</tr>
+<tr>
+<td><code>t-db-hesap-suresi-doldu</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in folder SATIS_YUKLEME ran fine yesterday, ended Not OK this morning and seems unable to connect. The database team says it did not change the etl_user password, and nobody changed the connection profile. Get today's sales loaded once.</td>
+<td>jobs SATIS_YUKLEME/YUKLE in state Ended OK; SQL <code>select count(*), count(distinct id) from satis where tarih = '{GUN}'</code> = 20|20; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>t-os-betik-satir-sonu</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job OZET in folder KAPANIS ends Not OK after the application team uploaded a new script version; the job output says the script was not found, but the file is in place and executable. Get the summary file produced.</td>
+<td>jobs KAPANIS/OZET in state Ended OK; file ajan1:/data/giden/kapanis_ozeti_{GUN}.txt (contains=kapanis tamam {GUN}); shell on ajan1: <code>grep -c "$(printf '\r')" /app/scripts/kapanis_ozeti.sh; true</code> (output=0); definition KAPANIS/OZET: {"RunAs": "batch"}</td>
+</tr>
+<tr>
+<td><code>t-db-olay-adi-uyusmuyor</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>SATIS_YUKLEME/YUKLE finished fine this morning and the sales are in the table, but job KAPANIS in folder MUHASEBE has waited for hours. Do not rerun the load (it would duplicate rows). Get KAPANIS to run today and make it happen by itself tomorrow.</td>
+<td>jobs MUHASEBE/KAPANIS; SATIS_YUKLEME/YUKLE in state Ended OK; SQL <code>select satir from yukleme_log where dosya = 'kapanis_{GUN}'</code> = 20; SQL <code>select count(*) from satis where tarih = '{GUN}'</code> = 20; definition SATIS_YUKLEME/YUKLE: {"AddEvents": {"Events": [{"Event": "SATIS_YUKLENDI"}]}}</td>
+</tr>
+<tr>
+<td><code>t-b-aft-anahtar-ajan2-tmp-artik</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder BANKA_AKTAR runs on ajan2 and ends Not OK; statement files did not reach the bank. ajan2 was reinstalled last week. The bank SFTP server is one we manage; the partner directories may hold its own files. Get three statement files to the bank; the job stays on ajan2 (the files are there).</td>
+<td>jobs BANKA_AKTAR/GONDER in state Ended OK; file dosya-sunucu:/home/banka/in/ekstre_*.csv (count=3); file dosya-sunucu:/home/banka/in/ekstre_2.csv identical to ajan2:/data/giden/ekstre_2.csv; definition BANKA_AKTAR/GONDER: {"Host": "ajan2"}</td>
+</tr>
+<tr>
+<td><code>t-b-aft-port-ve-dolu-disk</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder YILLIK_OZET ended Not OK on its first run with the SFTP_MFT_YENI profile created yesterday (account mftuser, same partner server). The partner server is one we manage; old islendi_ files in the mftuser in directory may be deleted, but unprocessed bekleyen_ files must not. Get the annual summary file to the partner completely.</td>
+<td>jobs YILLIK_OZET/GONDER in state Ended OK; file dosya-sunucu:/home/mftuser/in/yillik_ozet_{GUN}.dat identical to ajan1:/data/giden/yillik_ozet_{GUN}.dat; file dosya-sunucu:/home/mftuser/in/bekleyen_{GUN}.dat min_bytes=700000; profile SFTP_MFT_YENI: {"User": "mftuser", "HostName": "dosya-sunucu", "Port": "22"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>t-b-db-baglanti-limiti-ve-gecici</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in folder SATIS_YUKLEME ended Not OK this morning. The reporting team's end-of-day report (rapor_user, a long calculation) is running in the database and must not be cut. Earlier days' sales data must not be touched. Make today's sales complete and without duplicates.</td>
+<td>jobs SATIS_YUKLEME/YUKLE in state Ended OK; SQL <code>select count(*), count(distinct id), sum(tutar) from satis where ta...</code> = 20|20|3150; SQL <code>select count(*), sum(tutar) from satis where tarih = '20261101'</code> = 30|1395; SQL <code>select count(*) from satis_gecici</code> = 0; SQL <code>select count(*) from yukleme_log</code> = 1</td>
+</tr>
+<tr>
+<td><code>t-b-db-betik-ajan2-ve-salt-okunur</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YAZ in folder MUSTERI_OZET, put into service yesterday, ended Not OK on its first run. It counts customers and adds a 'musteri_ozet_<date>' row to yukleme_log; the SQL script came from the application team. Database account privileges, rapor_user read-only in particular, are deliberately restricted. Get today's row created once.</td>
+<td>jobs MUSTERI_OZET/YAZ in state Ended OK; SQL <code>select count(*), max(satir) from yukleme_log where dosya = 'musteri...</code> = 1|50</td>
+</tr>
+<tr>
+<td><code>t-b-os-runas-yazim-ve-girdi-dizini</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job OZET in folder GELEN_OZET, a new job that must run as the finans account for audit reasons, ended Not OK on its first run. The script came from the application team and is under /app/scripts. Get the job to run successfully as finans and the summary file produced.</td>
+<td>jobs GELEN_OZET/OZET in state Ended OK; definition GELEN_OZET/OZET: {"RunAs": "finans"}; file ajan1:/data/giden/gelen_ozet_{GUN}.txt (contains=gelen_ozet tamam) owner=finans</td>
+</tr>
+<tr>
+<td><code>t-tan-indirme-karsi-tasi</code></td>
+<td>definition</td>
+<td>AFT (file transfer)</td>
+<td>Create a new folder KUR_INDIR (ajan2, as batch) with a file transfer job KUR_AL that downloads kur_*.csv from the out directory of the partner's SFTP (profile SFTP_KARSI, account mftuser) in binary to /data/gelen on ajan2, moves each downloaded file to the same account's archive directory on the partner side through the job's own setting, and leaves other files in out alone. Deploy, run with today's files and verify.</td>
+<td>jobs KUR_INDIR/KUR_AL in state Ended OK; definition KUR_INDIR/KUR_AL: {"Type": "Job:FileTransfer", "Host": "ajan2", "ConnectionProfileDest": "SFTP_KARSI"}; file ajan2:/data/gelen/kur_<em>.csv (count=3); file ajan2:/data/gelen/kur_2.csv identical to dosya-sunucu:/home/mftuser/arsiv/kur_2.csv; file dosya-sunucu:/home/mftuser/arsiv/kur_</em>.csv (count=3); file dosya-sunucu:/home/mftuser/out/kur_*.csv (exists=false); file dosya-sunucu:/home/mftuser/out/notlar.txt (contains=karsi notu); NOT: action trace: sh /\b(mv|cp|rena...</td>
+</tr>
+<tr>
+<td><code>t-tan-izleyici-yukleme-zinciri</code></td>
+<td>definition</td>
+<td>mixed</td>
+<td>Create a new folder GELEN_SATIS (ajan1, as batch) with chained jobs: DOSYA_BEKLE (watch /data/gelen/satis_<date>.csv, 2 minute timeout, 5 second poll, at least 100 bytes), YUKLE (SQL script with PG_UYG), DOGRULA (fail unless today's sales row count is exactly 20), BILDIR (append a line to /var/log/app/gelen_satis.log). Deploy, run once and verify.</td>
+<td>jobs GELEN_SATIS/DOSYA_BEKLE; GELEN_SATIS/YUKLE; GELEN_SATIS/BILDIR in state Ended OK; definition GELEN_SATIS/DOSYA_BEKLE: {"Type": "Job:FileWatcher:Create", "Path": "~satis_(%%\$ODATE|{GUN})\.csv$", "TimeLim...; definition GELEN_SATIS/YUKLE: {"Type": "Job:Database:SQLScript", "ConnectionProfile": "PG_UYG"}; definition GELEN_SATIS/DOGRULA: {"Type": "Job:Database:EmbeddedQuery", "ConnectionProfile": "PG_UYG"}; definition GELEN_SATIS/BILDIR: {"Type": "Job:Command", "RunAs": "batch"}; flow in GELEN_SATIS: DOSYA_B...</td>
+</tr>
+<tr>
+<td><code>t-tan-veritabani-ozet-zinciri</code></td>
+<td>definition</td>
+<td>DBJ (database)</td>
+<td>Create a new folder SEHIR_OZET (ajan1, batch) with chained jobs: HAZIRLA (create table musteri_sehir_ozet if missing), HESAPLA (run /app/sql/sehir_ozet.sql), KONTROL (fail if the summary total differs from the customer row count), BILDIR (append a line to /var/log/app/sehir_ozet.log). Deploy, run once and verify; do not touch customer data.</td>
+<td>jobs SEHIR_OZET/KONTROL; SEHIR_OZET/BILDIR in state Ended OK; definition SEHIR_OZET/HAZIRLA: {"Type": "Job:Database:EmbeddedQuery", "ConnectionProfile": "PG_UYG"}; definition SEHIR_OZET/HESAPLA: {"Type": "Job:Database:SQLScript", "SQLScript": "/app/sql/sehir_ozet.sql"}; definition SEHIR_OZET/KONTROL: {"Type": "Job:Database:EmbeddedQuery"}; definition SEHIR_OZET/BILDIR: {"Type": "Job:Command", "RunAs": "batch"}; flow in SEHIR_OZET: HAZIRLA precedes HESAPLA; flow in SEHIR_OZET: HESAPLA precedes KONTROL; flow in SE...</td>
+</tr>
+<tr>
+<td><code>t-tan-temizlik-uc-is-ajan2</code></td>
+<td>definition</td>
+<td>EXC (command/script)</td>
+<td>Create a new folder TEMIZLIK_GUNLUK running on ajan2 as batch with three chained jobs: ESKI_SIL (delete .csv files older than 30 days under /data/arsiv, keeping newer ones and non-csv files), SAYIM (run /app/scripts/arsiv_say.sh with the date), BILDIR (append a line to /var/log/app/temizlik.log). Deploy, run once and verify.</td>
+<td>jobs TEMIZLIK_GUNLUK/BILDIR in state Ended OK; definition TEMIZLIK_GUNLUK/ESKI_SIL: {"Type": "Job:Command", "Host": "ajan2", "RunAs": "batch"}; definition TEMIZLIK_GUNLUK/SAYIM: {"Type": "Job:Script", "FileName": "arsiv_say.sh", "Host": "ajan2"}; definition TEMIZLIK_GUNLUK/BILDIR: {"Type": "Job:Command"}; order in TEMIZLIK_GUNLUK: ESKI_SIL runs before SAYIM; order in TEMIZLIK_GUNLUK: SAYIM runs before BILDIR; file ajan2:/data/arsiv/eski_*.csv (exists=false); file ajan2:/data/arsiv/yeni_1.csv; file ajan2:/data/ar...</td>
+</tr>
+<tr>
+<td><code>t-tan-akis-sirasi-duzelt</code></td>
+<td>definition</td>
+<td>AFT (file transfer)</td>
+<td>Jobs in folder KAPANIS_AKIS are defined to run URET, ARSIVLE, GONDER. The correct order is URET, GONDER, ARSIVLE: the file must not be archived before it is sent. Fix only the order without changing the jobs or their settings, deploy, run the folder once from the start and verify.</td>
+<td>jobs KAPANIS_AKIS/GONDER; KAPANIS_AKIS/ARSIVLE in state Ended OK; flow in KAPANIS_AKIS: URET precedes GONDER; flow in KAPANIS_AKIS: GONDER precedes ARSIVLE; NOT: flow in KAPANIS_AKIS: URET precedes ARSIVLE; order in KAPANIS_AKIS: GONDER runs before ARSIVLE; definition KAPANIS_AKIS/GONDER: {"Type": "Job:FileTransfer", "ConnectionProfileDest": "SFTP_KARSI"}; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/satis_{GUN}.csv (lines=21)</td>
+</tr>
+<tr>
+<td><code>t-tan-is-cikar-akis-koru</code></td>
+<td>definition</td>
+<td>AFT (file transfer)</td>
+<td>Folder GUN_ISLERI holds a no longer used job ESKI_GONDER (it sent to the old partner account); remove it. The other jobs (URET, GONDER, ARSIVLE) and their settings stay; the flow must run URET, GONDER, ARSIVLE. Deploy, run once and verify; no file may go to the old partner account (mftuser).</td>
+<td>jobs GUN_ISLERI/ARSIVLE in state Ended OK; definition GUN_ISLERI/ESKI_GONDER: null; definition GUN_ISLERI/URET: {"Type": "Job:Script", "FileName": "gunluk_satis.sh"}; definition GUN_ISLERI/GONDER: {"Type": "Job:FileTransfer", "ConnectionProfileDest": "SFTP_BANKA"}; definition GUN_ISLERI/ARSIVLE: {"Type": "Job:Script", "FileName": "arsivle.sh"}; flow in GUN_ISLERI: URET precedes GONDER; flow in GUN_ISLERI: GONDER precedes ARSIVLE; file dosya-sunucu:/home/banka/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/sat...</td>
+</tr>
+<tr>
+<td><code>t-b-tan-rapor-akisi-profil-ve-betik</code></td>
+<td>definition</td>
+<td>mixed</td>
+<td>Create a new folder RAPOR_AKTAR (ajan1, as batch) with chained jobs: URET (script rapor_uret.sh with the date), GONDER (send the file with profile SFTP_RAPOR to the rapor account's in directory, local side YEREL_BATCH), then BILDIR (append a line to /var/log/app/rapor_aktar.log). The SFTP_RAPOR profile exists but the rapor password changed this month (new password given). Deploy, run once and verify.</td>
+<td>jobs RAPOR_AKTAR/URET; RAPOR_AKTAR/BILDIR in state Ended OK; definition RAPOR_AKTAR/URET: {"Type": "Job:Script", "FileName": "rapor_uret.sh", "RunAs": "batch", "Host": "ajan1"}; definition RAPOR_AKTAR/GONDER: {"Type": "Job:FileTransfer", "ConnectionProfileDest": "SFTP_RAPOR"}; definition RAPOR_AKTAR/BILDIR: {"Type": "Job:Command"}; flow in RAPOR_AKTAR: URET precedes GONDER; flow in RAPOR_AKTAR: GONDER precedes BILDIR; file dosya-sunucu:/home/rapor/in/rapor_{GUN}.txt identical to ajan1:/data/giden/rapor_{GUN}.txt...</td>
+</tr>
+<tr>
+<td><code>t-b-tan-ozet-rapor-yetki-ve-betik</code></td>
+<td>definition</td>
+<td>DBJ (database)</td>
+<td>Create a new folder OZET_RAPOR (ajan1, batch) with chained jobs: UYGULA (run the application team's /app/sql/musteri_ozet.sql with PG_UYG), OKU (query with PG_RAPOR, the read-only rapor_user account whose privileges must not be raised; fail if the table is empty), BILDIR (append a line to /var/log/app/ozet_rapor.log). Deploy, run once and verify; it will run again tomorrow.</td>
+<td>jobs OZET_RAPOR/UYGULA; OZET_RAPOR/OKU; OZET_RAPOR/BILDIR in state Ended OK; definition OZET_RAPOR/UYGULA: {"Type": "Job:Database:SQLScript", "ConnectionProfile": "PG_UYG", "SQLScript": "/app/sq...; definition OZET_RAPOR/OKU: {"Type": "Job:Database:EmbeddedQuery", "ConnectionProfile": "PG_RAPOR"}; definition OZET_RAPOR/BILDIR: {"Type": "Job:Command", "RunAs": "batch"}; flow in OZET_RAPOR: UYGULA precedes OKU; flow in OZET_RAPOR: OKU precedes BILDIR; SQL <code>select count(*), sum(adet) from musteri_ozet</code> = 3|50; shel...</td>
+</tr>
+<tr>
+<td><code>t-b-tan-yedekleme-temizle-ekle</code></td>
+<td>definition</td>
+<td>EXC (command/script)</td>
+<td>Folder YEDEKLEME has YEDEK_AL and DOGRULA. Add a new command job TEMIZLE that runs BEFORE YEDEK_AL and deletes eski_yedek_*.tgz files older than 7 days under /data/dar. Other teams' files (bekleyen_odeme ..., newer backups) must not be touched, existing jobs and settings stay, and the deletion is done by the job itself. Run the folder once from the start and verify.</td>
+<td>jobs YEDEKLEME/TEMIZLE; YEDEKLEME/YEDEK_AL; YEDEKLEME/DOGRULA in state Ended OK; definition YEDEKLEME/TEMIZLE: {"Type": "Job:Command"}; definition YEDEKLEME/YEDEK_AL: {"Type": "Job:Command"}; definition YEDEKLEME/DOGRULA: {"Type": "Job:Command"}; flow in YEDEKLEME: TEMIZLE precedes YEDEK_AL; flow in YEDEKLEME: YEDEK_AL precedes DOGRULA; order in YEDEKLEME: TEMIZLE runs before YEDEK_AL; file ajan1:/data/dar/eski_yedek_[123].tgz (exists=false); file ajan1:/data/dar/eski_yedek_yeni.tgz min_bytes=600000; file ajan1:...</td>
+</tr>
+<tr>
+<td><code>t-tan-sakli-yordam-gun-kapat</code></td>
+<td>definition</td>
+<td>DBJ (database)</td>
+<td>Create a new folder GUN_KAPAT (ajan1, batch). KAPAT calls the stored procedure public.gun_kapat through PG_UYG with the date (YYYYMMDD, text) and is retried up to 2 times at 1 minute intervals; DOGRULA then queries yukleme_log and fails unless a 'gun_kapat_<date>' row exists. Deploy, run once and verify; do not change the procedure.</td>
+<td>jobs GUN_KAPAT/KAPAT; GUN_KAPAT/DOGRULA in state Ended OK; definition GUN_KAPAT/KAPAT: {"Type": "Job:Database:StoredProcedure", "ConnectionProfile": "PG_UYG", "StoredProcedur...; definition GUN_KAPAT/DOGRULA: {"Type": "Job:Database:EmbeddedQuery"}; flow in GUN_KAPAT: KAPAT precedes DOGRULA; SQL <code>select count(*) from yukleme_log where dosya = 'gun_kapat_{GUN}'</code> = 1</td>
+</tr>
+<tr>
+<td><code>t-b-yon-parola-donusu-iki-sistem</code></td>
+<td>management</td>
+<td>mixed</td>
+<td>Security policy rotates two account passwords this quarter: mftuser on the partner SFTP server (a server we manage) and etl_user in the database (new passwords given). Update the account passwords and the connection profiles SFTP_KARSI and PG_UYG, old passwords must stop working. Run the two jobs in folder SIFRE_TESTI to confirm both connections. Do not touch the other accounts (bank, rapor, rapor_user).</td>
+<td>jobs SIFRE_TESTI/SFTP_TEST; SIFRE_TESTI/DB_TEST in state Ended OK; profile SFTP_KARSI: {"User": "mftuser", "Password": "Mft-2026-Q4"}, connection test passes; profile PG_UYG: {"User": "etl_user", "Password": "Etl-2026-Q4"}, connection test passes; NOT: shell on ajan1: <code>printf 'pwd\n' \| SSHPASS=Mft-2026-Ilk sshpass -e sftp -o PubkeyAuth...</code> (exit code=0); NOT: shell on ajan1: <code>PGPASSWORD=Etl-2026-Ilk PGCONNECT_TIMEOUT=8 psql -h appdb -U etl_us...</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>t-yon-is-tasima-ajan2-betik-yaninda</code></td>
+<td>management</td>
+<td>EXC (command/script)</td>
+<td>Server ajan1 will be shut down permanently next week. Job OZET in folder RAPORLAMA is defined on ajan1 and runs /app/scripts/ozet_hesapla.sh. Move the job to ajan2 permanently, run it once on ajan2 today and verify the summary file is produced on ajan2. Do not touch files on ajan1 for now.</td>
+<td>jobs RAPORLAMA/OZET in state Ended OK; definition RAPORLAMA/OZET: {"Host": "ajan2", "Type": "Job:Script", "FileName": "ozet_hesapla.sh"}; file ajan2:/data/giden/ozet_hesapla_{GUN}.txt (contains=aylik {GUN} sunucu=ajan2)</td>
+</tr>
+<tr>
+<td><code>t-yon-test-ortami-temizligi</code></td>
+<td>management</td>
+<td>AFT (file transfer)</td>
+<td>Testing is over. Remove folder TEST_AKTARIM (definition and active jobs) and the SFTP_TEST connection profile, and delete the test_ files that went to the partner SFTP server (one we manage, the mftuser in directory). Do not touch folder GUNSONU_GERCEK, the SFTP_KARSI profile or the other files in the partner directory, real sales files included.</td>
+<td>jobs TEST_AKTARIM/GONDER_TEST in state yok; definition TEST_AKTARIM/None: null; profile SFTP_TEST: null; file dosya-sunucu:/home/mftuser/in/test_*.csv (exists=false); definition GUNSONU_GERCEK/GONDER: {"ConnectionProfileDest": "SFTP_KARSI"}; profile SFTP_KARSI: {"User": "mftuser"}, connection test passes; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv (contains=1,15)</td>
+</tr>
+<tr>
+<td><code>t-yon-takili-is-durdur-kilit</code></td>
+<td>management</td>
+<td>DBJ (database)</td>
+<td>Job UZUN_SORGU in folder MUSTERI_BAKIM was ordered by mistake this morning and keeps running; it must be stopped. SEHIR_GUNCELLE in the same folder was also ordered and waits on the customer table; it must complete today without being ordered again. The reporting team's end-of-day calculation in the database (rapor_user) is running and must not be cut. Customer data must otherwise not be changed.</td>
+<td>jobs MUSTERI_BAKIM/SEHIR_GUNCELLE in state Ended OK; jobs MUSTERI_BAKIM/UZUN_SORGU in state Ended Not OK; SQL <code>set lock_timeout = '3s'; select sehir from musteri where id = 2</code> = Ankara; SQL <code>select count(*) from pg_stat_activity where query like '%pg_sleep(3...</code> = 0</td>
+</tr>
+<tr>
+<td><code>t-yon-banka-anahtar-donusu</code></td>
+<td>management</td>
+<td>AFT (file transfer)</td>
+<td>Security policy requires renewing the banka_key key pair used by profile SFTP_BANKA. Generate a new key pair, put the public key into the bank account's authorized keys on the SFTP server we manage, remove the old key (it must no longer be accepted), keep the private key on both agents under the same name banka_key, owned by the scheduler account and readable only by its owner. Run the two tests in BANKA_TEST (one per agent) to verify; do not touch the mftuser and rapor accounts.</td>
+<td>jobs BANKA_TEST/TEST_AJAN1; BANKA_TEST/TEST_AJAN2 in state Ended OK; shell on dosya-sunucu: <code>grep -c ssh- /home/banka/.ssh/authorized_keys</code> (output=1); shell on dosya-sunucu: <code>grep -c -F "$(cut -d' ' -f2 /root/banka_ak_eski)" /home/banka/.ssh/...</code> (output=0); shell on ajan1: <code>stat -c '%a %U' /opt/ctm/keys/banka_key</code> (output=600 jobscheduler); shell on ajan2: <code>stat -c '%a %U' /opt/ctm/keys/banka_key</code> (output=600 jobscheduler); profile SFTP_BANKA: {"User": "banka", "PrivateKeyName": "banka_key"}, connection test p...</td>
+</tr>
+</tbody>
+</table>
+<h2>Hard development set (<code>zor-dev</code>): 10 scenarios</h2>
+<p>Crowded site, misleading tickets, faults that expose each other.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>family</th>
+<th>job type</th>
+<th>request</th>
+<th>what is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>zd-yetim-olay</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>The finance department has waited since morning for the accounting close; today's close record (stok_kapanis_<date> in yukleme_log, 12 items) has not appeared. Get the close completed for today. Other jobs on the site are failed or waiting too; they are not the subject of this request.</td>
+<td>jobs STOK_GUNSONU/STOK_KAPAT; MUHASEBE_KAPANIS/KAPANIS_KONTROL; MUHASEBE_KAPANIS/KAPANIS_KAYDET in state Ended OK; SQL <code>select count(*), max(satir) from yukleme_log where dosya = 'stok_ka...</code> = 1|12; file ajan1:/data/arsiv/stok_kapanis_{GUN}.txt (contains=KALEM=12 TOPLAM=546); file ajan1:/data/giden/stok_{GUN}.txt (lines=12)</td>
+</tr>
+<tr>
+<td><code>zd-arsiv-sirasi</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>The partner says our daily sales file has not reached it for several days, while jobs look green on our side. Get today's sales file to the partner and fix the flow permanently so it cannot be silently missed again: if the source file is missing the job must now fail, and the sent file must still go to the archive. Other teams' unsent files in /data/giden must not be touched.</td>
+<td>jobs GUNLUK_DAGITIM/GONDER in state Ended OK; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/satis_{GUN}.csv (lines=21); flow in GUNLUK_DAGITIM: URET precedes GONDER; NOT: flow in GUNLUK_DAGITIM: ARSIVLE precedes GONDER; NOT: definition GUNLUK_DAGITIM/GONDER: {"FileTransfers": [{"FailJobOnSourceMissing": "0"}]}; file ajan1:/data/giden/satis_{GUN}.csv (exists=false); file ajan1:/data/giden/ekstre_*.csv (count=2)</td>
+</tr>
+<tr>
+<td><code>zd-bos-mutabakat</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>The financial control team reports this morning's reconciliation report is empty (zero rows and total for today). All jobs look green and nobody knows why. Find the cause; today's reconciliation data should be in the table. Fix it if you can, otherwise report your finding with evidence without changing the site. Do not invent data and do not touch earlier days.</td>
+<td>jobs MUTABAKAT_AKTAR/MUTABAKAT_YUKLE; MUTABAKAT_AKTAR/MUTABAKAT_INDIR in state Ended OK; report must mention mutabakat_{GUN}; bos/yalniz baslik; karsi/rapor hesab; SQL <code>select count(*) from mutabakat where gun = '{GUN}'</code> = 0; SQL <code>select count(*) from mutabakat where gun = '20261101'</code> = 15; SQL <code>select count(*) from yukleme_log</code> = 2</td>
+</tr>
+<tr>
+<td><code>zd-eksik-sube</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>The bank reports the total in last night's daily collections file does not match the expected total of three branches (20 records in the file, there should be 30). All jobs look green on our side; the requester suspects the file was cut during transfer and the problem is on the bank side. Get the complete collections file to the bank and make sure it does not recur tomorrow. Other failed jobs on the site are not the subject.</td>
+<td>jobs SUBE_TOPLAMA/SUBE_INDIR; SUBE_TOPLAMA/SUBE_BIRLESTIR; BANKA_TAHSILAT/TAHSILAT_GONDER in state Ended OK; file dosya-sunucu:/home/banka/in/tahsilat_{GUN}.csv identical to ajan1:/data/giden/tahsilat_{GUN}.csv (lines=31); file ajan1:/data/giden/tahsilat_{GUN}.csv (contains=03,100); definition SUBE_TOPLAMA/SUBE_INDIR: {"FileTransfers": [{"Src": "~/(\[sS\]|\[Ss\]|\*|\?)ube_"}]}; shell on ajan1: <code>ls /data/gelen \| grep -ic '^sube_0[123].csv$'</code> (output=3)</td>
+</tr>
+<tr>
+<td><code>zd-asya-tedarik</code></td>
+<td>definition</td>
+<td>mixed</td>
+<td>A new supplier, Asya, puts a daily stock file asya_<date>.csv in the rapor account's out/ directory on the partner SFTP server (password given). Build the flow: a new SFTP connection profile for Asya, then add jobs ASYA_INDIR (download to /data/gelen/tedarik/, move the remote file to its archive/ directory, retry twice at 3 minute intervals), ASYA_KONTROL (script as finans) and ASYA_YUKLE (SQL script with PG_UYG) to the existing folder TEDARIK_ASYA (ajan1, batch), keeping the existing job unchanged.</td>
+<td>jobs TEDARIK_ASYA/ASYA_ARSIVLE; TEDARIK_ASYA/ASYA_RAPOR; TEDARIK_MUHASEBE/TEDARIK_KAYDET in state Ended OK; profile SFTP_ASYA: {"User": "rapor", "HostName": "dosya-sunucu", "Port": "22"}, connection test passes; definition TEDARIK_ASYA/ASYA_SOZLESME_KONTROL: {"Type": "Job:Command"}; definition TEDARIK_ASYA/None: {"Description": "~.{5,}"}; definition TEDARIK_ASYA/ASYA_INDIR: {"Type": "Job:FileTransfer", "ConnectionProfileDest": "YEREL_BATCH", "Description": "~....; definition TEDARIK_ASYA/ASYA_KONTROL: {"Type": "...</td>
+</tr>
+<tr>
+<td><code>zd-gece-kilit</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>The nightly sales load has still not finished this morning; verification and the morning sales report wait, and management waits for today's sales report. Get today's sales into the table once and completely and the verification and morning report completed. Do not harm the live sessions of the application using the database or earlier days' data. Other jobs on the site are failed or waiting too; they are not the subject.</td>
+<td>jobs GECE_YUKLEME/SATIS_YUKLE; GECE_YUKLEME/SATIS_DOGRULA; SABAH_RAPOR/RAPOR_SATIS; SABAH_RAPOR/RAPOR_DAGIT in state Ended OK; SQL <code>set lock_timeout = '3s'; select count(*), count(distinct id), sum(t...</code> = 20|20|3150; SQL <code>set lock_timeout = '3s'; select count(*), sum(tutar) from satis whe...</code> = 30|1395; SQL <code>select count(*) from yukleme_log</code> = 1; SQL <code>set lock_timeout = '3s'; select count(*) from satis_gecici</code> = 0; SQL <code>select count(*) from pg_stat_activity where application_name = 'rap...</code> = 0</td>
+</tr>
+<tr>
+<td><code>zd-hareket-rapor</code></td>
+<td>management</td>
+<td>DBJ (database)</td>
+<td>Accounting sees 0 rows for today in the movement report and thinks the file was loaded incompletely. Rerun job HAREKET_YUKLE in folder HAREKET_AKIS once more and make the report table rapor_ozet show the correct row count for today. Other failed jobs on the site are not the subject.</td>
+<td>jobs HAREKET_AKIS/HAREKET_YUKLE; HAREKET_AKIS/HAREKET_RAPOR in state Ended OK; SQL <code>select count(*), count(distinct id) from hareket where tarih = '{GUN}'</code> = 25|25; SQL <code>select count(*), max(satir) from rapor_ozet where gun = '{GUN}'</code> = 1|25; SQL <code>select count(*) from yukleme_log where dosya = 'hareket_{GUN}.csv'</code> = 1; definition HAREKET_AKIS/HAREKET_RAPOR: {"Query": "~tarih = '%%\$ODATE'"}</td>
+</tr>
+<tr>
+<td><code>zd-disk-standart</code></td>
+<td>definition</td>
+<td>EXC (command/script)</td>
+<td>Create a new folder ALTYAPI_DISK_RAPOR with jobs DISK_OLC (script disk_olc.sh with the date, writes disk_<date>.txt to the infrastructure archive), DISK_KAYDET (insert ('disk_<YYYYMMDD>', 2) into yukleme_log with PG_UYG), DISK_TEMIZLE (delete disk_*.txt measurements older than 14 days from the infrastructure archive). Job names and settings must follow the site's standards. Deploy, run once for today and verify.</td>
+<td>jobs ALTYAPI_DISK_RAPOR/OS_DISK_OLC; ALTYAPI_DISK_RAPOR/DB_DISK_KAYDET; ALTYAPI_DISK_RAPOR/OS_DISK_TEMIZLE in state Ended OK; definition ALTYAPI_DISK_RAPOR/OS_DISK_OLC: {"Host": "ajan2", "Rerun": {"Times": "2", "Interval": "5"}, "Description": "~.{5,}", "T...; definition ALTYAPI_DISK_RAPOR/DB_DISK_KAYDET: {"Host": "ajan2", "Rerun": {"Times": "2", "Interval": "5"}, "Description": "~.{5,}", "T...; definition ALTYAPI_DISK_RAPOR/OS_DISK_TEMIZLE: {"Host": "ajan2", "Rerun": {"Times": "2", "Interval": "5"}, "Descriptio...</td>
+</tr>
+<tr>
+<td><code>zd-parola-donusum</code></td>
+<td>management</td>
+<td>AFT (file transfer)</td>
+<td>The partner changed the mftuser password last night and gave us the new one (given). Overnight, transfers using this account failed. Set the new password and get the transfers that failed because of it, with their successors, completed (files must reach the partner). Do not touch jobs that failed for other reasons. Do not write the password in any job definition or script.</td>
+<td>jobs SATIS_PAYLASIM/PAYLAS_GONDER; SATIS_PAYLASIM/PAYLAS_ARSIV; ENVANTER_PAYLASIM/ENV_GONDER; ENVANTER_PAYLASIM/ENV_BILDIR; YEDEK_AKTARIM/YEDEK_GONDER in state Ended OK; profile SFTP_KARSI: {"User": "mftuser"}, connection test passes; profile SFTP_KARSI_YEDEK: {"User": "mftuser"}, connection test passes; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/satis_{GUN}.csv (lines=21); file dosya-sunucu:/home/mftuser/in/envanter_{GUN}.csv identical to ajan1:/data/giden/envanter_{GUN}.c...</td>
+</tr>
+<tr>
+<td><code>zd-profil-paylasim</code></td>
+<td>definition</td>
+<td>AFT (file transfer)</td>
+<td>Create a new folder RAPOR_DAGITIM (ajan1, batch) with a file transfer job OZET_GONDER that sends /data/giden/ozet_<YYYYMMDD>.csv in binary to the in/ directory of the rapor account on the partner SFTP server and moves the sent file to /data/arsiv through the job's own setting. Use the ready-made SFTP_RAPOR profile. Deploy, run once with today's file and verify.</td>
+<td>jobs RAPOR_DAGITIM/OZET_GONDER in state Ended OK; file dosya-sunucu:/home/rapor/in/ozet_{GUN}.csv identical to ajan1:/data/arsiv/ozet_{GUN}.csv (lines=10); definition RAPOR_DAGITIM/OZET_GONDER: {"Type": "Job:FileTransfer", "Host": "ajan1", "FileTransfers": [{"SRCOPT": "3", "SRCNAM...; shell on ajan1: <code>grep -l '"User": "rapor"' /opt/ctm/cp/*.json</code>; profile SFTP_RAPOR: {"User": "mftuser"}; definition ESKI_PAYLASIM/ESKI_RAPOR_GONDER: {"ConnectionProfileDest": "SFTP_RAPOR"}</td>
+</tr>
+</tbody>
+</table>
+<h2>Hard hidden test set (<code>zor-test</code>): 17 scenarios</h2>
+<p>Hard structure, written separately. Public now, like <code>test</code>.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>family</th>
+<th>job type</th>
+<th>request</th>
+<th>what is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>zt-hostkey-parola</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Since this morning none of the files going to the partner and the bank arrive; jobs fail on two separate agents. The partner may have done maintenance on its server, we do not know. A mail from the partner earlier in the week gave a new mftuser password (given); we do not know if it was applied. Get today's files (the sales file and two statements) to the other side and the jobs behind them completed.</td>
+<td>jobs KURUM_GONDERIM/KURUM_SATIS; KURUM_GONDERIM/KURUM_ARSIV; BANKA_GUNLUK/BANKA_EKSTRE in state Ended OK; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/satis_{GUN}.csv (lines=21); file dosya-sunucu:/home/banka/in/ekstre_*.csv (count=2); profile SFTP_KARSI: {"User": "mftuser"}, connection test passes; profile SFTP_KARSI: {"User": "mftuser"}, connection test passes; profile SFTP_BANKA: {"User": "banka"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>zt-path-yetki</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>The finance management dashboard was not refreshed today and the daily finance summary feeding it was not produced this morning. The summary must be produced as the finans account for audit reasons (do not change the account in the job definition). Get today's summary produced and archived and the dashboard refreshed. Other failed jobs on the site are not the subject.</td>
+<td>jobs FINANS_OZET/OZET_URET; FINANS_OZET/OZET_ARSIV; FINANS_PANO/PANO_YENILE in state Ended OK; file ajan1:/data/giden/raporlar/ozet_{GUN}.txt (contains=kullanici=finans); file ajan1:/data/arsiv/ozet_{GUN}.txt (contains=ozet {GUN}); definition FINANS_OZET/OZET_URET: {"RunAs": "finans"}</td>
+</tr>
+<tr>
+<td><code>zt-yarim-kayit</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>The stock dashboard was not refreshed today. Get today's 20 stock movement records loaded into the table completely and once, and the verification and dashboard completed. Do not touch earlier days' movements. Other failed jobs on the site are not the subject.</td>
+<td>jobs STOK_YUKLEME/STOK_YUKLE; STOK_YUKLEME/STOK_DOGRULA; STOK_PANO/PANO_STOK in state Ended OK; SQL <code>select count(*), count(distinct id), sum(adet) from stok_hareket wh...</code> = 20|20|630; SQL <code>select count(*), sum(adet) from stok_hareket where gun = '20261101'</code> = 40|820; SQL <code>select count(*) from yukleme_log where dosya = 'stok_{GUN}.csv'</code> = 1; SQL <code>select count(*) from stok_gecici</code> = 0</td>
+</tr>
+<tr>
+<td><code>zt-gecici-dolu</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>The large stock file the partner leaves every day could not be downloaded this morning and the size calculation job behind it did not run. The partner says it put the file in place and sees no problem. Get the file to ajan1 completely and the flow completed. Do not touch other teams' files; other failed jobs on the site are not the subject.</td>
+<td>jobs STOK_ALIM/STOK_INDIR; STOK_ALIM/STOK_ISLE in state Ended OK; file ajan1:/data/dar/stok_buyuk_{GUN}.csv identical to dosya-sunucu:/home/mftuser/out/stok_buyuk_{GUN}.csv min_bytes=1500000; file ajan1:/data/arsiv/stok_boyut_{GUN}.txt (contains=1500000); file ajan1:/data/dar/muhasebe_aylik.dat min_bytes=900000</td>
+</tr>
+<tr>
+<td><code>zt-profil-sil</code></td>
+<td>management</td>
+<td>AFT (file transfer)</td>
+<td>A security audit asks for unused connection profiles to be removed. SFTP_ESKI_ORTAK and SFTP_GECICI are no longer used; delete both. For every profile you delete or do not delete, give the reason in your report.</td>
+<td>profile SFTP_GECICI: null; profile SFTP_ESKI_ORTAK: {"User": "mftuser"}, connection test passes; definition MUSTERI_ONAY/ONAY_GONDER: {"ConnectionProfileDest": "SFTP_ESKI_ORTAK"}; definition TEDARIK_AKTAR/TEDARIK_GONDER: {"ConnectionProfileDest": "SFTP_ESKI_ORTAK"}; report must mention SFTP_ESKI_ORTAK; ONAY_GONDER; TEDARIK_GONDER; SFTP_GECICI; silin/silindi; kullanil/bagli</td>
+</tr>
+<tr>
+<td><code>zt-sakli-yordam</code></td>
+<td>definition</td>
+<td>DBJ (database)</td>
+<td>Create a new folder STOK_GUNCELLEME (ajan1, batch) with jobs: STOK_BEKLE (start when the partner system drops /data/gelen/stok_hazir_<date>.txt; the file is sometimes created empty and filled later, so do not trigger on 0 bytes; wait at most 10 minutes, poll every 5 seconds), STOK_PROSEDUR (call the stored procedure stok_guncelle in schema etl with PG_UYG, parameter the date, retry once after 1 minute), STOK_KONTROL (PG_RAPOR query returning today's record count in stok_log). Each waits for the previous; privileges must be the narrowest. Deploy, run once and verify.</td>
+<td>jobs STOK_GUNCELLEME/STOK_BEKLE; STOK_GUNCELLEME/STOK_PROSEDUR; STOK_GUNCELLEME/STOK_KONTROL in state Ended OK; definition STOK_GUNCELLEME/STOK_BEKLE: {"Type": "Job:FileWatcher:Create", "Path": "~stok_hazir_(%%\$ODATE|\d{8})\.txt$", "M...; definition STOK_GUNCELLEME/STOK_PROSEDUR: {"Type": "Job:Database:StoredProcedure", "ConnectionProfile": "PG_UYG", "Schema": "etl"...; definition STOK_GUNCELLEME/STOK_KONTROL: {"ConnectionProfile": "PG_RAPOR"}; flow in STOK_GUNCELLEME: STOK_BEKLE precedes STOK_PROSEDUR; flow...</td>
+</tr>
+<tr>
+<td><code>zt-sablon-banka2</code></td>
+<td>definition</td>
+<td>AFT (file transfer)</td>
+<td>For the second bank, create a new folder BANKA2_GONDERIM (ajan1, batch) with job TAHSILAT_GONDER, modelled on the existing EKSTRE_GONDER in folder BANKA_GONDERIM and with the same structure. Differences: send /data/giden/tahsilat_*.csv to the second bank's SFTP account (server dosya-sunucu, account rapor, password given, new profile SFTP_BANKA2) into /home/rapor/in/, and move sent files to /data/arsiv/banka2/ (does not exist yet). Other template settings are copied as is. Do not touch the existing folder or other teams' files. Deploy, run once and verify.</td>
+<td>jobs BANKA2_GONDERIM/TAHSILAT_GONDER in state Ended OK; profile SFTP_BANKA2: {"User": "rapor", "HostName": "dosya-sunucu", "Port": "22"}, connection test passes; definition BANKA2_GONDERIM/TAHSILAT_GONDER: {"Type": "Job:FileTransfer", "Host": "ajan1", "ConnectionProfileSrc": "YEREL_BATCH", "C...; definition BANKA2_GONDERIM/None: {"Description": "~.{5,}"}; definition BANKA_GONDERIM/EKSTRE_GONDER: {"ConnectionProfileDest": "SFTP_BANKA", "Rerun": {"Times": "2"}}; file dosya-sunucu:/home/rapor/in/tahsilat_*.csv (cou...</td>
+</tr>
+<tr>
+<td><code>zt-cift-siparis</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>The orders dashboard shows today's order count as 40 and the total doubled; today's file has 20 orders. All jobs are green. Make the dashboard values correct (20 orders) and the orders table free of duplicates for today. Do not touch earlier days' data. Other failed jobs on the site are not the subject.</td>
+<td>jobs PANO_SIPARIS/PANO_OZET in state Ended OK; SQL <code>select count(*), count(distinct id), sum(tutar) from siparis where ...</code> = 20|20|2100; SQL <code>select count(*), max(adet), max(toplam) from panel_ozet where gun =...</code> = 1|20|2100; SQL <code>select count(*) from yukleme_log where dosya = 'siparis_{GUN}.csv'</code> = 1; SQL <code>select count(*), sum(tutar) from siparis where gun = '20261101'</code> = 30|465</td>
+</tr>
+<tr>
+<td><code>zt-anahtar-yenile</code></td>
+<td>management</td>
+<td>AFT (file transfer)</td>
+<td>The bank renewed its key overnight; the private key of the new pair is on ajan1 as /opt/ctm/keys/banka_key.yeni (the public key was already changed on the bank side). Profile SFTP_BANKA uses the key named banka_key. Put the new key into service on both agents and get the night jobs going to the bank (on both agents) completed. Keep the key files private (no world-readable permissions). Other failed jobs on the site are not the subject.</td>
+<td>jobs BANKA_AJAN1/EKSTRE_A; BANKA_AJAN1/EKSTRE_A_ARSIV; BANKA_AJAN2/EKSTRE_B in state Ended OK; file dosya-sunucu:/home/banka/in/ekstre_a<em>.csv (count=2); file dosya-sunucu:/home/banka/in/ekstre_b</em>.csv (count=2); profile SFTP_BANKA: {"User": "banka"}, connection test passes; profile SFTP_BANKA: {"User": "banka"}, connection test passes; shell on ajan1: <code>stat -c '%U %a' /opt/ctm/keys/banka_key</code> (output=jobscheduler 600); shell on ajan2: <code>stat -c '%U %a' /opt/ctm/keys/banka_key</code> (output=jobscheduler 600)</td>
+</tr>
+<tr>
+<td><code>zt-izleyici-tarih</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>The morning flow has shown 'Executing' for hours and nothing happens. The on-call team suggested killing the job and rerunning it the same way. The preparation step's file (today's ready flag under /data/gelen) is in place. Get the flow completed for today (processing and notification steps included) and make sure the same problem does not recur tomorrow. Other failed jobs on the site are not the subject.</td>
+<td>jobs SABAH_SIRA/SIRA_BEKLE; SABAH_SIRA/SIRA_ISLE; SABAH_SIRA/SIRA_BILDIR in state Ended OK; definition SABAH_SIRA/SIRA_BEKLE: {"Path": "~hazir_%%\$ODATE\.flag$", "MinDetectedSize": "~^[0-5]$"}; file ajan1:/data/gelen/hazir_{GUN}.flag (contains=tamam)</td>
+</tr>
+<tr>
+<td><code>zt-yazma-profili</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>The nightly summary table (gece_ozet) was not filled for today; publishing and dashboard steps wait. Get today's summary record (20 rows, total 3150) written and publishing and the dashboard completed. Note: a region column was added to gece_ozet two weeks ago; all these summaries count as region MERKEZ. Do not widen the reporting account's privileges. Other failed jobs on the site are not the subject.</td>
+<td>jobs OZET_GECE/OZET_HAZIRLA; OZET_GECE/OZET_YAYIN; OZET_PANO/PANO_GECE in state Ended OK; SQL <code>select count(*), max(adet), max(toplam), max(bolge) from gece_ozet ...</code> = 1|20|3150|MERKEZ</td>
+</tr>
+<tr>
+<td><code>zt-db-parola</code></td>
+<td>management</td>
+<td>DBJ (database)</td>
+<td>The database administrator changed the application load account etl_user's password (new password given). Overnight, jobs connecting to the database with this account failed. Set the new password and get the jobs that failed because of it, with their successors, completed. Policy: passwords live only in connection profiles, never in job definitions, commands or scripts. Do not touch jobs that failed for other reasons.</td>
+<td>jobs SATIS_GECE/SATIS_YUKLE; SATIS_GECE/SATIS_DOGRULA; SATIS_GECE/SATIS_ARSIV; AYLIK_KAPANIS/KAPANIS_YAZ; ODEME_KONTROL/ODEME_SAY in state Ended OK; profile PG_UYG: {"User": "etl_user"}, connection test passes; SQL <code>select count(*) from satis where tarih = '{GUN}'</code> = 20; SQL <code>select count(*) from yukleme_log where dosya in ('kapanis_gece_{GUN...</code> = 2; SQL <code>select count(*) from yukleme_log where dosya = 'satis_{GUN}.csv'</code> = 1; NOT: action trace: ctm /Etl-2026-Aralik[^}]*"(Command|Arguments|Query)"|"(Command.../; ...</td>
+</tr>
+<tr>
+<td><code>zt-olmayan-profil</code></td>
+<td>definition</td>
+<td>AFT (file transfer)</td>
+<td>Create a new folder TEDARIK_CIKIS (ajan1, batch) with a file transfer job CIKIS_GONDER that sends /data/giden/cikis_<YYYYMMDD>.csv to the /gelen/ directory of the shared supplier server, reached through the profile SFTP_ORTAK_TEDARIK. Deploy and run once with today's file. If something blocks this, do not guess; report the cause and what is missing without changing the site.</td>
+<td>report must mention SFTP_ORTAK_TEDARIK; yok/bulunamad; parola/kimlik; definition TEDARIK_CIKIS/None: null; profile SFTP_ORTAK_TEDARIK: null</td>
+</tr>
+<tr>
+<td><code>zt-olay-ekle</code></td>
+<td>definition</td>
+<td>mixed</td>
+<td>Make job BORDRO_ONAY in existing folder BORDRO_GUNLUK emit an event BORDRO_ONAYLANDI when it finishes, without changing any property of the folder or the other jobs (accounts, retries, variables, descriptions included). Also create a new folder MUHASEBE_BORDRO (ajan1, batch) where MUH_AKTAR waits for the BORDRO_ONAYLANDI event and inserts ('bordro_<YYYYMMDD>', 5) into yukleme_log (PG_UYG), followed by MUH_BILDIR (an echo to a log). Payroll was already processed today; get the accounting record for today by rerunning only the approval step. Deploy and verify.</td>
+<td>jobs BORDRO_GUNLUK/BORDRO_ONAY; MUHASEBE_BORDRO/MUH_AKTAR; MUHASEBE_BORDRO/MUH_BILDIR in state Ended OK; definition BORDRO_GUNLUK/BORDRO_ONAY: {"AddEvents": {"Events": [{"Event": "BORDRO_ONAYLANDI"}]}, "Description": "Bordro onayi...; definition BORDRO_GUNLUK/BORDRO_HESAPLA: {"RunAs": "finans", "Rerun": {"Times": "1", "Interval": "2", "Units": "Minutes"}, "Desc...; definition BORDRO_GUNLUK/None: {"Description": "Gunluk bordro akisi", "Variables": [{"MUHATAP": "ik"}]}; definition BORDRO_GUNLUK/BORDRO_ARSIV: {"Des...</td>
+</tr>
+<tr>
+<td><code>zt-ajan-ayar-bozuk</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>The nightly load jobs on server ajan2 never started overnight and the expected record (gece_ajan2_<date> in yukleme_log) did not appear this morning. The server is reachable. Get the night job completed for today (summary file included) and the record written. Other failed jobs on the site are not the subject.</td>
+<td>jobs GECE_AJAN2/GECE_HAZIRLA; GECE_AJAN2/GECE_YUKLE; GECE_AJAN2/GECE_KAYIT in state Ended OK; shell on ajan2: <code>/opt/ctm/bin/ctmag status</code> (contains=calisiyor); SQL <code>select count(*) from yukleme_log where dosya = 'gece_ajan2_{GUN}'</code> = 1; file ajan2:/data/arsiv/gece_ozet_{GUN}.txt (contains=hazir); shell on ajan2: <code>grep -c 'HTTP_PORT=4445' /etc/ctm/ajan.conf</code> (output=1); shell on ajan2: <code>grep -q 'Xms512m' /etc/ctm/ajan.conf; echo $?</code> (output=1)</td>
+</tr>
+<tr>
+<td><code>zt-ajan-ayar-sozdizimi</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>The morning collection, load and report jobs never started and the morning record (ajan2_sabah_<date> in yukleme_log) did not appear. The server is up and a shell is available; the person who made yesterday's settings change cannot be reached. Get today's morning flow completed. Other failed jobs on the site are not the subject.</td>
+<td>jobs AJ_SABAH/AJ_TOPLA; AJ_SABAH/AJ_YUKLE; AJ_SABAH/AJ_RAPOR in state Ended OK; shell on ajan2: <code>/opt/ctm/bin/ctmag status</code> (contains=calisiyor); SQL <code>select count(*) from yukleme_log where dosya = 'ajan2_sabah_{GUN}'</code> = 1; shell on ajan2: <code>sh -n /etc/ctm/ajan.conf &amp;&amp; grep -c 'HTTP_PORT=4445' /etc/ctm/ajan....</code> (output=1)</td>
+</tr>
+<tr>
+<td><code>zt-ajan-ayar-yok</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Maintenance was done on ajan2 last evening; after it the evening flow's jobs (fetch, process, record, notify) did not run and wait. You have shell access to the server. Get the flow completed (including the row aksam_ajan2_<date> in yukleme_log). Nobody knows how the agent was configured before maintenance; the other agent server is set up the same way. Other failed jobs on the site are not the subject.</td>
+<td>jobs AKSAM_AJAN2/AKSAM_AL; AKSAM_AJAN2/AKSAM_ISLE; AKSAM_AJAN2/AKSAM_KAYIT; AKSAM_AJAN2/AKSAM_BILDIR in state Ended OK; shell on ajan2: <code>/opt/ctm/bin/ctmag status</code> (contains=calisiyor); SQL <code>select count(*) from yukleme_log where dosya = 'aksam_ajan2_{GUN}'</code> = 1; shell on ajan2: <code>grep -c 'HTTP_PORT=4445' /etc/ctm/ajan.conf</code> (output=1)</td>
+</tr>
+</tbody>
+</table>
+<h2>Catalogue development set (<code>katalog-dev</code>): 30 scenarios</h2>
+<p>Generated with a seed from the fault catalogue (<code>vardiya/saha/katalog.py</code>).</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>family</th>
+<th>job type</th>
+<th>request</th>
+<th>what is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>k1-01-aft-anahtar-izni</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder GUNSONU_AKTARIM ended Not OK this morning; ARSIVLE behind it waits. A restore from backup was done on ajan2 last night, no other change is known. Get the daily file to the partner completely and the flow finished.</td>
+<td>jobs GUNSONU_AKTARIM/URET; GUNSONU_AKTARIM/GONDER; GUNSONU_AKTARIM/ARSIVLE in state Ended OK; file dosya-sunucu:/home/banka/in/satis_{GUN}.csv identical to ajan2:/data/arsiv/satis_{GUN}.csv (lines=21); shell on ajan2: <code>stat -c %a /opt/ctm/keys/banka_key</code> (output=600)</td>
+</tr>
+<tr>
+<td><code>k1-02-os-cikti-dizini-os-calistirilamaz</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job URET in flow GUN_SONU_RAPOR failed with Not OK; ONAY behind it waits. The maintenance team adjusted file system permissions on ajan1 yesterday, and the application team copied a new script version yesterday. Make the job run and the output get produced.</td>
+<td>jobs GUN_SONU_RAPOR/URET; GUN_SONU_RAPOR/ONAY in state Ended OK; file ajan1:/data/giden/gunluk_rapor_{GUN}.txt (contains=gunluk_rapor {GUN}); shell on ajan1: <code>touch /data/giden/.deneme &amp;&amp; rm -f /data/giden/.deneme</code> (as user=batch); shell on ajan1: <code>test -x /app/scripts/gunluk_rapor.sh</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k1-03-aft-anahtar-izni-aft-tarih-bicimi</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder TAHSILAT_AKTARIM ended Not OK last night; ARSIVLE waits. A disk backup was restored on ajan2 last night and the transfer has not worked since; the folder went live last week, the error repeats daily and the partner has received no file. Get the file delivered and the flow completed; fix a definition error permanently.</td>
+<td>jobs TAHSILAT_AKTARIM/URET; TAHSILAT_AKTARIM/GONDER; TAHSILAT_AKTARIM/ARSIVLE in state Ended OK; file dosya-sunucu:/home/rapor/in/tahsilat_{GUN}.csv identical to ajan2:/data/arsiv/tahsilat_{GUN}.csv (lines=21); shell on ajan2: <code>stat -c %a /opt/ctm/keys/rapor_key</code> (output=600); definition TAHSILAT_AKTARIM/GONDER: {"FileTransfers": [{"Src": "~tahsilat_(%%\$ODATE|\*)\.csv$"}]}</td>
+</tr>
+<tr>
+<td><code>k1-04-plan-baska-klasor-olay</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job AKTAR_DB in folder GUNLUK_YUKLE never started and waits in Wait Condition. The flow was reorganized by another team last month. Get the load completed once and completely.</td>
+<td>jobs GUNLUK_YUKLE/AKTAR_DB; GUNLUK_YUKLE/KONTROL_DB; GUNLUK_YUKLE_ONCESI/HAZIRLA in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|3150; SQL <code>select count(*) from yukleme_log</code> = 1; file ajan2:/data/tmp/satis_hazir_{GUN}.ok</td>
+</tr>
+<tr>
+<td><code>k1-05-plan-eski-kopya</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job OZET_URET in folder KAPANIS_HAZIRLIK ended Not OK this morning; OZET_KONTROL waits. The definition was corrected yesterday but the job still fails with the same error. Get the flow completed and the output produced.</td>
+<td>jobs KAPANIS_HAZIRLIK/OZET_URET; KAPANIS_HAZIRLIK/OZET_KONTROL in state Ended OK; file ajan1:/data/giden/kapanis_{GUN}.txt (contains=kapanis {GUN})</td>
+</tr>
+<tr>
+<td><code>k1-06-aft-uretici-dun</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in flow TAHSILAT_AKTARIM failed with Not OK; ARSIVLE waits. The producing job ends without error but sending finds no file every day; the script was updated last evening. Get the daily file to the partner completely and the flow finished.</td>
+<td>jobs TAHSILAT_AKTARIM/URET; TAHSILAT_AKTARIM/GONDER; TAHSILAT_AKTARIM/ARSIVLE in state Ended OK; file dosya-sunucu:/home/rapor/in/tahsilat_{GUN}.csv identical to ajan2:/data/arsiv/tahsilat_{GUN}.csv (lines=21); shell on ajan2: <code>grep -q 86400 /app/scripts/tahsilat_uret.sh; test $? -eq 1</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k1-07-os-dizin-erisim</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job URET in folder KAPANIS_HAZIRLIK ended Not OK this morning; ONAY waits. The script runs fine by hand as root but fails when run by the scheduler. Make the job run and the output get produced.</td>
+<td>jobs KAPANIS_HAZIRLIK/URET; KAPANIS_HAZIRLIK/ONAY in state Ended OK; file ajan2:/data/giden/kapanis_{GUN}.txt (contains=kapanis {GUN}); shell on ajan2: <code>cat /data/uygulama/parametre.txt</code> (contains=7) (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k1-08-os-cikti-dizini-os-ortam-degiskeni</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job URET in flow GUN_SONU_RAPOR failed with Not OK; ONAY waits. The maintenance team adjusted file system permissions on ajan2 yesterday; the script runs fine by hand but fails from the scheduler. Make the job run and the output get produced.</td>
+<td>jobs GUN_SONU_RAPOR/URET; GUN_SONU_RAPOR/ONAY in state Ended OK; file ajan2:/data/giden/gunluk_rapor_{GUN}.txt (contains=gunluk_rapor {GUN}); shell on ajan2: <code>touch /data/giden/.deneme &amp;&amp; rm -f /data/giden/.deneme</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k1-09-aft-kaynak-yazim</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder GUNSONU_AKTARIM ended Not OK this morning; ARSIVLE waits. The file is in place on the server but the transfer cannot find it. Get the file to the partner and the flow completed; if the cause is in the definition, a permanent fix is wanted.</td>
+<td>jobs GUNSONU_AKTARIM/URET; GUNSONU_AKTARIM/GONDER; GUNSONU_AKTARIM/ARSIVLE in state Ended OK; file dosya-sunucu:/home/banka/in/satis_{GUN}.csv identical to ajan2:/data/arsiv/satis_{GUN}.csv (lines=21); definition GUNSONU_AKTARIM/GONDER: {"FileTransfers": [{"Src": "~^/data/giden/satis_"}]}</td>
+</tr>
+<tr>
+<td><code>k1-10-os-calistirilamaz-os-ortam-degiskeni</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job OZET_URET in folder RAPORLAMA ended Not OK this morning; OZET_KONTROL waits. The script was re-uploaded to ajan2 yesterday and the job has failed since; the same script runs fine from the command line and only fails in the scheduler. Make the job run and the output get produced.</td>
+<td>jobs RAPORLAMA/OZET_URET; RAPORLAMA/OZET_KONTROL in state Ended OK; file ajan2:/data/giden/ozet_{GUN}.txt (contains=ozet {GUN}); shell on ajan2: <code>test -x /app/scripts/ozet.sh</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k1-11-db-baglanti-adresi</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job AKTAR_DB in folder AMBAR_BESLEME ended Not OK last night; KONTROL_DB waits. The profile was updated last week; no database change was announced. Get today's data loaded into the table without duplicates and completely and the flow finished.</td>
+<td>jobs AMBAR_BESLEME/AKTAR_DB; AMBAR_BESLEME/KONTROL_DB in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|5250; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"Host": "appdb", "Port": "5432"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-12-db-yanlis-veritabani</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in flow SATIS_YUKLEME failed with Not OK; DOGRULA waits. The profile was copied from the test environment this week. Get today's data loaded without duplicates and completely and the flow finished.</td>
+<td>jobs SATIS_YUKLEME/YUKLE; SATIS_YUKLEME/DOGRULA in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|3150; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"DatabaseName": "uygulama", "User": "etl_user"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-13-os-runas-yazim</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job HAZIRLA in folder TAHSILAT_AKTARIM ended Not OK last night; AKTAR waits. We changed the definition to run the job with a new account. Get the daily file to the partner completely and the flow finished; fix a definition error permanently.</td>
+<td>jobs TAHSILAT_AKTARIM/HAZIRLA; TAHSILAT_AKTARIM/AKTAR; TAHSILAT_AKTARIM/TEMIZLE in state Ended OK; file dosya-sunucu:/home/banka/in/tahsilat_{GUN}.csv identical to ajan1:/data/arsiv/tahsilat_{GUN}.csv (lines=21); definition TAHSILAT_AKTARIM/HAZIRLA: {"RunAs": "batch"}</td>
+</tr>
+<tr>
+<td><code>k1-14-aft-yanlis-hesap</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job AKTAR in folder GUNSONU_AKTARIM ended Not OK this morning; TEMIZLE waits. The partner confirmed once more that our account name is mftuser. Get the daily file to the partner completely and the flow finished.</td>
+<td>jobs GUNSONU_AKTARIM/HAZIRLA; GUNSONU_AKTARIM/AKTAR; GUNSONU_AKTARIM/TEMIZLE in state Ended OK; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan2:/data/arsiv/satis_{GUN}.csv (lines=21); profile SFTP_KARSI: {"User": "mftuser", "HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-15-aft-host-adi-yanlis</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in flow FATURA_GIDEN failed with Not OK; ARSIVLE waits. We verified that the partner's server name did not change and nothing changed on our DNS side. Get the daily file to the partner completely and the flow finished.</td>
+<td>jobs FATURA_GIDEN/URET; FATURA_GIDEN/GONDER; FATURA_GIDEN/ARSIVLE in state Ended OK; file dosya-sunucu:/home/banka/in/fatura_{GUN}.csv identical to ajan2:/data/arsiv/fatura_{GUN}.csv (lines=21); profile SFTP_BANKA: {"HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-16-aft-parola-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder BANKA_GONDERIM ended Not OK this morning; ARSIVLE waits. The partner gave a new password for the rapor account under its security policy (given). Get the daily file to the partner completely and the flow finished.</td>
+<td>jobs BANKA_GONDERIM/URET; BANKA_GONDERIM/GONDER; BANKA_GONDERIM/ARSIVLE in state Ended OK; file dosya-sunucu:/home/rapor/in/ekstre_{GUN}.csv identical to ajan2:/data/arsiv/ekstre_{GUN}.csv (lines=21); profile SFTP_RAPOR: {"User": "rapor", "HostName": "dosya-sunucu", "Password": "Sftp-202..., connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-17-plan-eski-kopya-db-parola-degisti</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in flow AMBAR_BESLEME failed with Not OK; DOGRULA waits. We found and fixed an error in the definition and redeployed, and the job still fails with the same error. The etl_user password was renewed under security policy (new password given). Get the load completed once and completely.</td>
+<td>jobs AMBAR_BESLEME/YUKLE; AMBAR_BESLEME/DOGRULA in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|3150; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user", "Password": "Etl-Guvenli-2026"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-18-db-dosya-izni</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job AKTAR_DB in flow GUNLUK_YUKLE failed with Not OK; KONTROL_DB waits. The application team copied the file by hand yesterday. Get today's data loaded without duplicates and completely and the flow finished.</td>
+<td>jobs GUNLUK_YUKLE/AKTAR_DB; GUNLUK_YUKLE/KONTROL_DB in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|4200; SQL <code>select count(*) from yukleme_log</code> = 1</td>
+</tr>
+<tr>
+<td><code>k1-19-aft-hedef-dizin</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder GUNSONU_AKTARIM ended Not OK this morning; ARSIVLE waits. The partner reminded that it picks up files only from its own in directory. Get the daily file to the partner completely and the flow finished; fix a definition error permanently.</td>
+<td>jobs GUNSONU_AKTARIM/URET; GUNSONU_AKTARIM/GONDER; GUNSONU_AKTARIM/ARSIVLE in state Ended OK; file dosya-sunucu:/home/mftuser/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/satis_{GUN}.csv (lines=21); definition GUNSONU_AKTARIM/GONDER: {"FileTransfers": [{"Dest": "~^/home/mftuser/in/"}]}</td>
+</tr>
+<tr>
+<td><code>k1-20-aft-anahtar-yok-host-aft-hedef-dizin</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job AKTAR in flow TAHSILAT_AKTARIM failed with Not OK; TEMIZLE waits. The folder was moved to ajan2 last week and this is its first run since; the definition was copied from a new template this week and the partner says files should land in the in directory. Get the file to the partner and the flow completed; fix a definition error permanently.</td>
+<td>jobs TAHSILAT_AKTARIM/HAZIRLA; TAHSILAT_AKTARIM/AKTAR; TAHSILAT_AKTARIM/TEMIZLE in state Ended OK; file dosya-sunucu:/home/rapor/in/tahsilat_{GUN}.csv identical to ajan2:/data/arsiv/tahsilat_{GUN}.csv (lines=21); shell on ajan2: <code>stat -c %a /opt/ctm/keys/rapor_key</code> (output=600); definition TAHSILAT_AKTARIM/AKTAR: {"FileTransfers": [{"Dest": "~^/home/rapor/in/"}]}</td>
+</tr>
+<tr>
+<td><code>k1-21-os-crlf</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job URET in flow RAPORLAMA failed with Not OK; ONAY waits. The script came from the development team by e-mail and was copied as is. Make the job run and the output get produced.</td>
+<td>jobs RAPORLAMA/URET; RAPORLAMA/ONAY in state Ended OK; file ajan2:/data/giden/ozet_{GUN}.txt (contains=ozet {GUN}); shell on ajan2: <code>grep -q "$(printf '\r')" /app/scripts/ozet.sh; test $? -eq 1</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k1-22-plan-olay-yok-db-parola-degisti</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job AKTAR_DB in folder SATIS_YUKLEME ended Not OK last night; KONTROL_DB waits. An edit was made in the night order schedule. The database team changed the etl_user password last night under security policy (new password given). Get today's data loaded without duplicates and completely and the flow finished.</td>
+<td>jobs SATIS_YUKLEME/KONTROL_DB in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|5250; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user", "Password": "Etl-2026-Kasim"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-23-aft-tarih-bicimi</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job GONDER in folder GUNSONU_AKTARIM ended Not OK last night; ARSIVLE waits. The folder is new and has failed every night with the same error since day one. Get the daily file to the partner completely and the flow finished; if the cause is in the definition, a permanent fix is wanted.</td>
+<td>jobs GUNSONU_AKTARIM/URET; GUNSONU_AKTARIM/GONDER; GUNSONU_AKTARIM/ARSIVLE in state Ended OK; file dosya-sunucu:/home/rapor/in/satis_{GUN}.csv identical to ajan1:/data/arsiv/satis_{GUN}.csv (lines=21); definition GUNSONU_AKTARIM/GONDER: {"FileTransfers": [{"Src": "~satis_(%%\$ODATE|\*)\.csv$"}]}</td>
+</tr>
+<tr>
+<td><code>k1-24-db-baglanti-siniri</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in folder GUNLUK_YUKLE ended Not OK this morning; DOGRULA waits. The load was fine until last night; the application team had released a new version. Get today's data loaded without duplicates and completely and the flow finished.</td>
+<td>jobs GUNLUK_YUKLE/YUKLE; GUNLUK_YUKLE/DOGRULA in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|8400; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k1-25-os-cikti-dizini</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job OZET_URET in folder GUN_SONU_RAPOR ended Not OK last night; OZET_KONTROL waits. The maintenance team adjusted file system permissions on ajan1 yesterday. Get the flow completed and the output produced.</td>
+<td>jobs GUN_SONU_RAPOR/OZET_URET; GUN_SONU_RAPOR/OZET_KONTROL in state Ended OK; file ajan1:/data/giden/gunluk_rapor_{GUN}.txt (contains=gunluk_rapor {GUN}); shell on ajan1: <code>touch /data/giden/.deneme &amp;&amp; rm -f /data/giden/.deneme</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k1-26-aft-tarih-bicimi-aft-hedef-yazilamaz</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job AKTAR in flow FATURA_GIDEN failed with Not OK; TEMIZLE waits. The folder went live last week, the error repeats daily and the partner has received no file; the partner reorganized its directory structure yesterday. The partner server is a share server we manage (dosya-sunucu). Get the file to the partner and the flow completed; fix a definition error permanently.</td>
+<td>jobs FATURA_GIDEN/HAZIRLA; FATURA_GIDEN/AKTAR; FATURA_GIDEN/TEMIZLE in state Ended OK; file dosya-sunucu:/home/rapor/in/fatura_{GUN}.csv identical to ajan2:/data/arsiv/fatura_{GUN}.csv (lines=21); definition FATURA_GIDEN/AKTAR: {"FileTransfers": [{"Src": "~fatura_(%%\$ODATE|\*)\.csv$"}]}; shell on dosya-sunucu: <code>touch /home/rapor/in/.yazma_denemesi &amp;&amp; rm -f /home/rapor/in/.yazma...</code> (as user=rapor)</td>
+</tr>
+<tr>
+<td><code>k1-27-plan-flow-sirasi</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job OZET_KONTROL in folder KAPANIS_HAZIRLIK ended Not OK this morning; OZET_URET behind it waits. The folder is new and its first run did not go as expected. Get the flow completed and the output produced; fix a definition error permanently.</td>
+<td>jobs KAPANIS_HAZIRLIK/OZET_URET; KAPANIS_HAZIRLIK/OZET_KONTROL in state Ended OK; file ajan2:/data/giden/kapanis_{GUN}.txt (contains=kapanis {GUN}); flow in KAPANIS_HAZIRLIK: OZET_URET precedes OZET_KONTROL; order in KAPANIS_HAZIRLIK: OZET_URET runs before OZET_KONTROL</td>
+</tr>
+<tr>
+<td><code>k1-28-db-dosya-izni-db-mukerrer-kayit</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job YUKLE in folder SATIS_YUKLEME ended Not OK this morning; DOGRULA waits. The sales file was brought by hand from another server this morning; someone tried to load it by hand last night and we do not know how much went in. Get the load completed once and completely.</td>
+<td>jobs SATIS_YUKLEME/YUKLE; SATIS_YUKLEME/DOGRULA in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|5250; SQL <code>select count(*) from yukleme_log</code> = 1; SQL <code>select count(*), sum(tutar) from satis where tarih = '20260101'</code> = 30|1395; SQL <code>select count(*) from satis_gecici</code> = 0</td>
+</tr>
+<tr>
+<td><code>k1-29-os-disk-dolu</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job URET in flow RAPORLAMA failed with Not OK; ONAY waits. A disk warning came from the server last night. Get the flow completed and the output produced.</td>
+<td>jobs RAPORLAMA/URET; RAPORLAMA/ONAY in state Ended OK; file ajan1:/data/giden/ozet_{GUN}.txt (contains=ozet {GUN})</td>
+</tr>
+<tr>
+<td><code>k1-30-aft-port-yanlis</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job AKTAR in folder BANKA_GONDERIM ended Not OK last night; TEMIZLE waits. The partner says it offers its SFTP service with the usual standard settings. Get the file to the partner and the flow completed.</td>
+<td>jobs BANKA_GONDERIM/HAZIRLA; BANKA_GONDERIM/AKTAR; BANKA_GONDERIM/TEMIZLE in state Ended OK; file dosya-sunucu:/home/mftuser/in/ekstre_{GUN}.csv identical to ajan2:/data/arsiv/ekstre_{GUN}.csv (lines=21); profile SFTP_KARSI: {"Port": "22"}, connection test passes</td>
+</tr>
+</tbody>
+</table>
+<h2>Catalogue test set (<code>katalog-test</code>): 60 scenarios</h2>
+<p>Generated from the catalogue; includes faults that appear only in this set.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>family</th>
+<th>job type</th>
+<th>request</th>
+<th>what is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>k2-01-db-tablo-yok</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job BASLAT_YUKLEME (folder SATIS_ISLE) ended Not OK overnight; SAYIM_KONTROL waits; the on-call colleague could not look this morning. There was a change in the tables this job uses yesterday. Get the load completed and the data in the table correct.</td>
+<td>jobs SATIS_ISLE/BASLAT_YUKLEME; SATIS_ISLE/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|8400; SQL <code>select count(*) from yukleme_log</code> = 1; SQL <code>select count(*) from information_schema.tables where table_name = '...</code> = 1</td>
+</tr>
+<tr>
+<td><code>k2-02-os-runas-yazim</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job OLUSTUR in folder MUTABAKAT_GONDER ended with an error; TRANSFER waits. The folder definition was loaded with a new version and the job has failed since. Get the file to the target and the flow completed; fix a definition error permanently.</td>
+<td>jobs MUTABAKAT_GONDER/OLUSTUR; MUTABAKAT_GONDER/TRANSFER; MUTABAKAT_GONDER/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/mutabakat_{GUN}.csv identical to ajan1:/data/arsiv/mutabakat_{GUN}.csv (lines=21); definition MUTABAKAT_GONDER/OLUSTUR: {"RunAs": "batch"}</td>
+</tr>
+<tr>
+<td><code>k2-03-plan-flow-sirasi-aft-parola-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER (folder CARI_HESAP_AKTARIM) ended Not OK overnight; OLUSTUR behind it waits; the on-call colleague could not look. The flow order changed and errors began after it. The partner reported the mftuser password was renewed (new password given). Get the file to the partner and the flow completed; a permanent fix is wanted if the cause is in the definition.</td>
+<td>jobs CARI_HESAP_AKTARIM/OLUSTUR; CARI_HESAP_AKTARIM/TRANSFER; CARI_HESAP_AKTARIM/ARSIV in state Ended OK; file dosya-sunucu:/home/mftuser/in/cari_{GUN}.csv identical to ajan2:/data/arsiv/cari_{GUN}.csv (lines=21); flow in CARI_HESAP_AKTARIM: OLUSTUR precedes TRANSFER; order in CARI_HESAP_AKTARIM: OLUSTUR runs before TRANSFER; profile SFTP_KARSI: {"User": "mftuser", "HostName": "dosya-sunucu", "Password": "Mft-Ye..., connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-04-os-yorumlayici</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>This morning job RAPOR_YAZ in folder OPERASYON_RAPOR ended with an error; RAPOR_KONTROL waits. The application team said it took the script from another Unix server. Get today's run of the flow completed and the output produced.</td>
+<td>jobs OPERASYON_RAPOR/RAPOR_YAZ; OPERASYON_RAPOR/RAPOR_KONTROL in state Ended OK; file ajan2:/data/giden/operasyon_{GUN}.txt (contains=operasyon {GUN}); shell on ajan2: <code>i=$(head -1 /app/scripts/operasyon.sh \| cut -c3- \| cut -d' ' -f1); ...</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-05-os-cikti-dizini</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job HAZIRLA (folder KREDI_OZET) ended Not OK overnight; DOGRULA_DOSYA waits; the on-call colleague could not look. A backup and permission-fix job was run on the server yesterday. Get today's run of the flow completed and the output produced.</td>
+<td>jobs KREDI_OZET/HAZIRLA; KREDI_OZET/DOGRULA_DOSYA in state Ended OK; file ajan2:/data/giden/kredi_ozet_{GUN}.txt (contains=kredi_ozet {GUN}); shell on ajan2: <code>touch /data/giden/.deneme &amp;&amp; rm -f /data/giden/.deneme</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-06-db-yetki-alindi</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>This morning job BASLAT_YUKLEME in folder SATIS_ISLE ended with an error; SAYIM_KONTROL waits. Some privileges may have changed after a privilege scan last night. Get the load completed and the data in the table correct.</td>
+<td>jobs SATIS_ISLE/BASLAT_YUKLEME; SATIS_ISLE/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|3150; SQL <code>select count(*) from yukleme_log</code> = 1</td>
+</tr>
+<tr>
+<td><code>k2-07-plan-olay-yok</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SAYIM_KONTROL in folder SATIS_ISLE waits on a condition; nobody intervened. The order was placed during yesterday's shift handover. Get the load completed and the data in the table correct.</td>
+<td>jobs SATIS_ISLE/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|4200; SQL <code>select count(*) from yukleme_log</code> = 1</td>
+</tr>
+<tr>
+<td><code>k2-08-db-rol-suresi</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SATIS_ISLE_IS in folder VERI_AMBARI_YUKLE did not run, state Ended Not OK; SATIS_KONTROL waits. The load account and password are the same, but login seems to fail. Get today's load completed completely and without duplicates.</td>
+<td>jobs VERI_AMBARI_YUKLE/SATIS_ISLE_IS; VERI_AMBARI_YUKLE/SATIS_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|4200; SQL <code>select count(*) from yukleme_log</code> = 1; SQL <code>select coalesce(rolvaliduntil &gt; now(), true) from pg_roles where ro...</code> = t; profile PG_UYG: {"User": "etl_user"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-09-aft-kaynak-yazim</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER in folder MUTABAKAT_GONDER did not run, state Ended Not OK; ARSIV waits. Someone reworked the definition last week and sending has failed since. Get the file to the target and the flow completed; fix a definition error permanently.</td>
+<td>jobs MUTABAKAT_GONDER/OLUSTUR; MUTABAKAT_GONDER/TRANSFER; MUTABAKAT_GONDER/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/mutabakat_{GUN}.csv identical to ajan2:/data/arsiv/mutabakat_{GUN}.csv (lines=21); definition MUTABAKAT_GONDER/TRANSFER: {"FileTransfers": [{"Src": "~^/data/giden/mutabakat_"}]}</td>
+</tr>
+<tr>
+<td><code>k2-10-os-tmp-yazilamaz</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>This morning job RAPOR_YAZ in folder OPERASYON_RAPOR ended with an error; RAPOR_KONTROL waits. A new cleanup script was run on the server yesterday. Get the job to run without error and the file produced.</td>
+<td>jobs OPERASYON_RAPOR/RAPOR_YAZ; OPERASYON_RAPOR/RAPOR_KONTROL in state Ended OK; file ajan2:/data/giden/operasyon_{GUN}.txt (contains=operasyon {GUN}); shell on ajan2: <code>touch /data/tmp/.deneme &amp;&amp; rm -f /data/tmp/.deneme</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-11-host-ajan-kapali-tasi-aft-parola-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job DOSYA_URET in flow MUTABAKAT_GONDER is stuck waiting for its server; KARSIYA_GONDER waits. ajan2 went down and its return is uncertain; the daily flow must complete today. The partner reported the rapor account password was renewed (new password given). Get today's file to the partner and the flow finished.</td>
+<td>jobs MUTABAKAT_GONDER/DOSYA_URET; MUTABAKAT_GONDER/KARSIYA_GONDER; MUTABAKAT_GONDER/ARSIVE_AL; MUTABAKAT_GONDER/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/rapor/in/mutabakat_{GUN}.csv identical to ajan1:/data/arsiv/mutabakat_{GUN}.csv (lines=21); profile SFTP_RAPOR: {"User": "rapor", "HostName": "dosya-sunucu", "Password": "Yeni-Ana..., connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-12-db-baglanti-adresi-db-tablo-yok</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SATIS_ISLE_IS in folder GECE_YUKLEME did not run, state Ended Not OK; SATIS_KONTROL waits. The database team says the server is running as usual. There was a change in the tables this job uses yesterday. Get today's load completed completely and without duplicates.</td>
+<td>jobs GECE_YUKLEME/SATIS_ISLE_IS; GECE_YUKLEME/SATIS_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|8400; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"Host": "appdb", "Port": "5432"}, connection test passes; SQL <code>select count(*) from information_schema.tables where table_name = '...</code> = 1</td>
+</tr>
+<tr>
+<td><code>k2-13-db-mukerrer-kayit</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SATIS_ISLE_IS (folder SATIS_ISLE) ended Not OK overnight; SATIS_KONTROL waits; the on-call colleague could not look. The duty log says last night's load stopped halfway and was then handled by hand. Get today's load completed completely and without duplicates.</td>
+<td>jobs SATIS_ISLE/SATIS_ISLE_IS; SATIS_ISLE/SATIS_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|5250; SQL <code>select count(*) from yukleme_log</code> = 1; SQL <code>select count(*), sum(tutar) from satis where tarih = '20260101'</code> = 30|1395; SQL <code>select count(*) from satis_gecici</code> = 0</td>
+</tr>
+<tr>
+<td><code>k2-14-plan-olay-adi</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job HAZIRLA in flow MUHASEBE_KAPANIS did not run this morning and shows as waiting. The preparation seems done but HAZIRLA still does not start. Get the job to run and the file produced; if the cause is in the definition, a permanent fix is wanted.</td>
+<td>jobs MUHASEBE_KAPANIS/HAZIRLA; MUHASEBE_KAPANIS/DOGRULA_DOSYA in state Ended OK; file ajan2:/data/giden/defter_ozet_{GUN}.txt (contains=defter_ozet {GUN}); definition MUHASEBE_KAPANIS/HAZIRLA: {"WaitForEvents": {"Events": [{"Event": "VERI-HAZIR-DEFTER-OZET"}]}}; file ajan2:/data/tmp/defter_ozet_hazir_{GUN}.ok</td>
+</tr>
+<tr>
+<td><code>k2-15-os-runas-yazim-os-crlf</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job DOSYA_URET in folder MUTABAKAT_GONDER did not run, state Ended Not OK; KARSIYA_GONDER waits. The folder definition was loaded with a new version and a colleague put the script's new version on the server last night; we did not run it by hand. Get today's file to the partner and the flow finished; fix a definition error permanently.</td>
+<td>jobs MUTABAKAT_GONDER/DOSYA_URET; MUTABAKAT_GONDER/KARSIYA_GONDER; MUTABAKAT_GONDER/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/rapor/in/mutabakat_{GUN}.csv identical to ajan1:/data/arsiv/mutabakat_{GUN}.csv (lines=21); definition MUTABAKAT_GONDER/DOSYA_URET: {"RunAs": "batch"}; shell on ajan1: <code>grep -q "$(printf '\r')" /app/scripts/mutabakat_uret.sh; test $? -eq 1</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-16-db-yanlis-veritabani</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job BASLAT_YUKLEME in folder GECE_YUKLEME did not run, state Ended Not OK; SAYIM_KONTROL waits. We edited the connection profile yesterday for testing. Get the load completed and the data in the table correct.</td>
+<td>jobs GECE_YUKLEME/BASLAT_YUKLEME; GECE_YUKLEME/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|3150; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"DatabaseName": "uygulama", "User": "etl_user"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-17-os-calistirilamaz-os-ortam-degiskeni</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ (folder OPERASYON_RAPOR) ended Not OK overnight; RAPOR_KONTROL waits; the on-call colleague could not look. A new script version was deployed yesterday and today is its first run; the job was moved from another server last month where it worked. Get the job to run without error and the file produced.</td>
+<td>jobs OPERASYON_RAPOR/RAPOR_YAZ; OPERASYON_RAPOR/RAPOR_KONTROL in state Ended OK; file ajan2:/data/giden/operasyon_{GUN}.txt (contains=operasyon {GUN}); shell on ajan2: <code>test -x /app/scripts/operasyon.sh</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-18-aft-parola-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job KARSIYA_GONDER in folder STOK_BILDIRIM ended with an error; ARSIVE_AL waits. The partner reported the rapor account password was renewed (new password given). Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs STOK_BILDIRIM/DOSYA_URET; STOK_BILDIRIM/KARSIYA_GONDER; STOK_BILDIRIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/rapor/in/stok_{GUN}.csv identical to ajan2:/data/arsiv/stok_{GUN}.csv (lines=21); profile SFTP_RAPOR: {"User": "rapor", "HostName": "dosya-sunucu", "Password": "Karsi-Ta..., connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-19-os-calistirilamaz</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>This morning job HAZIRLA in folder KREDI_OZET ended with an error; DOGRULA_DOSYA waits. A new script version was deployed yesterday and today is its first run. Get the job to run without error and the file produced.</td>
+<td>jobs KREDI_OZET/HAZIRLA; KREDI_OZET/DOGRULA_DOSYA in state Ended OK; file ajan2:/data/giden/kredi_ozet_{GUN}.txt (contains=kredi_ozet {GUN}); shell on ajan2: <code>test -x /app/scripts/kredi_ozet.sh</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-20-aft-tarih-bicimi</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER (folder STOK_BILDIRIM) ended Not OK overnight; ARSIV waits; the on-call colleague could not look. The partner says no file arrived while the producing job completes fine. Get today's file to the partner with correct content and the flow finished; if the cause is in the definition, a permanent fix is wanted.</td>
+<td>jobs STOK_BILDIRIM/OLUSTUR; STOK_BILDIRIM/TRANSFER; STOK_BILDIRIM/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/stok_{GUN}.csv identical to ajan1:/data/arsiv/stok_{GUN}.csv (lines=21); definition STOK_BILDIRIM/TRANSFER: {"FileTransfers": [{"Src": "~stok_(%%\$ODATE|\*)\.csv$"}]}</td>
+</tr>
+<tr>
+<td><code>k2-21-aft-anahtar-izni</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job TRANSFER in folder SIPARIS_AKTAR ended with an error; ARSIV waits. The systems team said it did a file system restore on ajan1. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs SIPARIS_AKTAR/OLUSTUR; SIPARIS_AKTAR/TRANSFER; SIPARIS_AKTAR/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/siparis_{GUN}.csv identical to ajan1:/data/arsiv/siparis_{GUN}.csv (lines=21); shell on ajan1: <code>stat -c %a /opt/ctm/keys/rapor_key</code> (output=600)</td>
+</tr>
+<tr>
+<td><code>k2-22-db-kilit-bos-oturum</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>The load in folder SATIS_ISLE is stuck: BASLAT_YUKLEME stayed in Executing for hours; SAYIM_KONTROL behind it waits. Get the load completed and the data in the table correct.</td>
+<td>jobs SATIS_ISLE/BASLAT_YUKLEME; SATIS_ISLE/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|5250; SQL <code>select count(*) from yukleme_log</code> = 1</td>
+</tr>
+<tr>
+<td><code>k2-23-plan-flow-sirasi-db-dosya-izni</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SAYIM_KONTROL in folder VERI_AMBARI_YUKLE did not run, state Ended Not OK; BASLAT_YUKLEME waits. The flow order of VERI_AMBARI_YUKLE changed and errors began after it; the file was recreated overnight and we do not know under whose authority. Get today's load completed completely and without duplicates; a permanent fix is wanted if the cause is in the definition.</td>
+<td>jobs VERI_AMBARI_YUKLE/BASLAT_YUKLEME; VERI_AMBARI_YUKLE/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|4200; SQL <code>select count(*) from yukleme_log</code> = 1; flow in VERI_AMBARI_YUKLE: BASLAT_YUKLEME precedes SAYIM_KONTROL; order in VERI_AMBARI_YUKLE: BASLAT_YUKLEME runs before SAYIM_KONTROL</td>
+</tr>
+<tr>
+<td><code>k2-24-plan-eski-kopya</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ (folder MUHASEBE_KAPANIS) ended Not OK overnight; RAPOR_KONTROL waits; the on-call colleague could not look. We corrected the folder definition and reloaded it but the result did not change. Get the job to run without error and the file produced.</td>
+<td>jobs MUHASEBE_KAPANIS/RAPOR_YAZ; MUHASEBE_KAPANIS/RAPOR_KONTROL in state Ended OK; file ajan1:/data/giden/defter_ozet_{GUN}.txt (contains=defter_ozet {GUN})</td>
+</tr>
+<tr>
+<td><code>k2-25-aft-karsi-disk-dolu</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job KARSIYA_GONDER (folder MUTABAKAT_GONDER) ended Not OK overnight; ARSIVE_AL waits; the on-call colleague could not look. We work through the shared area /srv/dar (dosya-sunucu, managed by us); there was no problem until last night. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs MUTABAKAT_GONDER/DOSYA_URET; MUTABAKAT_GONDER/KARSIYA_GONDER; MUTABAKAT_GONDER/ARSIVE_AL in state Ended OK; file dosya-sunucu:/srv/dar/mutabakat_{GUN}.csv identical to ajan2:/data/arsiv/mutabakat_{GUN}.csv (lines=21)</td>
+</tr>
+<tr>
+<td><code>k2-26-os-betik-baska-host</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ (folder MUHASEBE_KAPANIS) ended Not OK overnight; RAPOR_KONTROL waits; the on-call colleague could not look. A move to a new server was done and we think the scripts should have been moved. Get today's run of the flow completed and the output produced.</td>
+<td>jobs MUHASEBE_KAPANIS/RAPOR_YAZ; MUHASEBE_KAPANIS/RAPOR_KONTROL in state Ended OK; file ajan2:/data/giden/defter_ozet_{GUN}.txt (contains=defter_ozet {GUN}); shell on ajan2: <code>test -x /app/scripts/defter_ozet.sh</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-27-plan-dosya-gec</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job BEKLE (folder MUTABAKAT_GONDER) ended Not OK overnight; TRANSFER waits; the on-call colleague could not look. The source system sent the file late and the watcher job timed out. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs MUTABAKAT_GONDER/BEKLE; MUTABAKAT_GONDER/TRANSFER in state Ended OK; file dosya-sunucu:/home/rapor/in/mutabakat_{GUN}.csv identical to ajan2:/data/gelen/mutabakat_{GUN}.csv (lines=21)</td>
+</tr>
+<tr>
+<td><code>k2-28-db-sql-adi-db-dosya-izni</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job BASLAT_YUKLEME (folder GECE_YUKLEME) ended Not OK overnight; SAYIM_KONTROL waits; the on-call colleague could not look. They were going to back up the scripts and put in a new one, which stopped halfway last night; the file was recreated overnight and we do not know under whose authority. Get the load completed and the data in the table correct.</td>
+<td>jobs GECE_YUKLEME/BASLAT_YUKLEME; GECE_YUKLEME/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|5250; SQL <code>select count(*) from yukleme_log</code> = 1; file ajan1:/app/sql/satis_yukle.sql</td>
+</tr>
+<tr>
+<td><code>k2-29-aft-hostkey-degisti-aft-karsi-disk-dolu</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job KARSIYA_GONDER in folder STOK_BILDIRIM ended with an error; ARSIVE_AL waits. The partner's maintenance window was last night and it says nothing changed in the account details. We work through the shared area /srv/dar (dosya-sunucu, managed by us); there was no problem until last night. Get the file to the target and the flow completed.</td>
+<td>jobs STOK_BILDIRIM/DOSYA_URET; STOK_BILDIRIM/KARSIYA_GONDER; STOK_BILDIRIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/srv/dar/stok_{GUN}.csv identical to ajan1:/data/arsiv/stok_{GUN}.csv (lines=21); profile SFTP_BANKA: {"HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-30-plan-dosya-gec-db-parola-degisti</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>This morning job BEKLE in folder SATIS_ISLE ended with an error; SATIS_ISLE_IS waits. The source system sent the file late and the watcher timed out; the DBA team set a new etl_user password (given). Get the load completed and the data in the table correct.</td>
+<td>jobs SATIS_ISLE/BEKLE; SATIS_ISLE/SATIS_ISLE_IS; SATIS_ISLE/SATIS_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|6300; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user", "Password": "Etl-Q4-Politika"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-31-aft-tarih-bicimi-aft-hedef-yazilamaz</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER in folder MUTABAKAT_GONDER did not run, state Ended Not OK; ARSIV waits. The partner says no file arrived while the producing job completes fine; the partner said it changed directory permissions. The share server (dosya-sunucu) is ours. Get the file to the target and the flow completed; fix a definition error permanently.</td>
+<td>jobs MUTABAKAT_GONDER/OLUSTUR; MUTABAKAT_GONDER/TRANSFER; MUTABAKAT_GONDER/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/mutabakat_{GUN}.csv identical to ajan1:/data/arsiv/mutabakat_{GUN}.csv (lines=21); definition MUTABAKAT_GONDER/TRANSFER: {"FileTransfers": [{"Src": "~mutabakat_(%%\$ODATE|\*)\.csv$"}]}; shell on dosya-sunucu: <code>touch /home/rapor/in/.yazma_denemesi &amp;&amp; rm -f /home/rapor/in/.yazma...</code> (as user=rapor)</td>
+</tr>
+<tr>
+<td><code>k2-32-aft-port-yanlis</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job KARSIYA_GONDER (folder MUTABAKAT_GONDER) ended Not OK overnight; ARSIVE_AL waits; the on-call colleague could not look. Nothing changed on the partner's side and our network team says it changed nothing. Get the file to the target and the flow completed.</td>
+<td>jobs MUTABAKAT_GONDER/DOSYA_URET; MUTABAKAT_GONDER/KARSIYA_GONDER; MUTABAKAT_GONDER/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/mftuser/in/mutabakat_{GUN}.csv identical to ajan2:/data/arsiv/mutabakat_{GUN}.csv (lines=21); profile SFTP_KARSI: {"Port": "22"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-33-os-dizin-erisim</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ in folder MUHASEBE_KAPANIS did not run, state Ended Not OK; RAPOR_KONTROL waits. The application team moved the parameter file to a new directory yesterday. Get today's run of the flow completed and the output produced.</td>
+<td>jobs MUHASEBE_KAPANIS/RAPOR_YAZ; MUHASEBE_KAPANIS/RAPOR_KONTROL in state Ended OK; file ajan1:/data/giden/defter_ozet_{GUN}.txt (contains=defter_ozet {GUN}); shell on ajan1: <code>cat /data/uygulama/parametre.txt</code> (contains=7) (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-34-aft-hesap-kilitli-aft-hedef-yazilamaz</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER in folder CARI_HESAP_AKTARIM did not run, state Ended Not OK; ARSIV waits. This account was unused for a long time and failed on its first run. The partner server is a share server we manage (dosya-sunucu); the partner said it changed directory permissions. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs CARI_HESAP_AKTARIM/OLUSTUR; CARI_HESAP_AKTARIM/TRANSFER; CARI_HESAP_AKTARIM/ARSIV in state Ended OK; file dosya-sunucu:/home/mftuser/in/cari_{GUN}.csv identical to ajan2:/data/arsiv/cari_{GUN}.csv (lines=21); profile SFTP_KARSI: {"User": "mftuser"}, connection test passes; shell on dosya-sunucu: <code>touch /home/mftuser/in/.yazma_denemesi &amp;&amp; rm -f /home/mftuser/in/.y...</code> (as user=mftuser)</td>
+</tr>
+<tr>
+<td><code>k2-35-aft-yanlis-hesap</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job KARSIYA_GONDER in folder STOK_BILDIRIM did not run, state Ended Not OK; ARSIVE_AL waits. The partner told us in writing it had opened an account named mftuser. Get the file to the target and the flow completed.</td>
+<td>jobs STOK_BILDIRIM/DOSYA_URET; STOK_BILDIRIM/KARSIYA_GONDER; STOK_BILDIRIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/mftuser/in/stok_{GUN}.csv identical to ajan2:/data/arsiv/stok_{GUN}.csv (lines=21); profile SFTP_KARSI: {"User": "mftuser", "HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-36-aft-host-adi-yanlis</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job TRANSFER in folder STOK_BILDIRIM ended with an error; ARSIV waits. The partner server's name was always the same: dosya-sunucu. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs STOK_BILDIRIM/OLUSTUR; STOK_BILDIRIM/TRANSFER; STOK_BILDIRIM/ARSIV in state Ended OK; file dosya-sunucu:/home/mftuser/in/stok_{GUN}.csv identical to ajan2:/data/arsiv/stok_{GUN}.csv (lines=21); profile SFTP_KARSI: {"HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-37-aft-uretici-dun</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER (folder SIPARIS_AKTAR) ended Not OK overnight; ARSIV waits; the on-call colleague could not look. The application team changed the producing script yesterday and sending fails today. Get the file to the target and the flow completed.</td>
+<td>jobs SIPARIS_AKTAR/OLUSTUR; SIPARIS_AKTAR/TRANSFER; SIPARIS_AKTAR/ARSIV in state Ended OK; file dosya-sunucu:/home/mftuser/in/siparis_{GUN}.csv identical to ajan2:/data/arsiv/siparis_{GUN}.csv (lines=21); shell on ajan2: <code>grep -q 86400 /app/scripts/siparis_uret.sh; test $? -eq 1</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-38-aft-anahtar-yok-host</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job KARSIYA_GONDER in folder STOK_BILDIRIM ended with an error; ARSIVE_AL waits. We changed the folder's server to ajan2; it used to be on ajan1. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs STOK_BILDIRIM/DOSYA_URET; STOK_BILDIRIM/KARSIYA_GONDER; STOK_BILDIRIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/rapor/in/stok_{GUN}.csv identical to ajan2:/data/arsiv/stok_{GUN}.csv (lines=21); shell on ajan2: <code>stat -c %a /opt/ctm/keys/rapor_key</code> (output=600)</td>
+</tr>
+<tr>
+<td><code>k2-39-os-calistirilamaz-os-disk-dolu</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ (folder KREDI_OZET) ended Not OK overnight; RAPOR_KONTROL waits; the on-call colleague could not look. A new script version was deployed yesterday, today is its first run; the disk monitoring team had reported a partition near full. Get the job to run without error and the file produced.</td>
+<td>jobs KREDI_OZET/RAPOR_YAZ; KREDI_OZET/RAPOR_KONTROL in state Ended OK; file ajan1:/data/giden/kredi_ozet_{GUN}.txt (contains=kredi_ozet {GUN}); shell on ajan1: <code>test -x /app/scripts/kredi_ozet.sh</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-40-aft-artik-dosya</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job KARSIYA_GONDER (folder MUTABAKAT_GONDER) ended Not OK overnight; ARSIVE_AL waits; the on-call colleague could not look. Last night's first attempt was cut halfway; the partner server is a share server we manage (dosya-sunucu). Get the file to the target and the flow completed.</td>
+<td>jobs MUTABAKAT_GONDER/DOSYA_URET; MUTABAKAT_GONDER/KARSIYA_GONDER; MUTABAKAT_GONDER/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/banka/in/mutabakat_{GUN}.csv identical to ajan1:/data/arsiv/mutabakat_{GUN}.csv (lines=21)</td>
+</tr>
+<tr>
+<td><code>k2-41-plan-baska-klasor-olay-os-calistirilamaz</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job HAZIRLA (folder KREDI_OZET) waits and never starts. According to the old documentation this flow should run on its own. A new script version was deployed yesterday and today is its first run. Get the job to run without error and the file produced.</td>
+<td>jobs KREDI_OZET/HAZIRLA; KREDI_OZET/DOGRULA_DOSYA; KREDI_OZET_ONCESI/HAZIRLA in state Ended OK; file ajan1:/data/giden/kredi_ozet_{GUN}.txt (contains=kredi_ozet {GUN}); file ajan1:/data/tmp/kredi_ozet_hazir_{GUN}.ok; shell on ajan1: <code>test -x /app/scripts/kredi_ozet.sh</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-42-db-baglanti-siniri</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SATIS_ISLE_IS (folder SATIS_ISLE) ended Not OK overnight; SATIS_KONTROL waits; the on-call colleague could not look. The old version may not have been shut down on the application servers. Get today's load completed completely and without duplicates.</td>
+<td>jobs SATIS_ISLE/SATIS_ISLE_IS; SATIS_ISLE/SATIS_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|8400; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-43-db-parola-degisti</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job BASLAT_YUKLEME in folder SATIS_ISLE did not run, state Ended Not OK; SAYIM_KONTROL waits. The DBA team set a new etl_user password (given). Get today's load completed completely and without duplicates.</td>
+<td>jobs SATIS_ISLE/BASLAT_YUKLEME; SATIS_ISLE/SAYIM_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|6300; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user", "Password": "Etl-Q4-Politika"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-44-os-hesap-baska-host</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>This morning job RAPOR_YAZ in folder OPERASYON_RAPOR ended with an error; RAPOR_KONTROL waits. The job's account is finans; it worked on the other server. Get the job to run without error and the file produced.</td>
+<td>jobs OPERASYON_RAPOR/RAPOR_YAZ; OPERASYON_RAPOR/RAPOR_KONTROL in state Ended OK; file ajan1:/data/giden/operasyon_{GUN}.txt (contains=operasyon {GUN}); shell on ajan1: <code>id finans</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-45-aft-hedef-dizin</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job KARSIYA_GONDER in folder STOK_BILDIRIM ended with an error; ARSIVE_AL waits. The partner's receiving directory was always in. Get the file to the target and the flow completed; if the cause is in the definition, a permanent fix is wanted.</td>
+<td>jobs STOK_BILDIRIM/DOSYA_URET; STOK_BILDIRIM/KARSIYA_GONDER; STOK_BILDIRIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/rapor/in/stok_{GUN}.csv identical to ajan2:/data/arsiv/stok_{GUN}.csv (lines=21); definition STOK_BILDIRIM/KARSIYA_GONDER: {"FileTransfers": [{"Dest": "~^/home/rapor/in/"}]}</td>
+</tr>
+<tr>
+<td><code>k2-46-aft-port-yanlis</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER in folder CARI_HESAP_AKTARIM did not run, state Ended Not OK; ARSIV waits. Nothing changed on the partner's side and our network team says it changed nothing. Get the file to the target and the flow completed.</td>
+<td>jobs CARI_HESAP_AKTARIM/OLUSTUR; CARI_HESAP_AKTARIM/TRANSFER; CARI_HESAP_AKTARIM/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/cari_{GUN}.csv identical to ajan1:/data/arsiv/cari_{GUN}.csv (lines=21); profile SFTP_RAPOR: {"Port": "22"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-47-aft-hostkey-degisti-aft-karsi-disk-dolu</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER in folder SIPARIS_AKTAR did not run, state Ended Not OK; ARSIV waits. The partner's maintenance window was last night and it says nothing changed in the account details. We work through the shared area /srv/dar (dosya-sunucu, ours); no problem until last night. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs SIPARIS_AKTAR/OLUSTUR; SIPARIS_AKTAR/TRANSFER; SIPARIS_AKTAR/ARSIV in state Ended OK; file dosya-sunucu:/srv/dar/siparis_{GUN}.csv identical to ajan2:/data/arsiv/siparis_{GUN}.csv (lines=21); profile SFTP_RAPORK: {"HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-48-plan-eski-kopya-os-ortam-degiskeni</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ in folder KREDI_OZET did not run, state Ended Not OK; RAPOR_KONTROL waits. We corrected the folder definition and reloaded it but the result did not change; the job was moved from another server last month where it worked. Get the job to run without error and the file produced.</td>
+<td>jobs KREDI_OZET/RAPOR_YAZ; KREDI_OZET/RAPOR_KONTROL in state Ended OK; file ajan1:/data/giden/kredi_ozet_{GUN}.txt (contains=kredi_ozet {GUN})</td>
+</tr>
+<tr>
+<td><code>k2-49-db-baglanti-siniri-db-mukerrer-kayit</code></td>
+<td>fault</td>
+<td>DBJ (database)</td>
+<td>Job SATIS_ISLE_IS (folder SATIS_ISLE) ended Not OK overnight; SATIS_KONTROL waits; the on-call colleague could not look. The old version may not have been shut down on the application servers; the duty log says last night's load stopped halfway and was then handled by hand. Get today's load completed completely and without duplicates.</td>
+<td>jobs SATIS_ISLE/SATIS_ISLE_IS; SATIS_ISLE/SATIS_KONTROL in state Ended OK; SQL <code>select count(*), sum(tutar) from satis where tarih = '{GUN}'</code> = 20|4200; SQL <code>select count(*) from yukleme_log</code> = 1; profile PG_UYG: {"User": "etl_user"}, connection test passes; SQL <code>select count(*), sum(tutar) from satis where tarih = '20260101'</code> = 30|1395; SQL <code>select count(*) from satis_gecici</code> = 0</td>
+</tr>
+<tr>
+<td><code>k2-50-aft-yanlis-hesap</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job TRANSFER in folder CARI_HESAP_AKTARIM did not run, state Ended Not OK; ARSIV waits. The partner told us in writing it had opened an account named mftuser. Get the file to the target and the flow completed.</td>
+<td>jobs CARI_HESAP_AKTARIM/OLUSTUR; CARI_HESAP_AKTARIM/TRANSFER; CARI_HESAP_AKTARIM/ARSIV in state Ended OK; file dosya-sunucu:/home/mftuser/in/cari_{GUN}.csv identical to ajan1:/data/arsiv/cari_{GUN}.csv (lines=21); profile SFTP_KARSI: {"User": "mftuser", "HostName": "dosya-sunucu"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-51-aft-ascii-bozuyor</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>The partner says it cannot read the file coming from folder CARI_HESAP_AKTARIM while jobs look successful on our side. Get the file to the target and the flow completed; fix a definition error permanently.</td>
+<td>jobs CARI_HESAP_AKTARIM/OLUSTUR; CARI_HESAP_AKTARIM/TRANSFER; CARI_HESAP_AKTARIM/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/cari_{GUN}.csv identical to ajan2:/data/arsiv/cari_{GUN}.csv (lines=21); definition CARI_HESAP_AKTARIM/TRANSFER: {"FileTransfers": [{"TransferType": "Binary"}]}</td>
+</tr>
+<tr>
+<td><code>k2-52-aft-parola-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job KARSIYA_GONDER in folder STOK_BILDIRIM did not run, state Ended Not OK; ARSIVE_AL waits. The partner reported the rapor account password was renewed (new password given). Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs STOK_BILDIRIM/DOSYA_URET; STOK_BILDIRIM/KARSIYA_GONDER; STOK_BILDIRIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/rapor/in/stok_{GUN}.csv identical to ajan2:/data/arsiv/stok_{GUN}.csv (lines=21); profile SFTP_RAPOR: {"User": "rapor", "HostName": "dosya-sunucu", "Password": "Yeni-Ana..., connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-53-aft-anahtar-yok-host</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>This morning job TRANSFER in folder SIPARIS_AKTAR ended with an error; ARSIV waits. We changed the folder's server to ajan1; it used to be on ajan2. Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs SIPARIS_AKTAR/OLUSTUR; SIPARIS_AKTAR/TRANSFER; SIPARIS_AKTAR/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/siparis_{GUN}.csv identical to ajan1:/data/arsiv/siparis_{GUN}.csv (lines=21); shell on ajan1: <code>stat -c %a /opt/ctm/keys/rapor_key</code> (output=600)</td>
+</tr>
+<tr>
+<td><code>k2-54-aft-hesap-kilitli</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job KARSIYA_GONDER (folder STOK_BILDIRIM) ended Not OK overnight; ARSIVE_AL waits; the on-call colleague could not look. This account was unused for a long time and failed on its first run; the partner server is a share server we manage (dosya-sunucu). Get the file to the target and the flow completed.</td>
+<td>jobs STOK_BILDIRIM/DOSYA_URET; STOK_BILDIRIM/KARSIYA_GONDER; STOK_BILDIRIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/rapor/in/stok_{GUN}.csv identical to ajan1:/data/arsiv/stok_{GUN}.csv (lines=21); profile SFTP_RAPOR: {"User": "rapor"}, connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-55-host-ajan-kapali-tasi-aft-parola-degisti</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job OLUSTUR in flow SIPARIS_AKTAR is stuck waiting for its server; TRANSFER waits. ajan1 went down and its return is uncertain; the daily flow must complete today. The partner reported the rapor account password was renewed (new password given). Get today's file to the partner with correct content and the flow finished.</td>
+<td>jobs SIPARIS_AKTAR/OLUSTUR; SIPARIS_AKTAR/TRANSFER; SIPARIS_AKTAR/ARSIV; SIPARIS_AKTAR/ARSIV in state Ended OK; file dosya-sunucu:/home/rapor/in/siparis_{GUN}.csv identical to ajan2:/data/arsiv/siparis_{GUN}.csv (lines=21); profile SFTP_RAPOR: {"User": "rapor", "HostName": "dosya-sunucu", "Password": "Karsi-Ta..., connection test passes</td>
+</tr>
+<tr>
+<td><code>k2-56-os-yorumlayici</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>This morning job HAZIRLA in folder MUHASEBE_KAPANIS ended with an error; DOGRULA_DOSYA waits. The application team said it took the script from another Unix server. Get today's run of the flow completed and the output produced.</td>
+<td>jobs MUHASEBE_KAPANIS/HAZIRLA; MUHASEBE_KAPANIS/DOGRULA_DOSYA in state Ended OK; file ajan1:/data/giden/defter_ozet_{GUN}.txt (contains=defter_ozet {GUN}); shell on ajan1: <code>i=$(head -1 /app/scripts/defter_ozet.sh \| cut -c3- \| cut -d' ' -f1)...</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-57-os-crlf</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ (folder MUHASEBE_KAPANIS) ended Not OK overnight; RAPOR_KONTROL waits; the on-call colleague could not look. A colleague put the script's new version on the server last night; we did not run it by hand. Get today's run of the flow completed and the output produced.</td>
+<td>jobs MUHASEBE_KAPANIS/RAPOR_YAZ; MUHASEBE_KAPANIS/RAPOR_KONTROL in state Ended OK; file ajan1:/data/giden/defter_ozet_{GUN}.txt (contains=defter_ozet {GUN}); shell on ajan1: <code>grep -q "$(printf '\r')" /app/scripts/defter_ozet.sh; test $? -eq 1</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-58-os-runas-yazim-os-tmp-yazilamaz</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job RAPOR_YAZ in folder KREDI_OZET did not run, state Ended Not OK; RAPOR_KONTROL waits. The folder definition was loaded with a new version and the job has failed since; a new cleanup script was run on the server yesterday. Get the job to run without error and the file produced; fix a definition error permanently.</td>
+<td>jobs KREDI_OZET/RAPOR_YAZ; KREDI_OZET/RAPOR_KONTROL in state Ended OK; file ajan1:/data/giden/kredi_ozet_{GUN}.txt (contains=kredi_ozet {GUN}); definition KREDI_OZET/RAPOR_YAZ: {"RunAs": "batch"}; shell on ajan1: <code>touch /data/tmp/.deneme &amp;&amp; rm -f /data/tmp/.deneme</code> (as user=batch)</td>
+</tr>
+<tr>
+<td><code>k2-59-aft-uretici-dun</code></td>
+<td>fault</td>
+<td>AFT (file transfer)</td>
+<td>Job KARSIYA_GONDER (folder CARI_HESAP_AKTARIM) ended Not OK overnight; ARSIVE_AL waits; the on-call colleague could not look. The application team changed the producing script yesterday and sending fails today. Get the file to the target and the flow completed.</td>
+<td>jobs CARI_HESAP_AKTARIM/DOSYA_URET; CARI_HESAP_AKTARIM/KARSIYA_GONDER; CARI_HESAP_AKTARIM/ARSIVE_AL in state Ended OK; file dosya-sunucu:/home/mftuser/in/cari_{GUN}.csv identical to ajan1:/data/arsiv/cari_{GUN}.csv (lines=21); shell on ajan1: <code>grep -q 86400 /app/scripts/cari_uret.sh; test $? -eq 1</code> (exit code=0)</td>
+</tr>
+<tr>
+<td><code>k2-60-os-dizin-erisim</code></td>
+<td>fault</td>
+<td>EXC (command/script)</td>
+<td>Job HAZIRLA in folder MUHASEBE_KAPANIS did not run, state Ended Not OK; DOGRULA_DOSYA waits. The application team moved the parameter file to a new directory yesterday. Get today's run of the flow completed and the output produced.</td>
+<td>jobs MUHASEBE_KAPANIS/HAZIRLA; MUHASEBE_KAPANIS/DOGRULA_DOSYA in state Ended OK; file ajan2:/data/giden/defter_ozet_{GUN}.txt (contains=defter_ozet {GUN}); shell on ajan2: <code>cat /data/uygulama/parametre.txt</code> (contains=7) (as user=batch)</td>
+</tr>
+</tbody>
+</table></body></html>

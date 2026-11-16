@@ -1,6 +1,6 @@
 # Vardiya
 
-Türkçe | [English](README.en.md)
+Türkçe | [English](README.en.md) · [SchedOps-Bench in English (PDF)](docs/schedops-bench-en.pdf)
 
 > **Harness olmadan bir dil modeli 0 adminlik yapar.** Sunucuya bağlanamaz, işin çıktısını okuyamaz, profili düzeltemez,
 > işi yeniden çalıştıramaz; yalnızca öneri yazar ve sahada hiçbir şey değişmez. Bench'teki her senaryoda bu durumun
