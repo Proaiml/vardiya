@@ -9,6 +9,8 @@ Arms:
 The protocol is one JSON object per turn, so any text model can drive it (local, API, or a CLI such as agy).
 """
 import json
+import os
+import pathlib
 import time
 import urllib.error
 
@@ -56,6 +58,19 @@ def sikistir(messages, sinir, son=6, ilk_satir=4):
     return head + [kisa(m, 2) for m in mid] + [kisa(m, 30) for m in tail]
 
 
+_SONUC = pathlib.Path(os.environ["SAHA_SONUC"]) if os.environ.get("SAHA_SONUC") else pathlib.Path(__file__).resolve().parents[2] / "results" / "saha"
+BEKLE = _SONUC / "durum" / "BEKLE"
+
+
+def isi_bekle(dosya=None, uyku=15, en_cok=3600):
+    """Wait while the heat watchdog's pause file exists (tools/isi_bekcisi.py). Returns the seconds waited, so the
+    caller can leave them out of the episode's time: a cooling pause is the machine's, not the agent's."""
+    dosya, t0 = dosya or BEKLE, time.time()
+    while dosya.exists() and time.time() - t0 < en_cok:
+        time.sleep(uyku)
+    return time.time() - t0
+
+
 def kos(model, araclar, talep, usta=None, ek_baglam="", max_adim=MAX_ADIM, max_saniye=MAX_SANIYE, gunluk=None):
     """Run one episode. Returns {"rapor", "adim", "saniye", "bitis", "cagri", "mesajlar"}."""
     t0 = time.time()
@@ -70,6 +85,7 @@ def kos(model, araclar, talep, usta=None, ek_baglam="", max_adim=MAX_ADIM, max_s
     rapor, bitis, bozuk = "", "adim_siniri", 0
     sinir = baglam_siniri(model)
     for adim in range(1, max_adim + 1):
+        t0 += isi_bekle()            # every arm alike; paused time is not counted
         if time.time() - t0 > max_saniye:
             bitis = "sure_siniri"
             break

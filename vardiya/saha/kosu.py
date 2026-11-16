@@ -205,6 +205,7 @@ def main(argv=None):
     kotu = kota = 0
     for s in senaryolar:
         for kol in kollar:
+            ajan.isi_bekle()             # cool-down pause from the heat watchdog, before an episode starts
             if dur.exists():
                 print("DUR dosyasi goruldu; kosu temiz durduruldu.")
                 kilit.unlink(missing_ok=True)
