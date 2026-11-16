@@ -675,6 +675,8 @@ class Usta:
                 parts = text.split()
                 self.calistirilan.add(parts[2] if len(parts) > 2 else "")
             notes.append(self._takip())
+            if m.group(1) == "order":
+                notes.append(self._kopya_bekliyor(sonuc))
         if self.cagri.get(key, 0) >= 3:
             self.sayac["dongu"] += 1
             notes.append("Ayni komutu 3. kez calistirdin ve sonuc degismiyor. Farkli bir veri topla ya da baska bir hipotez dene; "
@@ -686,6 +688,27 @@ class Usta:
             notes.append("Bu ciktiya uyan beceri karti:\n" + kart_yazi(k))
         notes = [n for n in notes if n]
         return sonuc + ("\n\n--- USTA ---\n" + "\n\n".join(notes) if notes else "")
+
+    def _kopya_bekliyor(self, sonuc):
+        """A job ordered alone out of a flow is a new copy that waits for its predecessor's event; when that event
+        was already given and consumed, the copy waits forever and the failed instance is still there."""
+        try:
+            new = set(json.loads(sonuc).get("jobIds", []))
+        except (ValueError, AttributeError):
+            return None
+        rows = self._statuses()
+        lines = []
+        for r in [x for x in rows if x["jobId"] in new and x["status"] == "Wait Condition"]:
+            eski = [x for x in rows if x["folder"] == r["folder"] and x["name"] == r["name"] and x["jobId"] != r["jobId"]
+                    and x["status"] in ("Ended Not OK", "Wait Condition")]
+            evs = ", ".join((r.get("waitingFor") or {}).get("events", []))
+            lines.append(f"- {r['folder']}/{r['name']} yeni kopyasi [{r['jobId']}] {evs} olayini bekliyor; tek basina siparis edilen is, "
+                         "akistaki oncusunun olayini yeniden bekler." + (f" Ayni isin eski ornegi duruyor: {', '.join(x['jobId'] + ' ' + x['status'] for x in eski[:3])}; "
+                         f"duzeltmeden sonra o ornegi `run job::rerun {eski[0]['jobId']}` ile yeniden calistirmak kopya yaratmaz." if eski else ""))
+        if not lines:
+            return None
+        return ("SIPARIS NOTU:\n" + "\n".join(lines) + "\nTanim degistiyse yeni kopya gerekir: o zaman eski ornegi sil, oncu gercekten bittiyse "
+                "bekleyen olayi kanitiyla ekle. Tanim degismediyse yeni kopya siparis etmek yerine basarisiz ornegi rerun et.")
 
     def _takip(self, sure=50):
         """Wait for the jobs to settle and report what happened, with the failing lines."""
