@@ -69,6 +69,35 @@ gerçek sisteme karşı doğrulanır ve aynı senaryolar orada koşulur.
   `Desktop\harness` (Nöbetçi) deposuna dokunulmaz; başka projelerin Docker imajları silinmez.
 - Her bölümün kanıtı `results/saha/<koşu>/` altında saklanır ve commit edilir.
 
+## Yayın ölçütleri (16 Kasım 2026, İlhan)
+
+Depo Apache 2.0 lisansıyla ancak aşağıdaki dördü gerçek ortamda, kanıtıyla gösterildiğinde herkese açılır. Kapı takvim
+değil ölçüttür: gösterilemeyen madde açık yazılır ve yayın bekler.
+
+| # | Beklenti | Nasıl ölçülür | Bugün |
+| --- | --- | --- | --- |
+| 1 | Karmaşık işleri ve birden çok ardıl işi tanımlar | Zor kümedeki 8-10 işli, çok tipli, klasörler arası olaylı tanım talepleri; her istek bir kontrol. Usta ile yardımsız model aynı senaryolarda | İlk kümede 5 işli akışlar var; iki kol da doğru, Usta çok daha az adımda. Zor küme yazılıyor |
+| 2 | Karmaşık olanlar dahil sorunları zarar vermeden çözer | Bileşik ve yanıltıcı arızalarda doğru oranı; zararlı ve sahte yeşil sayısı Usta'da sıfır | İlk kümede zarar yok, doğruluk iki kolda da tavanda. Fark zor kümede aranacak |
+| 3 | Kendi graf modeliyle sorunu oluşmadan fark eder | Canlı sitede öncü belirti senaryoları (dolmakta olan disk, süresi dolmak üzere hesap ya da anahtar, uzayan iş süresi, tekrarlayan hata imzası): arıza çıkmadan önce doğru uyarı ve yanlış alarm sayısı; yardımsız modelle karşılaştırma | Graf modeli metin bench'inde ön teşhis yapıyor; canlı ortamda erken uyarı kolu YOK |
+| 4 | Kriz anında çok hızlı çözer; örnek: bir sunucuda ajan durmuş, sunucuya uzaktan bağlanıp ajanı yeniden başlatır | Adım bütçeli koşular; ajanın gerçekten durduğu ve sunucuya bağlanıp yeniden başlatılması gereken senaryolar | Adım bütçesi tablosu var (8 adımda Usta 9/13, yardımsız 2/13). Laboratuvarda ajan yeniden başlatılamıyor; senaryo işi başka ajana taşıyor |
+
+"Ciddi atılım" şöyle okunur: aynı senaryolarda eşli karşılaştırmada fark açık olmalı (zor kümede en az 20 puan ya da
+işaret testinde p < 0,05) ve Usta hiçbir senaryoda zarar vermemeli. Fark yalnızca hızda çıkarsa bu açıkça söylenir ve
+yayın kararı İlhan'a bırakılır.
+
+Uzaktan bağlantı: laboratuvar sunucuları Linux olduğu için canlı denemede bağlantı SSH ile yapılır. WinRM aynı eylemin
+Windows karşılığıdır; Usta'nın genel yeteneklerinde yordamı vardır ama gerçek bir Windows sunucusu olmadan canlı
+denenemez. Bu sınır raporda yazılır.
+
+Bu ölçütler iki yeni iş doğurur (Aşama 3'e eklenir):
+
+- **Ajan yeniden başlatma.** Ajan sunucularında ajan süreci, kap kapanmadan durdurulup başlatılabilmeli (bir hizmet
+  betiği ve gözetici süreç); "ajan durdu" senaryoları: sunucuya bağlan, neden durduğunu bul, yeniden başlat, bağlandığını
+  doğrula, bekleyen işleri yürüt.
+- **Erken uyarı kolu.** Canlı siteden okunan geçmiş (iş süreleri, hata imzaları, disk doluluğu, hesap ve anahtar
+  süreleri) çizgeye işlenir; mevcut graf modeli (`vardiya/gnn.py`) ve erken uyarı kodu bunun üstünde çalışır; öncü
+  belirti senaryolarıyla ölçülür.
+
 ## "Bitti" ölçütü
 
 1. Gizli test kümesinde üç model ve üç kolla tam ölçüm, kesilen bölümler tamamlanmış.
