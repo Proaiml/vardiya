@@ -1,6 +1,6 @@
 # Vardiya
 
-[Türkçe](README.md) | English
+[Türkçe](README.md) | English · Paper (preprint): [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24309981.svg)](https://doi.org/10.5281/zenodo.24309981)
 
 > **Without a harness, a language model does 0 administration.** It cannot connect to the server, cannot read the job's
 > output, cannot fix the profile, cannot rerun the job; it only writes advice and nothing on the site changes. In every
