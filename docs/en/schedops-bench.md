@@ -187,8 +187,8 @@ Counted from the scenario files (`bench/saha/<set>/`):
 | **Total** | **165** | | |
 
 Measurements are on `dev`, `test`, `zor-dev` and `zor-test`. The `katalog-test` validation was left half done by a restart:
-of 60 scenarios, 49 have a passing pair of rows (nobody touched it / reference solution), 1 could not be established, 10 have
-no rows.
+later completed: in none of the 60 scenarios is the untouched site correct; the reference solution is correct in 59 and partial
+in 1 (`k2-55-host-ajan-kapali-tasi-aft-parola-degisti`).
 
 ## Results
 
@@ -221,6 +221,9 @@ When nobody touches the site (`bos`, the end state of the bare model), from the 
 | Hidden test (`test`) | 30 | 0 | 13 | 15 | 2 | 0 |
 | Hard development (`zor-dev`) | 10 | 0 | 7 | 0 | 3 | 0 |
 | Hard hidden test (`zor-test`) | 18 | 0 | 11 | 5 | 2 | 0 |
+
+`zor-test` is 17 scenarios in the measured set; the 18 in the table comes from the validation run, which also counted the removed
+`zt-ajan-port-dolu` scenario.
 
 "Partial" here comes from the part of the site that nobody touches already being right (for example a table that must not be
 harmed). In one development scenario (`ajan-servisi-bakimdan-donmedi`) the empty arm came out "harmful". That is a defect of the
@@ -266,8 +269,8 @@ enough to draw a conclusion.
 | test, budget 40 | Usta | 27 | 11 | 7 | 0 | 8 | 1 | 18.0 |
 | test, budget 10 (half) | Tool-equipped model | 15 | 4 | 6 | 0 | 3 | 2 | 9.5 |
 | test, budget 10 (half) | Usta | 15 | 5 | 3 | 3 | 4 | 0 | 9.5 |
-| zor-test, `saha-donuk-2` (partial) | Tool-equipped model | 7 | 0 | 3 | 0 | 2 | 2 | 19.0 |
-| zor-test, `saha-donuk-2` (partial) | Usta | 6 | 0 | 0 | 0 | 4 | 2 | 22.3 |
+| zor-test, `saha-donuk-2` | Tool-equipped model | 17 | 0 | 4 | 0 | 8 | 5 | 18.7 |
+| zor-test, `saha-donuk-2` | Usta | 17 | 0 | 2 | 0 | 11 | 4 | 23.2 |
 
 Paired comparison (same scenarios, tool-equipped model against Usta): at budget 40, 26 pairs; correct only with Usta 5,
 correct only with the tool-equipped model 2, sign test p=0.45. At budget 10, 15 pairs; 3 against 2, p=1.0. The difference is
@@ -287,11 +290,20 @@ with a narrow scope).
 
 | Set | Harness | Rung | Episodes | Correct | Partial | Wrong | False green | Harmful | Avg. steps |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| dev (16) | `saha-donuk-2` | Tool-equipped model | 16 | 3 | 1 | 2 | 0 | 10 | 22.8 |
+| dev (16) | `saha-donuk-2` | Usta | 16 | 9 | 5 | 0 | 2 | 0 | 28.3 |
 | test (partial; cut by a restart) | frozen | Tool-equipped model | 7 | 2 | 1 | 1 | 0 | 3 | 15.1 |
 | test (partial) | frozen | Usta | 6 | 2 | 1 | 1 | 2 | 0 | 24.8 |
 | zor-dev round 1 | development | Tool-equipped model | 10 | 0 | 3 | 0 | 1 | 6 | 32.4 |
 | zor-dev round 1 | development | Usta | 10 | 0 | 3 | 0 | 2 | 5 | 36.5 |
 | zor-dev round 2 | `saha-donuk-2` | Usta | 10 | 1 | 1 | 0 | 6 | 2 | 27.3 |
+
+Paired comparison on dev (16 pairs): correct only with Usta 7, only with the tool-equipped model 1 (sign test p=0.07); harmful
+only with the tool-equipped model 10, only with Usta 0 (p=0.002). Usta is not faster in steps (28.3 against 22.8; 7 episodes
+ended at the step limit): the tool-equipped model finishes early by causing harm.
+
+**Honesty note.** The harness was developed on this development set, so the correctness difference is an upper estimate and
+not a held-out result. For the small model the most solid finding is the harm difference.
 
 In the partial test run the tool-equipped model applied 31 destructive commands; for Usta this number is 0. The harness
 stopped 8 commands.
@@ -330,15 +342,15 @@ Harness changes between `saha-donuk-1` and `saha-donuk-2`:
 
 The tuning was limited to one confirmation round (round 2, Usta only). Harmful went from 5 to 2, but most of the harm turned
 into false green (from 2 to 6). Correct went from 0 to 1. As instructed, the result was not chased; `saha-donuk-2` was labelled
-as it stands. The hard hidden set (`zor-test`, 17 scenarios) was being run with gpt-oss under this label; when the report was
-written, 13 episodes had verdicts and neither rung had a correct one.
+as it stands. The hard hidden set (`zor-test`, 17 scenarios) was run once with gpt-oss under this label: 0/17 correct on both rungs;
+harmful 5 (tool-equipped model) and 4 (Usta); false green 8 and 11.
 
 ### Release criteria: status
 
 | Criterion | Status | Evidence |
 | --- | --- | --- |
-| 1. Usta is better than the tool-equipped model at managing the product end to end | Partly shown, only on the first set | Clearly fewer steps at the same correctness with every model (flash dev: 8.3 against 14.1; 9 against 2 at 8 steps). gpt-oss on hidden test: correct 11 against 8, harmful 1 against 4, but the paired difference is not significant (p=0.45) |
-| 2. Correctness difference on the hard set | Not shown | On zor-dev both rungs are about 0/10; tuning reduced harm and did not bring correctness; zor-test partial, 0 correct |
+| 1. Usta is better than the tool-equipped model at managing the product end to end | Partly shown, only on the first set | Clearly fewer steps at the same correctness with every model (flash dev: 8.3 against 14.1; 9 against 2 at 8 steps). qwen3:14b on dev: correct 9 against 3 (p=0.07; the harness was developed on this set, so an upper estimate), harmful 0 against 10 (p=0.002). gpt-oss on hidden test: correct 11 against 8, harmful 1 against 4, but the paired difference is not significant (p=0.45) |
+| 2. Correctness difference on the hard set | Not shown | On zor-dev both rungs are about 0/10; tuning reduced harm and did not bring correctness; zor-test (gpt-oss) 0/17 on both rungs |
 | 3. Early-warning arm | Code exists, not measured | `docs/11`, `vardiya/saha/erken*.py` |
 | 4. Crisis speed | Partly | Step-budget tables exist (flash dev, gpt-oss budget 10). Scenarios for restarting the agent service were written, one was validated, not measured |
 

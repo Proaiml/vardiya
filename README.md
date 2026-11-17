@@ -35,7 +35,7 @@ işlerini teşhis etmek, düzeltmek ve yeniden çalıştırmak. Üç şeyle ayr�
 Boyut (senaryo dosyalarından sayıldı): geliştirme `dev` 18 dosyada 16 ölçülen (iki ajan servisi senaryosu ölçülen kümede
 yok), gizli test `test` 30, `zor-dev` 10, `zor-test` 17, `katalog-dev` 30, `katalog-test` 60; toplam 165 senaryo.
 Ölçümler `dev`, `test`, `zor-dev` ve `zor-test` üzerindedir; katalog kümeleri ölçülmedi (`katalog-test` doğrulaması
-yeniden başlatmada yarım kaldı: 60 senaryodan 49'unda geçen bir çift satır var, 1'i kurulamadı, 10'unda satır yok).
+yeniden başlatmada yarım kaldı, sonra tamamlandı: 60 senaryonun hiçbirinde dokunulmamış site doğru değil; referans çözüm 59'unda doğru, 1'inde yarım (`k2-55-host-ajan-kapali-tasi-aft-parola-degisti`)).
 Bu, projenin önceki bench'leriyle karıştırılmasın: Scheduler Admin Bench (emülatörde tanım talepleri, `docs/03`) ve ops
 bench (metin cevapları, `docs/07`) ayrıdır; SchedOps-Bench onların canlı üyesidir.
 
@@ -107,7 +107,8 @@ genel sonucu temsil etmez; genel sonuç aşağıdaki tablodadır.
 
 1. **Saf model.** Aracı yoktur; yalnızca öneri metni yazar, sitede hiçbir şey değişmez. Ayrıca koşulmaz: her senaryonun
    doğrulamasındaki "kimse dokunmadı" kolu bunu ölçer ve kuruluş gereği hiçbir senaryoda doğru çıkmaz (geliştirmede
-   0/17, gizli testte 0/30, zor geliştirmede 0/10, zor gizli testte 0/18).
+   0/17, gizli testte 0/30, zor geliştirmede 0/10, zor gizli testte 0/18; zor gizli kümede ölçülen 17 senaryodur, 18
+   sayısı kaldırılmış `zt-ajan-port-dolu` senaryosunun da sayıldığı doğrulama koşusundan gelir).
 2. **Araçlı model.** Vardiya'nın yalnızca erişim katmanı: iki araç (`ctm`, `sh`), el kitabı, ajan döngüsü.
 3. **Usta.** Aynı model, aynı araçlar, aynı el kitabı; üstüne harness: ön okuma ve sınıflandırma, beceri kartları, ön
    uçuş denetimi, koruma, sonuç takibi, bitiş kapısı. Harness, araçlı modelin ulaşamadığı hiçbir veriyi görmez.
@@ -123,7 +124,7 @@ makine yeniden başlaması ya da sürüyor olması yüzünden yarım kaldığı 
 | gemini-4-hydrogen-high | dev (`dev-hydrogen-high`), **kısmi** | 6/6, 11,0 | 6/6, 7,7 | 30 bölüm kota ile kesildi |
 | gpt-oss-120b-medium | test, bütçe 40 (`test-gpt-oss`) | 8/26, 15,0 | 11/27, 18,0 | zararlı 4'e 1; eşli fark p=0,45 |
 | gpt-oss-120b-medium | test, bütçe 10 (`test-gpt-oss-b10`) | 4/15, 9,5 | 5/15, 9,5 | zararlı 2'ye 0; eşli fark p=1,0 |
-| qwen3:14b | dev (`dev-qwen3-14b`) | 3/16, 22,8 | 9/16, 28,3 | zararlı 10'a 0; eşli fark: yalnız Usta doğru 7, yalnız araçlı model 1 (p=0,07) |
+| qwen3:14b | dev (`dev-qwen3-14b`, `saha-donuk-2`) | 3/16, 22,8 | 9/16, 28,3 | araçlı model: 1 yarım, 2 yanlış, 0 sahte yeşil, 10 zararlı; Usta: 5 yarım, 0 yanlış, 2 sahte yeşil, 0 zararlı, 7 bölüm adım sınırında bitti. Eşli: yalnız Usta doğru 7, yalnız araçlı model 1 (p=0,07); yalnız araçlı modelde zararlı 10, yalnız Usta'da 0 (p=0,002). Harness bu küme üzerinde geliştirildi: doğruluk farkı üst tahmindir, ayrılmış küme sonucu değildir |
 | qwen3:14b | zor-dev tur 1 (`zor-dev-qwen-t1`) | 0/10, 32,4 | 0/10, 36,5 | zararlı 6'ya 5 |
 | qwen3:14b | zor-dev tur 2 (`zor-dev-qwen-t2`) | ölçülmedi | 1/10, 27,3 | yalnızca Usta; zararlı 2, sahte yeşil 6 |
 | gpt-oss-120b-medium | zor-test (`zor-test-gpt-oss`) | 0/17, 18,7 | 0/17, 23,2 | zararlı 5'e 4; sahte yeşil 8'e 11 |
@@ -138,7 +139,9 @@ bilgi tek başına hızı açıklamıyor.
   karşı 14,1; hydrogen: 7,7'ye karşı 11,0). Küçük yerel modelde (qwen3:14b, geliştirme kümesi) fark doğrulukta da
   görülüyor: araçlarla tek başına 16 senaryodan 3'ünü doğru, 10'unu zararlı bitirdi (12 yıkıcı komut, 11 kez set to OK);
   Usta'nın içinde 9'unu doğru bitirdi, hiçbirinde zarar yok. Bu küçük bir örneklemdir (p=0,07). gpt-oss gizli testte
-  zararlı 4'e 1, doğru 8'e 11; eşli fark anlamlı değil.
+  zararlı 4'e 1, doğru 8'e 11; eşli fark anlamlı değil. Dürüstlük notu: harness bu geliştirme kümesi üzerinde geliştirildi;
+  qwen3:14b'deki doğruluk farkı üst tahmindir ve ayrılmış küme sonucu değildir. Küçük model için en sağlam bulgu zarar
+  farkıdır (yalnız araçlı modelde zararlı 10 senaryo, yalnız Usta'da 0; p=0,002).
 
 ## Beceriler: yeni bir duruma uyarlamak
 

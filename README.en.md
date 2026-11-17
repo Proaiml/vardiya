@@ -36,8 +36,8 @@ command/script jobs and database jobs. It stands apart in three ways:
 Size (counted from the scenario files): development `dev` 16 measured in 18 files (two agent-service scenarios are not in
 the measured set), hidden test `test` 30, `zor-dev` 10, `zor-test` 17, `katalog-dev` 30, `katalog-test` 60; 165 scenarios
 in total. Measurements are on `dev`, `test`, `zor-dev` and `zor-test`; the catalogue sets were not measured (the
-`katalog-test` validation was left half done by a restart: of 60 scenarios, 49 have a passing pair of rows, 1 could not be
-established, 10 have no rows). This is not to be confused with the project's earlier benchmarks: Scheduler Admin Bench
+`katalog-test` validation was left half done by a restart: later completed: in none of the 60 scenarios is the untouched site correct; the reference
+solution is correct in 59 and partial in 1 (`k2-55-host-ajan-kapali-tasi-aft-parola-degisti`)). This is not to be confused with the project's earlier benchmarks: Scheduler Admin Bench
 (definition requests on the emulator, `docs/03`) and the ops bench (text answers, `docs/07`) are separate; SchedOps-Bench is
 their live member.
 
@@ -114,7 +114,8 @@ selected, simple scenario and does not represent the overall result; the overall
 1. **Bare model.** It has no tools; it only writes advice text and nothing changes on the site. It is also not run
    separately: the "nobody touched it" arm in each scenario's validation measures this, and by construction it never comes
    out correct in any scenario (0/17 on development, 0/30 on hidden test, 0/10 on hard development, 0/18 on hard hidden
-   test).
+   test; the hard hidden set measures 17 scenarios, the 18 comes from the validation run that also counted the removed
+   `zt-ajan-port-dolu` scenario).
 2. **Tool-equipped model.** Only Vardiya's access layer: two tools (`ctm`, `sh`), a handbook, the agent loop.
 3. **Usta (model with the Vardiya harness).** The same model, the same tools, the same handbook; on top, the harness:
    pre-reading and classification, skill cards, pre-flight checks, protection, result tracking, a finish gate. The
@@ -132,9 +133,10 @@ verdicts.
 | gemini-4-hydrogen-high | dev (`dev-hydrogen-high`), **partial** | 6/6, 11.0 | 6/6, 7.7 | 30 episodes cut by quota |
 | gpt-oss-120b-medium | test, budget 40 (`test-gpt-oss`) | 8/26, 15.0 | 11/27, 18.0 | harmful 4 vs 1; paired difference p=0.45 |
 | gpt-oss-120b-medium | test, budget 10 (`test-gpt-oss-b10`) | 4/15, 9.5 | 5/15, 9.5 | harmful 2 vs 0; paired difference p=1.0 |
+| qwen3:14b | dev (`dev-qwen3-14b`, `saha-donuk-2`) | 3/16, 22.8 | 9/16, 28.3 | tool-equipped: 1 partial, 2 wrong, 0 false green, 10 harmful; Usta: 5 partial, 0 wrong, 2 false green, 0 harmful, 7 episodes ended at the step limit. Paired: correct only with Usta 7, only with the tool-equipped model 1 (p=0.07); harmful only with the tool-equipped model 10, only with Usta 0 (p=0.002). The harness was developed on this set: the correctness difference is an upper estimate, not a held-out result |
 | qwen3:14b | zor-dev round 1 (`zor-dev-qwen-t1`) | 0/10, 32.4 | 0/10, 36.5 | harmful 6 vs 5 |
 | qwen3:14b | zor-dev round 2 (`zor-dev-qwen-t2`) | not measured | 1/10, 27.3 | Usta only; harmful 2, false green 6 |
-| gpt-oss-120b-medium | zor-test (`zor-test-gpt-oss`), **partial** | 0/9, 17.3 | 0/10, 26.2 | snapshot taken while the run was in progress; numbers may change |
+| gpt-oss-120b-medium | zor-test (`zor-test-gpt-oss`) | 0/17, 18.7 | 0/17, 23.2 | harmful 5 vs 4; false green 8 vs 11 |
 
 Step budget (`--butce`): on `dev-flash-low`, over 14 common scenarios, those finishing correct in at most 8 steps are 2
 for the tool-equipped model and 9 for Usta; at 15 steps, 9 against 14. The card-text arm (card text added, no harness)
@@ -145,7 +147,11 @@ solved 2 at 8 steps and 11 at 15 steps: information alone does not explain the s
   tools (15/15 on flash dev).
 - **From 2 to 3: speed and less harm.** Clearly fewer steps at the same correctness (flash dev: 8.3 against 14.1;
   hydrogen: 7.7 against 11.0). With a weak model (gpt-oss test) there are fewer harmful outcomes and a small increase in
-  correct ones, but the paired difference is not statistically significant.
+  correct ones, but the paired difference is not statistically significant. With the small local model (qwen3:14b, development set) the
+  tool-equipped model finished 3 of 16 scenarios correct and 10 harmful; inside Usta, 9 correct and 0 harmful. Honesty
+  note: the harness was developed on this set, so the correctness difference is an upper estimate and not a held-out
+  result; the most solid finding for the small model is the harm difference (10 scenarios harmful only with the
+  tool-equipped model, 0 only with Usta; p=0.002).
 
 ## Skills: adapting to a new situation
 

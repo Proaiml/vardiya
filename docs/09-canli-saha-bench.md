@@ -146,6 +146,8 @@ Kimse dokunmadığında (`bos`, saf modelin uç durumu), doğrulama koşularınd
 | Zor geliştirme (`zor-dev`) | 10 | 0 | 7 | 0 | 3 | 0 |
 | Zor gizli test (`zor-test`) | 18 | 0 | 11 | 5 | 2 | 0 |
 
+`zor-test` ölçülen kümede 17 senaryodur; tablodaki 18, kaldırılmış `zt-ajan-port-dolu` senaryosunun da sayıldığı doğrulama koşusundan gelir.
+
 "Yarım" burada sitenin dokunulmayan kısmının zaten doğru olmasından gelir (ör. zarar görmemesi gereken tablo). Bir
 geliştirme senaryosunda (`ajan-servisi-bakimdan-donmedi`) boş kol "zararlı" çıktı. Bu senaryonun kusurudur; senaryo
 ölçülen kümelerde yoktur.
@@ -228,7 +230,9 @@ Küçük yerel modelin üç basamağı (dev, 16 senaryo):
 | 2. Araçlı model | 3 | 10 | Sunuculara bağlanıp iş yapıyor, ama 16 bölümün 10'unda zarar: 12 yıkıcı komut ve 11 kez set to OK uyguladı |
 | 3. Usta | 9 | 0 | Aynı model; harness 232 çağrıyı durdurdu ya da ikinci çağrı istedi, hiçbir yıkıcı komut ve set to OK uygulanmadı |
 
-Eşli karşılaştırma: 16 çift; yalnız Usta doğru 7, yalnız araçlı model doğru 1 (işaret testi p=0.07). Usta adım bakımından hızlı değil (28.3'e karşı 22.8): araçlı model zarar vererek erken bitiriyor.
+Eşli karşılaştırma: 16 çift; yalnız Usta doğru 7, yalnız araçlı model doğru 1 (işaret testi p=0.07). Zarar bakımından 10 senaryo yalnızca araçlı modelde zararlı, 0 senaryo yalnızca Usta'da (p=0.002). Usta adım bakımından hızlı değil (28.3'e karşı 22.8; 7 bölüm adım sınırında bitti): araçlı model zarar vererek erken bitiriyor.
+
+**Dürüstlük notu.** Harness bu geliştirme kümesi üzerinde geliştirildi; doğruluk farkı üst tahmindir, ayrılmış küme sonucu değildir. Küçük model için en sağlam bulgu zarar farkıdır.
 
 Kısmi test koşusunda (donuk harness) araçlı model 31 yıkıcı komut uyguladı, Usta'da bu sayı 0. Harness 8 komutu durdurdu.
 
@@ -272,7 +276,7 @@ Usta 4 zararlı; sahte yeşil 8'e 11. Zor kümede doğruluk farkı yok.
 
 | Ölçüt | Durum | Kanıt |
 | --- | --- | --- |
-| 1. Usta, ürünü uçtan uca yönetmede araçlı modelden üstün | Kısmen gösterildi, ilk kümelerde | Güçlü ve hafif modelde aynı doğrulukta belirgin daha az adım (flash dev: 8.3'e karşı 14.1; 8 adımda 9'a karşı 2). Küçük yerel modelde (qwen3:14b, dev) doğru 9'a 3, zararlı 0'a 10 (p=0.07). gpt-oss gizli testte doğru 11'e 8, zararlı 1'e 4 (p=0.45). Hiçbir eşli fark 0.05 altında değil |
+| 1. Usta, ürünü uçtan uca yönetmede araçlı modelden üstün | Kısmen gösterildi, ilk kümelerde | Güçlü ve hafif modelde aynı doğrulukta belirgin daha az adım (flash dev: 8.3'e karşı 14.1; 8 adımda 9'a karşı 2). Küçük yerel modelde (qwen3:14b, dev) doğru 9'a 3 (p=0.07; harness bu kümede geliştirildi, üst tahmin), zararlı 0'a 10 (p=0.002). gpt-oss gizli testte doğru 11'e 8, zararlı 1'e 4 (p=0.45). Hiçbir eşli fark 0.05 altında değil |
 | 2. Zor kümede doğruluk farkı | Gösterilmedi | zor-dev'de iki basamak da ~0/10; ayar zararı azalttı, doğruluğu getirmedi; zor-test (gpt-oss) iki basamakta 0/17 |
 | 3. Erken uyarı kolu | Kodu var, ölçülmedi | `docs/11`, `vardiya/saha/erken*.py` |
 | 4. Kriz hızı | Kısmen | Adım bütçesi tabloları var (flash dev, gpt-oss bütçe 10). Ajan servisi senaryoları: zor-test'teki üçü (`zt-ajan-ayar-bozuk`, `-sozdizimi`, `-yok`) gpt-oss ile ölçüldü, iki basamakta da hiçbiri doğru değil (Usta üçünde sahte yeşil; araçlı model bir yarım, iki sahte yeşil). Geliştirme kümesindeki iki ajan servisi senaryosu ölçülmedi |
@@ -292,7 +296,7 @@ Usta 4 zararlı; sahte yeşil 8'e 11. Zor kümede doğruluk farkı yok.
   bellek için kaldırıldı; hiç kullanılmadı. Canlı bench'te Windows sunucusu ve WinRM yolu yok.
 - **Gerçek Control-M.** Kurulmadı (hesabın indirme hakkı yok). Ölçümler JS7 üzerindeki Control-M sözdizimli katmanda.
 - **Öykünmeyle olaylar.** Laboratuvarda üretilemeyen olaylar için planlandı (`docs/10`), yapılmadı.
-- **Katalog kümeleri** (`bench/saha/katalog-*`). `katalog-test` doğrulaması tamamlandı (59/60). Gizli yarının yarısının ölçümü kısmi kaldı (14/30 senaryo); harness ayarı `katalog-dev` ile yapılmadı.
+- **Katalog kümeleri** (`bench/saha/katalog-*`). `katalog-test` doğrulaması tamamlandı: 60 senaryonun hiçbirinde dokunulmamış site doğru değil, referans çözüm 59'unda doğru, 1'inde yarım. Gizli yarının yarısının ölçümü kısmi kaldı (14/30 senaryo); harness ayarı `katalog-dev` ile yapılmadı.
 - **Senaryo yazarının körlüğü.** Yazar `skills/`, `usta.py`, `tests/test_saha.py`, `opsbench.py`, `desk.py`,
   `checks.py`, `skills.py`, `docs/ilerleme.md` ve `bench/saha/test/`'in hiçbirini açmadığını bildirdi. Bir grep
   `usta.py`'nin ilgisiz tek bir satırını gösterdi; dosyayı açmadı. Yanlış adrese giden mesaj bilinen bir sızıntıya yol
